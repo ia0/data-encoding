@@ -14,6 +14,7 @@ guarantees, to conform to RFC 4648 (base64, base32, hex, etc.), to be
 efficient, and to give choice between allocating and in-place
 functions.
 """
+include = ["Cargo.toml", "LICENSE", "src/*.rs"]
 
 [dev-dependencies]
 # Used by the example.
