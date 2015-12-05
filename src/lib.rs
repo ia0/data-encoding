@@ -42,14 +42,13 @@
 //! [`base32hex`](base32hex/index.html),
 //! [`base64`](base64/index.html), and
 //! [`base64url`](base64url/index.html) modules are conform to [RFC
-//! 4648][rfc4648].
+//! 4648](https://tools.ietf.org/html/rfc4648).
 //!
 //! # Performance
 //!
-//! This crate has comparable performance to the `rustc-serialize`
-//! crate and the `base64` GNU program.
-//!
-//! [rfc4648]: https://tools.ietf.org/html/rfc4648
+//! This [crate](https://crates.io/crates/data-encoding) has
+//! comparable performance to the `rustc-serialize` crate and the
+//! `base64` GNU program.
 
 #![warn(unused_results)]
 
@@ -176,8 +175,7 @@ base!{
     ///
     /// # Conformance
     ///
-    /// [RFC 4648][rfc4648] compliant.
-    /// [rfc4648]: https://tools.ietf.org/html/rfc4648#section-8
+    /// [RFC 4648](https://tools.ietf.org/html/rfc4648#section-8) compliant.
     mod base16;
     4, b'=', &[(b'0', b'9'), (b'A', b'F')], b"0123456789ABCDEF",
     X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
@@ -196,8 +194,7 @@ base!{
     ///
     /// # Conformance
     ///
-    /// [RFC 4648][rfc4648] compliant.
-    /// [rfc4648]: https://tools.ietf.org/html/rfc4648#section-6
+    /// [RFC 4648](https://tools.ietf.org/html/rfc4648#section-6) compliant.
     mod base32;
     5, b'=', &[(b'A', b'Z'), (b'2', b'7')],
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
@@ -216,8 +213,7 @@ base!{
     ///
     /// # Conformance
     ///
-    /// [RFC 4648][rfc4648] compliant.
-    /// [rfc4648]: https://tools.ietf.org/html/rfc4648#section-7
+    /// [RFC 4648](https://tools.ietf.org/html/rfc4648#section-7) compliant.
     mod base32hex;
     5, b'=', &[(b'0', b'9'), (b'A', b'V')],
     b"0123456789ABCDEFGHIJKLMNOPQRSTUV",
@@ -236,8 +232,7 @@ base!{
     ///
     /// # Conformance
     ///
-    /// [RFC 4648][rfc4648] compliant.
-    /// [rfc4648]: https://tools.ietf.org/html/rfc4648#section-4
+    /// [RFC 4648](https://tools.ietf.org/html/rfc4648#section-4) compliant.
     mod base64;
     6, b'=', &[(b'A', b'Z'), (b'a', b'z'), (b'0', b'9'), (b'+', b'+'), (b'/', b'/')],
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
@@ -256,8 +251,7 @@ base!{
     ///
     /// # Conformance
     ///
-    /// [RFC 4648][rfc4648] compliant.
-    /// [rfc4648]: https://tools.ietf.org/html/rfc4648#section-5
+    /// [RFC 4648](https://tools.ietf.org/html/rfc4648#section-5) compliant.
     mod base64url;
     6, b'=', &[(b'A', b'Z'), (b'a', b'z'), (b'0', b'9'), (b'-', b'-'), (b'_', b'_')],
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
