@@ -2,10 +2,10 @@
 
 [![Build Status](https://travis-ci.org/ia0/data-encoding.svg?branch=master)](https://travis-ci.org/ia0/data-encoding)
 
-This library provides generic encoding and decoding functions with
-instances for common bases (base64, base32, hex, etc.). It also
-provides a file encoding and decoding binary example exercising the
-library quite exhaustively.
+This [crate](https://crates.io/crates/data-encoding) provides generic
+encoding and decoding functions with instances for common bases
+(base64, base32, hex, etc.). It also provides a file encoding and
+decoding binary example exercising the library quite exhaustively.
 
 The implementation is meant:
 - to guarantee mathematical properties,
