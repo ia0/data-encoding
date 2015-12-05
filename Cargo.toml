@@ -1,0 +1,21 @@
+[package]
+name = "data-encoding"
+version = "1.0.0"
+authors = ["Julien Cretin <git@ia0.eu>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/ia0/data-encoding"
+homepage = "https://github.com/ia0/data-encoding"
+documentation = "https://ia0.github.com/data-encoding/data_encoding"
+description = """
+Generic data encoding functions. It is meant to provide mathematical
+guarantees, to conform to RFC 4648 (base64, base32, hex, etc.), to be
+efficient, and to give choice between allocating and in-place
+functions.
+"""
+
+[dev-dependencies]
+# Used by the example.
+getopts = "0.2.14"
+# Used by benchmarks.
+rustc-serialize = "0.3.16"
