@@ -35,7 +35,7 @@ done; unset t
 echo "Test with $(stat -c%s "$INPUT") bytes of input."
 
 compare() {
-  local x="$(measure "$1" "$2")" y="$(measure "$3" "$4")" a b
+  local x="$(measure "$1" "$2")" y="$(measure "$3" "$4")" a b ta=0 tb=0
   echo
   echo "a: $x"
   echo "b: $y"
@@ -44,8 +44,13 @@ compare() {
     mv "$OUTPUT" "$ORACLE"
     b="$(eval "$y")" || fail "$b"
     echo "  a: $a;  b: $b;"
+    a="${a%% *}"
+    b="${b%% *}"
+    ta="$(echo "$ta + $a" | bc)"
+    tb="$(echo "$tb + $b" | bc)"
     diff -q "$OUTPUT" "$ORACLE" >/dev/null || fail "Wrong output!"
   done
+  echo "(b-a)/a: $(echo "($tb - $ta) * 100 / $ta" | bc)%"
 }
 
 compare "base64 $input" "$output" "encode -w76 -i $input -o $output" ""
