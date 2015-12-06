@@ -36,6 +36,10 @@ fn last_block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) {
 ///
 /// This function is meant to be used in conjunction with
 /// [`encode_mut`](fn.encode_mut.html).
+///
+/// # Panics
+///
+/// May panic if `base` does not satisfy the `Base` invariants.
 pub fn encode_len<B: Base>(base: &B, len: usize) -> usize {
     div_ceil(len, enc(base)) * dec(base)
 }

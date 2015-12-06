@@ -94,7 +94,7 @@ pub trait Base {
     ///
     /// # Panics
     ///
-    /// This function may panic when input is not a value.
+    /// May panic when input is not a value.
     fn sym(&self, x: u8) -> u8 {
         for s in 0..128u8 {
             match self.val(s) {
@@ -110,6 +110,10 @@ pub trait Base {
 ///
 /// The bit-mask of a base is the set of bits used by values. In other
 /// words, the bit-mask is `(1 << base.bit()) - 1`.
+///
+/// # Panics
+///
+/// May panic if `base` does not satisfy the `Base` invariants.
 pub fn mask<B: Base>(base: &B) -> u8 {
     (1 << base.bit()) - 1
 }
@@ -120,6 +124,10 @@ pub fn mask<B: Base>(base: &B) -> u8 {
 /// after which the encoding or decoding mechanism loops. In other
 /// words, the period length is the least common multiple of 8 and
 /// `base.bit()`.
+///
+/// # Panics
+///
+/// May panic if `base` does not satisfy the `Base` invariants.
 pub fn len<B: Base>(base: &B) -> usize {
     match base.bit() {
         1 | 2 | 4 => 8,
@@ -134,6 +142,10 @@ pub fn len<B: Base>(base: &B) -> usize {
 /// The encoding length of a base is the number of ascii it takes
 /// before encoding loops. In other words, the encoding length is
 /// `len(base) / 8`.
+///
+/// # Panics
+///
+/// May panic if `base` does not satisfy the `Base` invariants.
 pub fn enc<B: Base>(base: &B) -> usize {
     len(base) / 8
 }
@@ -143,6 +155,10 @@ pub fn enc<B: Base>(base: &B) -> usize {
 /// The decoding length of a base is the number of symbols it takes
 /// before decoding loops. In other words, the decoding length is
 /// `len(base) / base.bit()`.
+///
+/// # Panics
+///
+/// May panic if `base` does not satisfy the `Base` invariants.
 pub fn dec<B: Base>(base: &B) -> usize {
     len(base) / base.bit()
 }

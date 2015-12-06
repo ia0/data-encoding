@@ -48,6 +48,10 @@ fn last_block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) -> Result<usiz
 ///
 /// This function is meant to be used in conjunction with
 /// [`decode_mut`](fn.decode_mut.html).
+///
+/// # Panics
+///
+/// May panic if `base` does not satisfy the `Base` invariants.
 pub fn decode_len<B: Base>(base: &B, len: usize) -> usize {
     div_ceil(len, dec(base)) * enc(base)
 }
