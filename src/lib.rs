@@ -119,8 +119,9 @@ macro_rules! base {
                 const SPEC: Spec = Spec { val: $r, pad: $p };
                 assert_eq!(BASE.val.len(), 256);
                 assert_eq!(BASE.sym.len(), 1 << BASE.bit);
-                equal(&BASE, &SPEC).unwrap();
+                valid(&SPEC).unwrap();
                 valid(&BASE).unwrap();
+                equal(&BASE, &SPEC).unwrap();
             }
         }
     };
