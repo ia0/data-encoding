@@ -1,7 +1,5 @@
 # Changelog
 
-## Master
-
 ### Minor
 
 - Give access to the base of each module.
