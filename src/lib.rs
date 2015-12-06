@@ -90,11 +90,16 @@ macro_rules! base {
         pub mod $n {
             use ::decode::Error;
             const X_: u8 = 128;
-            enum Static {}
+            /// Force static dispatch.
+            pub enum Static {}
             static BASE: ::base::Opt<Static> = ::base::Opt {
                 val: ascii!($($v),*), sym: $s, bit: $b, pad: $p,
                 _phantom: ::std::marker::PhantomData
             };
+            /// Gives access to the base.
+            pub fn base() -> &'static ::base::Opt<Static> {
+                &BASE
+            }
             pub fn encode_len(len: usize) -> usize {
                 ::encode::encode_len(&BASE, len)
             }
