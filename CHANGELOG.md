@@ -6,7 +6,9 @@
 
 ### Patch
 
-- Fix missing panics in documentation.
-- Test that specification is valid.
+- Discuss implementation discrepancies in the documentation.
+- Test decoding differences with rustc-serialize.
+- Add the missing panic sections in the documentation.
+- Test that base specifications are valid.
 
 ## 1.0.0

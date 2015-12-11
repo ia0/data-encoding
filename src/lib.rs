@@ -1,54 +1,95 @@
-//! This crate provides generic data encoding functions.
+//! This [crate](https://crates.io/crates/data-encoding) provides
+//! generic data encoding functions.
 //!
-//! Encoding and decoding functions are provided for common bases.
-//! Those functions are instantiated from generic functions using a
-//! base interface described in module [`base`](base/index.html). The
-//! generic encoding and decoding functions are defined in the
-//! [`encode`](encode/index.html) and [`decode`](decode/index.html)
-//! modules respectively.
+//! Encoding and decoding functions with and without allocation are
+//! provided for common bases. Those functions are instantiated from
+//! generic functions using a base interface described in module
+//! [`base`](base/index.html). The generic encoding and decoding
+//! functions are defined in the [`encode`](encode/index.html) and
+//! [`decode`](decode/index.html) modules respectively.
 //!
 //! # Examples
 //!
 //! ```
 //! use data_encoding::hex;
 //! use data_encoding::base64;
-//! assert_eq!(hex::encode(b"some raw data").as_bytes(), b"736F6D65207261772064617461");
+//! assert_eq!(hex::encode(b"some raw data"), "736F6D65207261772064617461");
 //! assert_eq!(base64::decode(b"c29tZSByYXcgZGF0YQ==").unwrap(), b"some raw data");
 //! ```
 //!
 //! A more involved example is available in the `examples` directory.
+//! It is similar to the `base64` GNU program, but it works for all
+//! common bases and also for custom bases defined at runtime.
+//!
+//! # Conformance
+//!
+//! This crate is meant to be conform. The
+//! [`base16`](base16/index.html), [`hex`](index.html#reexports),
+//! [`base32`](base32/index.html),
+//! [`base32hex`](base32hex/index.html),
+//! [`base64`](base64/index.html), and
+//! [`base64url`](base64url/index.html) modules conform to [RFC
+//! 4648](https://tools.ietf.org/html/rfc4648).
 //!
 //! # Properties
 //!
-//! The encoding and decoding functions satisfy the following
-//! properties:
+//! This crate is meant to provide strong properties. The encoding and
+//! decoding functions satisfy the following properties:
 //!
 //! - They are deterministic: their output only depends on their input.
 //! - They have no side-effects: they do not modify a hidden mutable
 //! state.
 //! - They never panic, although the decoding function may return a
 //! decoding error on invalid input.
-//! - They are inverses of each other:
+//! - They are inverse of each other:
 //!   - For all `data: Vec<u8>`, we have
 //!   `decode(encode(&data).as_bytes()) == Ok(data)`.
 //!   - For all `repr: String`, if there is `data: Vec<u8>` such that
 //!   `decode(repr.as_bytes()) == Ok(data)`, then `encode(&data) ==
 //!   repr`.
 //!
-//! # Conformance
+//! This last property, that `encode` and `decode` are inverse of each
+//! other, is usually not satisfied by common `base64`
+//! implementations, like the `rustc-serialize` crate or the `base64`
+//! GNU program. This is a matter of choice, and this crate has made
+//! the choice to guarantee canonical encoding as described by
+//! [section 3.5](https://tools.ietf.org/html/rfc4648#section-3.5) of
+//! the RFC.
 //!
-//! The [`base16`](base16/index.html), [`hex`](index.html#reexports),
-//! [`base32`](base32/index.html),
-//! [`base32hex`](base32hex/index.html),
-//! [`base64`](base64/index.html), and
-//! [`base64url`](base64url/index.html) modules are conform to [RFC
-//! 4648](https://tools.ietf.org/html/rfc4648).
+//! Since the RFC specifies `encode` on all inputs and `decode` on all
+//! possible `encode` outputs, the differences between implementations
+//! come from the `decode` function which may be more or less
+//! permissive. In this crate, the `decode` function rejects all
+//! inputs that are not a possible output of the `encode` function. A
+//! pre-treatment of the input has to be done to be more permissive
+//! (see the example of the `examples` directory). Here are some
+//! concrete examples of decoding differences between this crate, the
+//! `rustc-serialize` crate, and the `base64` GNU program:
+//!
+//! | Input      | `data-encoding`        | `rustc-serialize` | GNU `base64`  |
+//! | ---------- | ---------------------- | ----------------- | ------------- |
+//! | `AAB=`     | `Err(BadPadding)`      | `Ok(vec![0, 0])`  | `\x00\x00`    |
+//! | `AA\nB=`   | `Err(BadLength)`       | `Ok(vec![0, 0])`  | `\x00\x00`    |
+//! | `AAB`      | `Err(BadLength)`       | `Ok(vec![0, 0])`  | Invalid input |
+//! | `A\rA\nB=` | `Err(BadLength)`       | `Ok(vec![0, 0])`  | Invalid input |
+//! | `-_\r\n`   | `Err(BadCharacter(0))` | `Ok(vec![251])`   | Invalid input |
+//!
+//! We can summarize these discrepancies as follows:
+//!
+//! | Discrepancy | `data-encoding` | `rustc-serialize` | GNU `base64` |
+//! | ----------- | --------------- | ----------------- | ------------ |
+//! | Non-significant bits before padding may be non-null | No | Yes | Yes |
+//! | Non-alphabet ignored characters | None | `\r` and `\n` | `\n` |
+//! | Non-alphabet translated characters | None | `-_` mapped to `+/` | None |
+//! | Padding is optional | No | Yes | No |
+//!
+//! This crate may provide wrappers to accept these discrepancies in a
+//! generic way at some point in the future.
 //!
 //! # Performance
 //!
-//! This [crate](https://crates.io/crates/data-encoding) has
-//! comparable performance to the `rustc-serialize` crate and the
-//! `base64` GNU program.
+//! This crate is meant to be efficient. It has comparable performance
+//! to the `rustc-serialize` crate and the `base64` GNU program.
 
 #![warn(unused_results)]
 
@@ -100,21 +141,27 @@ macro_rules! base {
             pub fn base() -> &'static ::base::Opt<Static> {
                 &BASE
             }
+            /// See the generic [`encode_len`](../encode/fn.encode_len.html) function for details.
             pub fn encode_len(len: usize) -> usize {
                 ::encode::encode_len(&BASE, len)
             }
+            /// See the generic [`decode_len`](../decode/fn.decode_len.html) function for details.
             pub fn decode_len(len: usize) -> usize {
                 ::decode::decode_len(&BASE, len)
             }
+            /// See the generic [`encode_mut`](../encode/fn.encode_mut.html) function for details.
             pub fn encode_mut(input: &[u8], output: &mut [u8]) {
                 ::encode::encode_mut(&BASE, input, output)
             }
+            /// See the generic [`decode_mut`](../decode/fn.decode_mut.html) function for details.
             pub fn decode_mut(input: &[u8], output: &mut [u8]) -> Result<usize, Error> {
                 ::decode::decode_mut(&BASE, input, output)
             }
+            /// See the generic [`encode`](../encode/fn.encode.html) function for details.
             pub fn encode(input: &[u8]) -> String {
                 ::encode::encode(&BASE, input)
             }
+            /// See the generic [`decode`](../decode/fn.decode.html) function for details.
             pub fn decode(input: &[u8]) -> Result<Vec<u8>, Error> {
                 ::decode::decode(&BASE, input)
             }
