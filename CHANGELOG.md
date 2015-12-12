@@ -2,6 +2,7 @@
 
 ### Minor
 
+- Add `map` method to `decode::Error`.
 - Implement `Display` and `Error` for `ValidError` and `EqualError`.
 - Give access to the base of each module.
 

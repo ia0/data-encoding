@@ -156,6 +156,14 @@ impl Error {
             other => other,
         }
     }
+
+    /// Maps error position.
+    pub fn map<F: FnOnce(usize) -> usize>(self, f: F) -> Error {
+        match self {
+            BadCharacter(pos) => BadCharacter(f(pos)),
+            other => other,
+        }
+    }
 }
 
 impl fmt::Display for Error {
