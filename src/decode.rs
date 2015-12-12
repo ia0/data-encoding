@@ -1,7 +1,11 @@
 //! Generic decoding module.
 
+use std::{error, fmt};
+
 use base::{Base, len, enc, dec};
 use tool::{div_ceil, chunk, chunk_mut};
+
+use self::Error::*;
 
 fn block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) -> Result<(), Error> {
     let mut x = 0u64; // This is enough because `base.len() <= 40`.
@@ -143,7 +147,6 @@ pub enum Error {
     /// decoding are non-zero.
     BadPadding,
 }
-use self::Error::*;
 
 impl Error {
     /// Increments error position.
@@ -155,8 +158,6 @@ impl Error {
     }
 }
 
-use std::fmt;
-
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -166,8 +167,6 @@ impl fmt::Display for Error {
         }
     }
 }
-
-use std::error;
 
 impl error::Error for Error {
     fn description(&self) -> &str {

@@ -7,6 +7,7 @@
 //! constraints are described in the [`Base`](trait.Base.html)
 //! interface.
 
+use std::{error, fmt};
 use std::marker::PhantomData;
 
 /// Generic interface.
@@ -305,6 +306,36 @@ pub enum ValidError {
     NotSurj,
 }
 
+impl fmt::Display for ValidError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::ValidError::*;
+        match self {
+            &BadBit => write!(f, "Size is not 2, 4, 8, 16, 32, or 64."),
+            &PadNotAscii => write!(f, "Padding is not ascii."),
+            &PadSymbol => write!(f, "Padding is a symbol."),
+            &SymNotAscii(s) => write!(f, "Symbol {} is not ascii.", s),
+            &NotValue(s) => write!(f, "Symbol {} is not mapped to a value.", s),
+            &NotInj(s) => write!(f, "Symbol {} is not uniquely mapped to its value.", s),
+            &NotSurj => write!(f, "All values do not have an associated symbol."),
+        }
+    }
+}
+
+impl error::Error for ValidError {
+    fn description(&self) -> &str {
+        use self::ValidError::*;
+        match self {
+            &BadBit => "size must be 2, 4, 8, 16, 32, or 64",
+            &PadNotAscii => "padding must be ascii",
+            &PadSymbol => "padding must not be a symbol",
+            &SymNotAscii(_) => "symbols must be ascii",
+            &NotValue(_) => "symbols must be mapped to values",
+            &NotInj(_) => "symbols must be uniquely mapped",
+            &NotSurj => "all values must be mapped",
+        }
+    }
+}
+
 /// Checks whether a base is valid.
 ///
 /// This function checks whether a base satisfies the
@@ -337,6 +368,26 @@ pub enum EqualError {
 
     /// The two bases differ on the padding.
     Padding,
+}
+
+impl fmt::Display for EqualError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::EqualError::*;
+        match self {
+            &Symbol(s) => write!(f, "Bases differ on symbol {}.", s),
+            &Padding => write!(f, "Bases differ on padding."),
+        }
+    }
+}
+
+impl error::Error for EqualError {
+    fn description(&self) -> &str {
+        use self::EqualError::*;
+        match self {
+            &Symbol(_) => "bases must agree on all symbols",
+            &Padding => "bases must agree on padding",
+        }
+    }
 }
 
 /// Checks whether two bases are equal.
