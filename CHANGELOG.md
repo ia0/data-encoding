@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.1.0
+
 ### Minor
 
 - Add `map` method to `decode::Error`.
