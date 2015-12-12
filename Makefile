@@ -4,22 +4,22 @@
 build:
 	cargo build --release
 
-.PHONY: doc
-doc:
-	cargo doc
+.PHONY: encode
+encode:
+	cargo test --example encode --release
 
 .PHONY: test
 test:
 	cargo test --release
 
+.PHONY: doc
+doc:
+	cargo doc
+
 .PHONY: bench
 bench: encode
 	rustc -V | grep -v nightly >/dev/null || cargo bench
 	./bench.sh
-
-.PHONY: encode
-encode:
-	cargo test --example encode --release
 
 .PHONY: update-doc
 update-doc: doc
