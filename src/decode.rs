@@ -169,7 +169,7 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &BadCharacter(p) => write!(f, "Unexpected character at {}", p),
+            &BadCharacter(p) => write!(f, "Unexpected character at offset {}", p),
             &BadLength => write!(f, "Unexpected length"),
             &BadPadding => write!(f, "Non-zero padding"),
         }
