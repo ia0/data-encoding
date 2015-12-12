@@ -313,9 +313,9 @@ impl fmt::Display for ValidError {
             &BadBit => write!(f, "Size is not 2, 4, 8, 16, 32, or 64."),
             &PadNotAscii => write!(f, "Padding is not ascii."),
             &PadSymbol => write!(f, "Padding is a symbol."),
-            &SymNotAscii(s) => write!(f, "Symbol {} is not ascii.", s),
-            &NotValue(s) => write!(f, "Symbol {} is not mapped to a value.", s),
-            &NotInj(s) => write!(f, "Symbol {} is not uniquely mapped to its value.", s),
+            &SymNotAscii(s) => write!(f, "Symbol {:?} is not ascii.", s as char),
+            &NotValue(s) => write!(f, "Symbol {:?} is not mapped to a value.", s as char),
+            &NotInj(s) => write!(f, "Symbol {:?} is not uniquely mapped to its value.", s as char),
             &NotSurj => write!(f, "All values do not have an associated symbol."),
         }
     }
@@ -374,7 +374,7 @@ impl fmt::Display for EqualError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::EqualError::*;
         match self {
-            &Symbol(s) => write!(f, "Bases differ on symbol {}.", s),
+            &Symbol(s) => write!(f, "Bases differ on symbol {:?}.", s as char),
             &Padding => write!(f, "Bases differ on padding."),
         }
     }

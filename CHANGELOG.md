@@ -8,7 +8,7 @@
 
 ### Patch
 
-- Reword error message for unexpected characters.
+- Reword error messages.
 - Discuss implementation discrepancies in the documentation.
 - Test decoding differences with rustc-serialize.
 - Add the missing panic sections in the documentation.
