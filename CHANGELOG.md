@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.1.1
+
 ### Patch
 
 - Update crate description.
