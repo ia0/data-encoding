@@ -15,8 +15,10 @@ The implementation is meant:
 - to be efficient (wrt. the base64 GNU program), and
 - to give choice between allocating and in-place functions.
 
-For more information, please refer to the [online
-documentation](http://ia0.github.io/data-encoding/data_encoding).
+For more information, please refer to the
+[documentation](http://ia0.github.io/data-encoding/data_encoding) or
+to the
+[changelog](https://github.com/ia0/data-encoding/blob/master/CHANGELOG.md).
 
 ## About the binary
 

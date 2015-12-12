@@ -1,5 +1,10 @@
 # Changelog
 
+### Patch
+
+- Update crate description.
+- Add link to the changelog in the readme file.
+
 ## 1.1.0
 
 ### Minor

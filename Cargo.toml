@@ -9,13 +9,10 @@ repository = "https://github.com/ia0/data-encoding"
 homepage = "https://github.com/ia0/data-encoding"
 documentation = "https://ia0.github.com/data-encoding/data_encoding"
 description = """
-Generic data encoding functions.
-
-This crate is meant to provide mathematical guarantees, to conform to
-RFC 4648 (base64, base32, hex, etc.), to be efficient, and to give
-choice between allocating and in-place functions.
-
-This crate also provides an exhaustive example with similar
+This crate provides generic data encoding functions. It is meant to
+guarantee mathematical properties, to conform to RFC 4648, to be
+efficient, and to give choice between allocating and in-place
+functions. It also provides an exhaustive example with similar
 functionality to the base64 GNU program. It supports common bases
 (base2, base4, base8, base16, hex, base32, base32hex, base64, and
 base64url) and custom bases (defined on the command-line by their
