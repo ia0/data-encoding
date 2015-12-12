@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Update encode example.
 - Reword error messages.
 - Discuss implementation discrepancies in the documentation.
 - Test decoding differences with rustc-serialize.

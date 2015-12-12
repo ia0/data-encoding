@@ -27,7 +27,7 @@ while true; do
   t="$(time -f '%e' base64 < "$INPUT" 2>&1 > "$OUTPUT")"
   echo "Current time: $t"
   t="${t%?}"
-  [ "${t%.*}" -eq 0 -a "${t#0.}" -lt 3 ] || break
+  [ "${t%.*}" -eq 0 ] && [ "${t#0.}" -lt 3 ] || break
   cp "$INPUT" "$TMP"
   cat "$TMP" "$TMP" > "$INPUT"
 done; unset t
@@ -37,8 +37,8 @@ echo "Test with $(stat -c%s "$INPUT") bytes of input."
 compare() {
   local x="$(measure "$1" "$2")" y="$(measure "$3" "$4")" a b ta=0 tb=0
   echo
-  echo "a: $x"
-  echo "b: $y"
+  echo "[36ma: $x[m"
+  echo "[36mb: $y[m"
   for i in $(seq 4); do
     a="$(eval "$x")" || fail "$a"
     mv "$OUTPUT" "$ORACLE"
@@ -50,7 +50,7 @@ compare() {
     tb="$(echo "$tb + $b" | bc)"
     diff -q "$OUTPUT" "$ORACLE" >/dev/null || fail "Wrong output!"
   done
-  echo "(b-a)/a: $(echo "($tb - $ta) * 100 / $ta" | bc)%"
+  echo "[1;36m(b-a)/a: $(echo "($tb - $ta) * 100 / $ta" | bc)%[m"
 }
 
 compare "base64 $input" "$output" "encode -w76 -i $input -o $output" ""
