@@ -100,6 +100,8 @@ test!{
 fn exhaustive() {
     use data_encoding::base64::{encode_mut, decode_mut};
     let mut t = 0u32;
+    // TODO: Also test on [0u8; 4] ++ [b'A'; 4] to not only test
+    // block_last but also block. It will give more code coverage.
     let mut x = [0u8; 4];
     let mut y = [0u8; 3];
     let mut z = [0u8; 4];
