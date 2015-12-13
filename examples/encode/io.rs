@@ -121,6 +121,8 @@ impl<W: Write> Drop for Wrap<W> {
 }
 
 fn shift<R: ReadShift>(reader: &R, err: decode::Error, delta: usize) -> Error {
+    // TODO: Map decode::Error to custom Error to add the unexpected
+    // character too.
     Error::Decode(<decode::Error>::map(err, |pos| delta + reader.shift(pos)))
 }
 
