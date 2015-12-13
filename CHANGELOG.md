@@ -1,5 +1,9 @@
 # Changelog
 
+### Patch
+
+- Add `generic` to the crate keywords.
+
 ## 1.1.1
 
 ### Patch
