@@ -2,6 +2,7 @@
 
 ### Patch
 
+- Compare performance with the `base64` crate.
 - Add `generic` to the crate keywords.
 
 ## 1.1.1
