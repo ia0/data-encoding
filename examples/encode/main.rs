@@ -1,5 +1,9 @@
 #![warn(unused_results)]
 
+// TODO: Instead of --base <base> and --decode, maybe use --from <base> and --to <base>
+// With <base> in 2, 4, 8, 16, hex, 32, 32hex, 64, 64url, raw, <custom>
+//      <custom> is <pad><symbols>
+
 extern crate getopts;
 extern crate data_encoding;
 
