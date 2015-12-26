@@ -1,5 +1,8 @@
 #![warn(unused_results)]
 
+// TODO: Test if we really need custom, or if it's not easier and
+// faster to "tr | baseN | tr".
+
 // TODO: Instead of --base <base> and --decode, maybe use --from <base> and --to <base>
 // With <base> in 2, 4, 8, 16, hex, 32, 32hex, 64, 64url, raw, <custom>
 //      <custom> is <pad><symbols>
