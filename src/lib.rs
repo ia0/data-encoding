@@ -19,7 +19,9 @@
 //!
 //! A more involved example is available in the `examples` directory.
 //! It is similar to the `base64` GNU program, but it works for all
-//! common bases and also for custom bases defined at runtime.
+//! common bases and also for custom bases defined at runtime. The
+//! `make encode` command builds this example in
+//! `target/release/examples/encode`.
 //!
 //! # Conformance
 //!
@@ -89,7 +91,9 @@
 //! # Performance
 //!
 //! This crate is meant to be efficient. It has comparable performance
-//! to the `rustc-serialize` crate and the `base64` GNU program.
+//! to the `rustc-serialize` crate and the `base64` GNU program. The
+//! `make bench` command runs some benchmarks using cargo and a shell
+//! script.
 
 #![warn(unused_results)]
 
