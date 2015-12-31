@@ -1,6 +1,8 @@
 # Generic data encoding functions
 
+[![Latest Version](https://img.shields.io/crates/v/data-encoding.svg)![Latest License](https://img.shields.io/crates/l/data-encoding.svg)](https://crates.io/crates/data-encoding)
 [![Build Status](https://travis-ci.org/ia0/data-encoding.svg?branch=master)](https://travis-ci.org/ia0/data-encoding)
+[![Coverage Status](https://coveralls.io/repos/ia0/data-encoding/badge.svg?branch=master&service=github)](https://coveralls.io/github/ia0/data-encoding?branch=master)
 
 This [crate](https://crates.io/crates/data-encoding) provides generic
 encoding and decoding functions with instances for common bases

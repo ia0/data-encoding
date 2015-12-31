@@ -1,8 +1,16 @@
 language: rust
+sudo: false
 
 rust:
   - stable
   - beta
   - nightly
 
-script: make build test
+addons:
+  apt:
+    packages:
+    - libelf-dev
+    - libdw-dev
+    - binutils-dev
+
+script: ./travis.sh
