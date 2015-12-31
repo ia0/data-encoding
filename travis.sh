@@ -4,10 +4,15 @@ set -e
 info() { echo "[1;36mInfo:[m $1"; }
 
 info "Build in release mode."
-cargo build --release
+cargo build --verbose --release
 
 info "Test in release mode."
-cargo test --release
+cargo test --verbose --release
+
+if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
+  info "Benchmark."
+  cargo bench --verbose
+fi
 
 info "Download kcov."
 wget -q https://github.com/SimonKagstrom/kcov/archive/master.tar.gz
@@ -21,9 +26,10 @@ mkdir kcov-master/build
 )
 
 info "Test in debug mode with coverage."
-cargo test --no-run
+cargo test --verbose --no-run
 find target/debug -maxdepth 1 -type f -perm /u+x -printf '%P\n' |
 while IFS= read -r test; do
+  info "Run $test"
   ./kcov-master/build/src/kcov --verify --include-path=src/ \
     target/kcov-"$test" ./target/debug/"$test"
 done; unset test
