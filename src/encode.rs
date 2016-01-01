@@ -1,7 +1,7 @@
 //! Generic encoding module.
 
 use base::{Base, mask, len, enc, dec};
-use tool::{div_ceil, chunk, chunk_mut};
+use tool::{div_ceil, chunk_unchecked, chunk_mut_unchecked};
 
 fn block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) {
     let mut x = 0u64; // This is enough because `base.len() <= 40`.
@@ -66,7 +66,9 @@ pub fn encode_mut<B: Base>(base: &B, input: &[u8], output: &mut [u8]) {
     assert_eq!(output.len(), olen);
     let n = ilen / enc;
     for i in 0 .. n {
-        block(base, chunk(input, enc, i), chunk_mut(output, dec, i));
+        let input = unsafe { chunk_unchecked(input, enc, i) };
+        let output = unsafe { chunk_mut_unchecked(output, dec, i) };
+        block(base, input, output);
     }
     last_block(base, &input[enc * n ..], &mut output[dec * n ..]);
 }

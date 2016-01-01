@@ -3,7 +3,7 @@
 use std::{error, fmt};
 
 use base::{Base, len, enc, dec};
-use tool::{div_ceil, chunk, chunk_mut};
+use tool::{div_ceil, chunk, chunk_mut, chunk_unchecked, chunk_mut_unchecked};
 
 use self::Error::*;
 
@@ -89,7 +89,9 @@ pub fn decode_mut<B: Base>(base: &B, input: &[u8], output: &mut [u8]) -> Result<
     assert_eq!(output.len(), decode_len(base, ilen));
     let n = ilen / dec - 1;
     for i in 0 .. n {
-        try!(block(base, chunk(input, dec, i), chunk_mut(output, enc, i))
+        let input = unsafe { chunk_unchecked(input, dec, i) };
+        let output = unsafe { chunk_mut_unchecked(output, enc, i) };
+        try!(block(base, input, output)
              .map_err(|e| e.shift(dec * i)));
     }
     last_block(base, chunk(input, dec, n), chunk_mut(output, enc, n))
