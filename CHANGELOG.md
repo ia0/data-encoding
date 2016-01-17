@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.1.2
+
 ### Patch
 
 - Enhance performance by 15%.
