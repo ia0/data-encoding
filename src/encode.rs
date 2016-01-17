@@ -3,7 +3,7 @@
 use base::{Base, mask, len, enc, dec};
 use tool::{div_ceil, chunk_unchecked, chunk_mut_unchecked};
 
-fn block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) {
+fn encode_block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) {
     let mut x = 0u64; // This is enough because `base.len() <= 40`.
     for j in 0 .. input.len() {
         x |= (input[j] as u64) << 8 * (enc(base) - 1 - j);
@@ -14,21 +14,12 @@ fn block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) {
     }
 }
 
-fn last_block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) {
+fn encode_last<B: Base>(base: &B, input: &[u8], output: &mut [u8]) {
     let ilen = input.len();
     let olen = div_ceil(8 * ilen, base.bit());
-    let mut x = 0u64; // This is enough because `base.len() <= 40`.
-    for j in 0 .. ilen {
-        x |= (input[j] as u64) << 8 * (enc(base) - 1 - j);
-    }
-    for j in 0 .. olen {
-        let y = (x >> base.bit() * (dec(base) - 1 - j)) as u8;
-        output[j] = base.sym(y & mask(base));
-    }
-    if ilen != 0 {
-        for j in olen .. dec(base) {
-            output[j] = base.pad();
-        }
+    encode_block(base, input, &mut output[0 .. olen]);
+    for j in olen .. output.len() {
+        output[j] = base.pad();
     }
 }
 
@@ -68,9 +59,9 @@ pub fn encode_mut<B: Base>(base: &B, input: &[u8], output: &mut [u8]) {
     for i in 0 .. n {
         let input = unsafe { chunk_unchecked(input, enc, i) };
         let output = unsafe { chunk_mut_unchecked(output, dec, i) };
-        block(base, input, output);
+        encode_block(base, input, output);
     }
-    last_block(base, &input[enc * n ..], &mut output[dec * n ..]);
+    encode_last(base, &input[enc * n ..], &mut output[dec * n ..]);
 }
 
 /// Generic encoding function with allocation.

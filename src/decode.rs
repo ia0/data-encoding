@@ -7,7 +7,9 @@ use tool::{div_ceil, chunk, chunk_mut, chunk_unchecked, chunk_mut_unchecked};
 
 use self::Error::*;
 
-fn block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) -> Result<(), Error> {
+fn decode_block<B: Base>
+    (base: &B, input: &[u8], output: &mut [u8]) -> Result<(), Error>
+{
     let mut x = 0u64; // This is enough because `base.len() <= 40`.
     for j in 0 .. input.len() {
         let y = try!(base.val(input[j]).ok_or(BadCharacter(j)));
@@ -19,7 +21,9 @@ fn block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) -> Result<(), Error
     Ok(())
 }
 
-fn last_block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) -> Result<usize, Error> {
+fn decode_last<B: Base>
+    (base: &B, input: &[u8], output: &mut [u8]) -> Result<usize, Error>
+{
     let bit = base.bit();
     let enc = enc(base);
     let dec = dec(base);
@@ -80,7 +84,9 @@ pub fn decode_len<B: Base>(base: &B, len: usize) -> usize {
 ///
 /// Panics if `output.len() != decode_len(input.len())`. May also
 /// panic if `base` does not satisfy the `Base` invariants.
-pub fn decode_mut<B: Base>(base: &B, input: &[u8], output: &mut [u8]) -> Result<usize, Error> {
+pub fn decode_mut<B: Base>
+    (base: &B, input: &[u8], output: &mut [u8]) -> Result<usize, Error>
+{
     let enc = enc(base);
     let dec = dec(base);
     let ilen = input.len();
@@ -91,10 +97,10 @@ pub fn decode_mut<B: Base>(base: &B, input: &[u8], output: &mut [u8]) -> Result<
     for i in 0 .. n {
         let input = unsafe { chunk_unchecked(input, dec, i) };
         let output = unsafe { chunk_mut_unchecked(output, enc, i) };
-        try!(block(base, input, output)
+        try!(decode_block(base, input, output)
              .map_err(|e| e.shift(dec * i)));
     }
-    last_block(base, chunk(input, dec, n), chunk_mut(output, enc, n))
+    decode_last(base, chunk(input, dec, n), chunk_mut(output, enc, n))
         .map_err(|e| e.shift(dec * n))
         .map(|r| enc * n + r)
 }
