@@ -28,5 +28,4 @@ path = "examples/encode/main.rs"
 # Used by the example.
 getopts = "0.2.14"
 # Used by the tests and benchmarks.
-base64 = "0.1.1"
 rustc-serialize = "0.3.16"

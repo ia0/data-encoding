@@ -4,7 +4,6 @@
 
 - Enhance performance by 15%.
 - Document the commands to build the example and run the benchmarks.
-- Compare performance with the `base64` crate.
 - Add `generic` to the crate keywords.
 
 ## 1.1.1

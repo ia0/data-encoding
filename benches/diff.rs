@@ -2,7 +2,6 @@
 
 extern crate test;
 extern crate rustc_serialize;
-extern crate base64 as extern_base64;
 extern crate data_encoding;
 
 use test::Bencher;
@@ -30,11 +29,6 @@ fn rustc_encode(b: &mut Bencher) {
 }
 
 #[bench]
-fn base64_encode(b: &mut Bencher) {
-    encode(b, |x| extern_base64::u8en(x).unwrap());
-}
-
-#[bench]
 fn data_decode(b: &mut Bencher) {
     decode(b, base64::decode);
 }
@@ -42,9 +36,4 @@ fn data_decode(b: &mut Bencher) {
 #[bench]
 fn rustc_decode(b: &mut Bencher) {
     decode(b, |x| x.from_base64());
-}
-
-#[bench]
-fn base64_decode(b: &mut Bencher) {
-    decode(b, extern_base64::u8de);
 }
