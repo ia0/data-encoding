@@ -3,16 +3,22 @@ set -e
 
 info() { echo "[1;36mInfo:[m $1"; }
 
-info "Build in release mode."
+info "Build library in release mode."
 cargo build --verbose --release
 
-info "Test in release mode."
+info "Test library in release mode."
 cargo test --verbose --release
 
 if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
-  info "Benchmark."
+  info "Benchmark library."
   cargo bench --verbose
 fi
+
+info "Build example in release mode."
+cargo test --verbose --release --example encode
+
+info "Benchmark example."
+./bench.sh
 
 info "Download kcov."
 wget -q https://github.com/SimonKagstrom/kcov/archive/master.tar.gz

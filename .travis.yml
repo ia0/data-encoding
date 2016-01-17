@@ -9,6 +9,8 @@ rust:
 addons:
   apt:
     packages:
+    - bc
+    - time
     - libelf-dev
     - libdw-dev
     - binutils-dev
