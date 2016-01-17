@@ -15,4 +15,4 @@ addons:
     - libdw-dev
     - binutils-dev
 
-script: ./travis.sh
+script: ./scripts/travis.sh

@@ -18,7 +18,7 @@ info "Build example in release mode."
 cargo test --verbose --release --example encode
 
 info "Benchmark example."
-./bench.sh
+"$(dirname "$0")"/bench.sh
 
 info "Download kcov."
 wget -q https://github.com/SimonKagstrom/kcov/archive/master.tar.gz

@@ -19,11 +19,11 @@ doc:
 .PHONY: bench
 bench: encode
 	rustc -V | grep -v nightly >/dev/null || cargo bench
-	./bench.sh
+	./scripts/bench.sh
 
 .PHONY: update-doc
 update-doc: doc
-	./update-doc.sh
+	./scripts/update-doc.sh
 
 .PHONY: clean
 clean:
