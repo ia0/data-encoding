@@ -2,7 +2,7 @@
 
 use std::{error, fmt};
 
-use base::{Base, len, enc, dec};
+use base::{Base, enc, dec};
 use tool::{div_ceil, chunk, chunk_mut, chunk_unchecked, chunk_mut_unchecked};
 
 use self::Error::*;

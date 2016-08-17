@@ -21,7 +21,6 @@ mod base;
 mod error;
 mod io;
 
-use base::Base;
 use error::Error;
 use io::{ReadShift, Operation, Skip, Wrap, repeat};
 

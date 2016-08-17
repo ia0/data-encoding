@@ -1,6 +1,6 @@
 //! Generic encoding module.
 
-use base::{Base, mask, len, enc, dec};
+use base::{Base, mask, enc, dec};
 use tool::{div_ceil, chunk_unchecked, chunk_mut_unchecked};
 
 fn encode_block<B: Base>(base: &B, input: &[u8], output: &mut [u8]) {
