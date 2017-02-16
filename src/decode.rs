@@ -8,7 +8,7 @@ use tool::{div_ceil, chunk, chunk_mut, chunk_unchecked, chunk_mut_unchecked};
 use self::Error::*;
 
 fn decode_block<B: Base>
-    (base: &B, input: &[u8], output: &mut [u8]) -> Result<(), Error>
+    (base: &B, input: &[u8], output: &mut [u8]) -> Result<u64, Error>
 {
     let mut x = 0u64; // This is enough because `base.len() <= 40`.
     for j in 0 .. input.len() {
@@ -18,7 +18,7 @@ fn decode_block<B: Base>
     for j in 0 .. output.len() {
         output[j] = (x >> 8 * (enc(base) - 1 - j)) as u8;
     }
-    Ok(())
+    Ok(x)
 }
 
 fn decode_last<B: Base>
@@ -52,7 +52,7 @@ fn decode_last<B: Base>
     Ok(r)
 }
 
-/// Converts an input length to its output length.
+/// Converts an input length to its output length (with padding).
 ///
 /// This function is meant to be used in conjunction with
 /// [`decode_mut`](fn.decode_mut.html).
@@ -64,7 +64,22 @@ pub fn decode_len<B: Base>(base: &B, len: usize) -> usize {
     div_ceil(len, dec(base)) * enc(base)
 }
 
-/// Generic decoding function without allocation.
+/// Converts an input length to its output length (without padding).
+///
+/// This function is meant to be used in conjunction with
+/// [`decode_nopad_mut`](fn.decode_nopad_mut.html).
+///
+/// # Failures
+///
+/// Invalid input length returns `Error::BadLength`.
+pub fn decode_nopad_len<B: Base>(base: &B, len: usize) -> Result<usize, Error> {
+    let olen = base.bit() * len / 8;
+    let ilen = div_ceil(8 * olen, base.bit());
+    if len != ilen { return Err(BadLength); }
+    Ok(olen)
+}
+
+/// Generic decoding function without allocation (with padding).
 ///
 /// This function takes a base implementation, a shared input slice, a
 /// mutable output slice, and decodes the input slice to the output
@@ -97,15 +112,58 @@ pub fn decode_mut<B: Base>
     for i in 0 .. n {
         let input = unsafe { chunk_unchecked(input, dec, i) };
         let output = unsafe { chunk_mut_unchecked(output, enc, i) };
-        try!(decode_block(base, input, output)
-             .map_err(|e| e.shift(dec * i)));
+        let _ = try!(decode_block(base, input, output)
+                     .map_err(|e| e.shift(dec * i)));
     }
     decode_last(base, chunk(input, dec, n), chunk_mut(output, enc, n))
         .map_err(|e| e.shift(dec * n))
         .map(|r| enc * n + r)
 }
 
-/// Generic decoding function with allocation.
+/// Generic decoding function without allocation (without padding).
+///
+/// This function takes a base implementation, a shared input slice, a
+/// mutable output slice, and decodes the input slice to the output
+/// slice. The input must not be padded.
+///
+/// # Correctness
+///
+/// The base must satisfy the `Base` invariants.
+///
+/// # Failures
+///
+/// Decoding may fail in the circumstances defined by
+/// [`Error`](enum.Error.html). Padding are unexpected characters.
+///
+/// # Panics
+///
+/// Panics if `output.len() !=
+/// decode_nopad_len(input.len()).unwrap()`. May also panic if `base`
+/// does not satisfy the `Base` invariants.
+pub fn decode_nopad_mut<B: Base>
+    (base: &B, input: &[u8], output: &mut [u8]) -> Result<(), Error>
+{
+    let enc = enc(base);
+    let dec = dec(base);
+    let ilen = input.len();
+    let olen = try!(decode_nopad_len(base, ilen));
+    assert_eq!(output.len(), olen);
+    let n = ilen / dec;
+    for i in 0 .. n {
+        let input = unsafe { chunk_unchecked(input, dec, i) };
+        let output = unsafe { chunk_mut_unchecked(output, enc, i) };
+        let _ = try!(decode_block(base, input, output)
+                     .map_err(|e| e.shift(dec * i)));
+    }
+    let x = try!(decode_block(base, &input[dec * n ..], &mut output[enc * n ..])
+                 .map_err(|e| e.shift(dec * n)));
+    if (x >> 8 * (enc * (n + 1) - (olen + 1))) as u8 != 0 {
+        return Err(BadPadding);
+    }
+    Ok(())
+}
+
+/// Generic decoding function with allocation (with padding).
 ///
 /// This function is a wrapper for [`decode_mut`](fn.decode_mut.html)
 /// that allocates an output of sufficient size using
@@ -128,6 +186,32 @@ pub fn decode<B: Base>(base: &B, input: &[u8]) -> Result<Vec<u8>, Error> {
     let mut output = vec![0u8; decode_len(base, input.len())];
     let len = try!(decode_mut(base, input, &mut output));
     output.truncate(len);
+    Ok(output)
+}
+
+/// Generic decoding function with allocation (without padding).
+///
+/// This function is a wrapper for
+/// [`decode_nopad_mut`](fn.decode_nopad_mut.html) that allocates an
+/// output of sufficient size using
+/// [`decode_nopad_len`](fn.decode_nopad_len.html). The input must not
+/// be padded.
+///
+/// # Correctness
+///
+/// The base must satisfy the `Base` invariants.
+///
+/// # Failures
+///
+/// Decoding may fail in the circumstances defined by
+/// [`Error`](enum.Error.html). Padding are unexpected characters.
+///
+/// # Panics
+///
+/// May panic if `base` does not satisfy the `Base` invariants.
+pub fn decode_nopad<B: Base>(base: &B, input: &[u8]) -> Result<Vec<u8>, Error> {
+    let mut output = vec![0u8; try!(decode_nopad_len(base, input.len()))];
+    try!(decode_nopad_mut(base, input, &mut output));
     Ok(output)
 }
 

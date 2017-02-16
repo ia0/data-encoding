@@ -119,3 +119,23 @@ fn exhaustive() {
     }
     assert_eq!(t, 0x1010100_u32);
 }
+
+#[test]
+fn nopad() {
+    use data_encoding::base64::{encode_nopad, decode_nopad};
+    use data_encoding::decode::Error::*;
+    fn test(x: &[u8], y: &[u8]) {
+        assert_eq!(&encode_nopad(x).into_bytes() as &[u8], y);
+        assert_eq!(&decode_nopad(y).unwrap() as &[u8], x);
+    }
+    test(b"", b"");
+    test(b"f", b"Zg");
+    test(b"fo", b"Zm8");
+    test(b"foo", b"Zm9v");
+    test(b"foob", b"Zm9vYg");
+    test(b"fooba", b"Zm9vYmE");
+    test(b"foobar", b"Zm9vYmFy");
+    assert_eq!(decode_nopad(b"Z"), Err(BadLength));
+    assert_eq!(decode_nopad(b"Zh"), Err(BadPadding));
+    assert_eq!(decode_nopad(b"Zg=="), Err(BadCharacter(2)));
+}

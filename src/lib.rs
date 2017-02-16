@@ -149,25 +149,61 @@ macro_rules! base {
             pub fn encode_len(len: usize) -> usize {
                 ::encode::encode_len(&BASE, len)
             }
+            /// See the generic
+            /// [`encode_nopad_len`](../encode/fn.encode_nopad_len.html)
+            /// function for details.
+            pub fn encode_nopad_len(len: usize) -> usize {
+                ::encode::encode_nopad_len(&BASE, len)
+            }
             /// See the generic [`decode_len`](../decode/fn.decode_len.html) function for details.
             pub fn decode_len(len: usize) -> usize {
                 ::decode::decode_len(&BASE, len)
+            }
+            /// See the generic
+            /// [`decode_nopad_len`](../decode/fn.decode_nopad_len.html)
+            /// function for details.
+            pub fn decode_nopad_len(len: usize) -> Result<usize, Error> {
+                ::decode::decode_nopad_len(&BASE, len)
             }
             /// See the generic [`encode_mut`](../encode/fn.encode_mut.html) function for details.
             pub fn encode_mut(input: &[u8], output: &mut [u8]) {
                 ::encode::encode_mut(&BASE, input, output)
             }
+            /// See the generic
+            /// [`encode_nopad_mut`](../encode/fn.encode_nopad_mut.html)
+            /// function for details.
+            pub fn encode_nopad_mut(input: &[u8], output: &mut [u8]) {
+                ::encode::encode_nopad_mut(&BASE, input, output)
+            }
             /// See the generic [`decode_mut`](../decode/fn.decode_mut.html) function for details.
             pub fn decode_mut(input: &[u8], output: &mut [u8]) -> Result<usize, Error> {
                 ::decode::decode_mut(&BASE, input, output)
+            }
+            /// See the generic
+            /// [`decode_nopad_mut`](../decode/fn.decode_nopad_mut.html)
+            /// function for details.
+            pub fn decode_nopad_mut(input: &[u8], output: &mut [u8]) -> Result<(), Error> {
+                ::decode::decode_nopad_mut(&BASE, input, output)
             }
             /// See the generic [`encode`](../encode/fn.encode.html) function for details.
             pub fn encode(input: &[u8]) -> String {
                 ::encode::encode(&BASE, input)
             }
+            /// See the generic
+            /// [`encode_nopad`](../encode/fn.encode_nopad.html)
+            /// function for details.
+            pub fn encode_nopad(input: &[u8]) -> String {
+                ::encode::encode_nopad(&BASE, input)
+            }
             /// See the generic [`decode`](../decode/fn.decode.html) function for details.
             pub fn decode(input: &[u8]) -> Result<Vec<u8>, Error> {
                 ::decode::decode(&BASE, input)
+            }
+            /// See the generic
+            /// [`decode_nopad`](../decode/fn.decode_nopad.html)
+            /// function for details.
+            pub fn decode_nopad(input: &[u8]) -> Result<Vec<u8>, Error> {
+                ::decode::decode_nopad(&BASE, input)
             }
             #[test]
             fn check() {
