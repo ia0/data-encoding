@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.2.0
+
 ### Minor
 
 - Add encoding and decoding functions without padding.
