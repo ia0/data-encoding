@@ -53,6 +53,15 @@
 //! assert_eq!(hex.encode(b"hello"), "68656c6c6f");
 //! ```
 //!
+//! If you use the `lazy_static` crate, you can define a global base:
+//!
+//! ```rust,ignore
+//! lazy_static! {
+//!     static ref BASE: NoPad = Builder::new(b"0123456789abcdef")
+//!         .translate(b"ABCDEF", b"abcdef").no_pad().unwrap();
+//! }
+//! ```
+//!
 //! # Properties
 //!
 //! The [base16], [base32], [base32hex], [base64], and [base64url] predefined

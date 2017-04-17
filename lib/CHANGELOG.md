@@ -2,6 +2,7 @@
 
 ### Patch
 
+- Add a `lazy_static` example to the documentation
 - Increase error message test coverage
 
 ## 2.0.0-rc.1

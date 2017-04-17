@@ -87,8 +87,8 @@ echo -n 'trailing:'
 unit "--mode=decode --base=64" Zh== '' 'non-zero trailing bits at 1'
 echo
 echo -n 'custom:'
-unit "--mode=info --base=custom --symbols=0" '' '' 'Invalid number of symbols'
-unit "--mode=info --base=custom --symbols=$(printf '\303\251')" '' '' 'Non-ascii symbol 0xc3'
+unit "--mode=info --base=custom --symbols=0" '' '' 'invalid number of symbols'
+unit "--mode=info --base=custom --symbols=$(printf '\303\251')" '' '' 'non-ascii symbol 0xc3'
 unit "--mode=info --base=custom --symbols=01 --translate=$(printf '\303\251')" '' \
      "$(printf 'symbols: "01"\nbit_order: MostSignificantFirst')"
 echo

@@ -1,9 +1,11 @@
 extern crate base64;
 extern crate data_encoding;
 extern crate diff;
+#[macro_use]
+extern crate lazy_static;
 extern crate rustc_serialize;
 
-use data_encoding::{BASE64, DecodeError};
+use data_encoding::{BASE64, NoPad, Builder, DecodeError};
 use data_encoding::DecodeKind::*;
 use rustc_serialize::base64::{FromBase64, ToBase64, STANDARD};
 
@@ -75,4 +77,15 @@ fn difference() {
     assert!(x.from_base64().is_err());
     assert_eq!(base64::decode(x).err().unwrap(),
                base64::DecodeError::InvalidByte(2, b'='));
+}
+
+lazy_static! {
+    static ref BASE: NoPad = Builder::new(b"0123456789abcdef")
+        .translate(b"ABCDEF", b"abcdef").no_pad().unwrap();
+}
+
+#[test]
+fn base() {
+    assert_eq!(BASE.encode(b"Hello"), "48656c6c6f");
+    assert_eq!(BASE.decode(b"48656c6c6f").unwrap(), b"Hello");
 }
