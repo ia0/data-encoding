@@ -28,6 +28,9 @@ git clean -fxd
   info "Benchmark binary"
   ./bench.sh
 )
+
+git clean -fxd
+
 ( cd lib
   info "Download kcov"
   wget -q https://github.com/SimonKagstrom/kcov/archive/master.tar.gz
