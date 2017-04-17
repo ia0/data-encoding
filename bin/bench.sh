@@ -3,8 +3,6 @@ set -e
 
 fail() { echo "[1;31mError:[m $1"; exit 1; }
 
-PATH="$(readlink -f target/release/examples):$PATH"
-
 DIR="$(mktemp -d)" || fail "Could not create temporary directory."
 trap 'rm -rf "$DIR"' 0
 
@@ -15,12 +13,21 @@ ORACLE="$DIR/oracle"
 input='"$INPUT"'
 output='"$OUTPUT"'
 
+cargo build --release
+cp ../target/release/data-encoding "$DIR/de"
+PATH="$DIR:$PATH"
+
 head -c16M /dev/urandom > "$INPUT" || fail "Could not create input."
 
 measure() {
   local cmd="time -f '%e %U %S' $1 2>&1"
   [ -z "$2" ] || cmd="$cmd > $2"
   echo "$cmd"
+}
+
+sum() {
+  local x="$1" y="${1#* }"
+  echo "${y% *} + ${x##* }" | bc
 }
 
 while true; do
@@ -44,8 +51,8 @@ compare() {
     mv "$OUTPUT" "$ORACLE"
     b="$(eval "$y")" || fail "$b"
     echo "  a: $a;  b: $b;"
-    a="${a%% *}"
-    b="${b%% *}"
+    a="$(sum "$a")"
+    b="$(sum "$b")"
     ta="$(echo "$ta + $a" | bc)"
     tb="$(echo "$tb + $b" | bc)"
     diff -q "$OUTPUT" "$ORACLE" >/dev/null || fail "Wrong output!"
@@ -53,12 +60,20 @@ compare() {
   echo "[1;36m(b-a)/a: $(echo "($tb - $ta) * 100 / $ta" | bc)%[m"
 }
 
-compare "base64 $input" "$output" "encode -w76 -i $input -o $output" ""
+compare "base64 $input" "$output" \
+  "de --mode=encode --base=64 --wrap=76 --input=$input --output=$output" ""
 cp "$ORACLE" "$INPUT"
-compare "base64 -d < $input" "$output" "encode -d -s -i $input -o $output" ""
+compare "base64 -d < $input" "$output" \
+  "de --mode=decode --base=64 --skip --input=$input --output=$output" ""
 cp "$ORACLE" "$INPUT"
-compare "base64 -w 0 < $input" "$output" "encode < $input" "$output"
-compare "base64 -w 0 $input" "$output" "encode -i $input -o $output" ""
-compare "base64 -w 0 $input" "$output" "encode -b=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/ -i $input -o $output" ""
+compare "base64 -w 0 < $input" "$output" \
+  "de --mode=encode --base=64 < $input" "$output"
+compare "base64 -w 0 $input" "$output" \
+  "de --mode=encode --base=64 --input=$input --output=$output" ""
+BASE64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+compare "base64 -w 0 $input" "$output" \
+  "de --mode=encode --base=custom --symbols=$BASE64 --padding== --input=$input \
+--output=$output" ""
 cp "$ORACLE" "$INPUT"
-compare "base64 -d < $input" "$output" "encode -d -i $input -o $output" ""
+compare "base64 -d < $input" "$output" \
+  "de --mode=decode --base=64 --input=$input --output=$output" ""

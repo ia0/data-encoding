@@ -16,4 +16,4 @@ addons:
     - libdw-dev
     - binutils-dev
 
-script: ./scripts/travis.sh
+script: ./travis.sh

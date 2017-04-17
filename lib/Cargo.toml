@@ -1,0 +1,17 @@
+[package]
+name = "data-encoding"
+version = "2.0.0-rc.1"
+authors = ["Julien Cretin <git@ia0.eu>"]
+license = "MIT"
+keywords = ["base-conversion", "encoding", "base64", "base32", "hex"]
+categories = ["encoding"]
+repository = "https://github.com/ia0/data-encoding"
+documentation = "https://ia0.github.com/data-encoding/v2.0.0-rc.1/data_encoding"
+description = """
+Correct, efficient, canonical, and generic little-endian ASCII base-conversion
+encodings (base64, base32, hex, etc.). See the documentation for more details.
+"""
+include = ["Cargo.toml", "src/lib.rs"]
+
+[badges]
+travis-ci = { repository = "ia0/data-encoding" }

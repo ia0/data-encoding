@@ -1,0 +1,17 @@
+[package]
+name = "data-encoding-bin"
+version = "0.1.0"
+authors = ["Julien Cretin <git@ia0.eu>"]
+license = "MIT"
+keywords = ["base-conversion", "encoding", "base64", "base32", "hex"]
+categories = ["encoding"]
+repository = "https://github.com/ia0/data-encoding"
+description = "Swiss Army knife for data-encoding"
+include = ["Cargo.toml", "src/*.rs"]
+
+[dependencies]
+data-encoding = { version = "2.0.0-rc.1", path = "../lib" }
+getopts = "0.2.14"
+
+[[bin]]
+name = "data-encoding"

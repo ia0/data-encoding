@@ -1,0 +1,16 @@
+[package]
+name = "diff"
+version = "0.1.0"
+authors = ["ia0 <git@ia0.eu>"]
+license = "MIT"
+build = "build.rs"
+publish = false
+
+[dependencies]
+base64 = { git = "https://github.com/alicemaz/rust-base64" }
+data-encoding = { path = "../lib" }
+libc = "0.2.21"
+rustc-serialize = "0.3.23"
+
+[build-dependencies]
+gcc = "0.3.45"
