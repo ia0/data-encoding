@@ -248,6 +248,10 @@ fn builder() {
     assert_eq!(errmsg(builder.padded()), "non-ascii padding 0x80");
     builder.padding = Some(b'0');
     assert_eq!(errmsg(builder.padded()), "padding symbol conflict");
+    assert_eq!(errmsg(Builder::new(
+        b"0000000000000000000000000000000000000000000000000000000000000000")
+                      .no_pad()),
+               "invalid value for '0'");
 }
 
 #[test]
