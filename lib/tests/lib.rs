@@ -16,6 +16,10 @@ macro_rules! test {
     };
 }
 
+fn errmsg<T, E: std::error::Error>(x: Result<T, E>) -> String {
+    format!("{}", x.err().unwrap())
+}
+
 test!{
     fn base2; NoPad;
     let b = Builder::new(b"01").no_pad().unwrap();
@@ -223,20 +227,34 @@ fn dns_curve() {
 
 #[test]
 fn builder() {
-    assert!(Builder::new(&[0u8] as &[u8]).no_pad().is_err());
-    assert!(Builder::new(&[0u8, 128] as &[u8]).no_pad().is_err());
-    assert!(Builder::new(b"01").pad(b' ').no_pad().is_err());
-    assert!(Builder::new(b"01").pad(b' ').padded().is_err());
-    assert!(Builder::new(b"01").translate(b"1", b" ").no_pad().is_err());
+    assert_eq!(errmsg(Builder::new(&[0u8] as &[u8]).no_pad()),
+               "invalid number of symbols");
+    assert_eq!(errmsg(Builder::new(&[0u8, 128] as &[u8]).no_pad()),
+               "non-ascii symbol 0x80");
+    assert_eq!(errmsg(Builder::new(b"01").pad(b' ').no_pad()),
+               "unnecessary or missing padding");
+    assert_eq!(errmsg(Builder::new(b"01").pad(b' ').padded()),
+               "unnecessary or missing padding");
+    assert_eq!(errmsg(Builder::new(b"01").translate(b"1", b" ").no_pad()),
+               "invalid value for '1'");
     let mut builder = Builder::new(b"01");
     builder.values[b'0' as usize] = 2;
-    assert!(builder.no_pad().is_err());
+    assert_eq!(errmsg(builder.no_pad()), "invalid value for '0'");
     let mut builder = Builder::new(b"01");
     builder.values[b' ' as usize] = 2;
-    assert!(builder.no_pad().is_err());
+    assert_eq!(errmsg(builder.no_pad()), "invalid value for ' '");
     let mut builder = Builder::new(b"01234567");
     builder.padding = Some(128);
-    assert!(builder.padded().is_err());
+    assert_eq!(errmsg(builder.padded()), "non-ascii padding 0x80");
     builder.padding = Some(b'0');
-    assert!(builder.padded().is_err());
+    assert_eq!(errmsg(builder.padded()), "padding symbol conflict");
+}
+
+#[test]
+fn decode_error() {
+    let b = &data_encoding::BASE64;
+    assert_eq!(errmsg(b.decode(b"A")), "invalid length at 0");
+    assert_eq!(errmsg(b.decode(b"A.AA")), "invalid symbol at 1");
+    assert_eq!(errmsg(b.decode(b"AAB=")), "non-zero trailing bits at 2");
+    assert_eq!(errmsg(b.decode(b"A===")), "invalid padding length at 1");
 }

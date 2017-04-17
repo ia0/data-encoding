@@ -1093,12 +1093,12 @@ pub struct BuilderError(BuilderErrorImpl);
 impl std::fmt::Display for BuilderError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
-            BadSize => write!(f, "Invalid number of symbols"),
-            BadSym(s) => write!(f, "Non-ascii symbol {:#x}", s),
-            BadVal(s) => write!(f, "Invalid value for {:?}", s as char),
-            BadPad(Some(s)) if s < 128 => write!(f, "Padding symbol conflict"),
-            BadPad(Some(pad)) => write!(f, "Non-ascii padding {:#x}", pad),
-            BadPad(None) => write!(f, "Unnecessary or missing padding"),
+            BadSize => write!(f, "invalid number of symbols"),
+            BadSym(s) => write!(f, "non-ascii symbol {:#x}", s),
+            BadVal(s) => write!(f, "invalid value for {:?}", s as char),
+            BadPad(Some(s)) if s < 128 => write!(f, "padding symbol conflict"),
+            BadPad(Some(pad)) => write!(f, "non-ascii padding {:#x}", pad),
+            BadPad(None) => write!(f, "unnecessary or missing padding"),
         }
     }
 }

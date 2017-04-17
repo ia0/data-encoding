@@ -1,5 +1,9 @@
 # Changelog
 
+### Patch
+
+- Increase error message test coverage
+
 ## 2.0.0-rc.1
 
 ### Major
