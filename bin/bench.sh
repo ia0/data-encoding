@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+LF='
+'
+
 fail() { echo "[1;31mError:[m $1"; exit 1; }
 
 DIR="$(mktemp -d)" || fail "Could not create temporary directory."
@@ -61,19 +64,18 @@ compare() {
 }
 
 compare "base64 $input" "$output" \
-  "de --mode=encode --base=64 --wrap=76 --input=$input --output=$output" ""
+        "de -mencode -b64 -p= -w76 -s'$LF' -i$input -o$output" ""
 cp "$ORACLE" "$INPUT"
 compare "base64 -d < $input" "$output" \
-  "de --mode=decode --base=64 --skip --input=$input --output=$output" ""
+        "de -mdecode -b64 -p= -g'$LF' -i$input -o$output" ""
 cp "$ORACLE" "$INPUT"
 compare "base64 -w 0 < $input" "$output" \
-  "de --mode=encode --base=64 < $input" "$output"
+        "de -mencode -b64 -p= < $input" "$output"
 compare "base64 -w 0 $input" "$output" \
-  "de --mode=encode --base=64 --input=$input --output=$output" ""
+        "de -mencode -b64 -p= -i$input -o$output" ""
 BASE64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 compare "base64 -w 0 $input" "$output" \
-  "de --mode=encode --base=custom --symbols=$BASE64 --padding== --input=$input \
---output=$output" ""
+        "de -mencode --symbols=$BASE64 -p= -i$input -o$output" ""
 cp "$ORACLE" "$INPUT"
 compare "base64 -d < $input" "$output" \
-  "de --mode=decode --base=64 --input=$input --output=$output" ""
+        "de -mdecode -b64 -p= -i$input -o$output" ""

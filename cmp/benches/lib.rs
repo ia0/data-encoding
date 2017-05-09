@@ -1,9 +1,8 @@
-// TODO: Understand why ref is faster on decode and slower on encode.
 #![feature(test)]
 
 extern crate base64;
 extern crate data_encoding;
-extern crate diff;
+extern crate cmp;
 extern crate rustc_serialize;
 extern crate test;
 
@@ -37,22 +36,22 @@ fn decode<E, F: Fn(&[u8]) -> Result<Vec<u8>, E>>(b: &mut Bencher, f: F) {
 
 #[bench]
 fn b00_encode_mut_seq_gcc(b: &mut Bencher) {
-    encode_mut(b, diff::base64_encode_seq_gcc)
+    encode_mut(b, cmp::base64_encode_seq_gcc)
 }
 
 #[bench]
 fn b01_encode_mut_seq_clang(b: &mut Bencher) {
-    encode_mut(b, diff::base64_encode_seq_clang)
+    encode_mut(b, cmp::base64_encode_seq_clang)
 }
 
 #[bench]
 fn b02_encode_mut_par_clang(b: &mut Bencher) {
-    encode_mut(b, diff::base64_encode_par_clang)
+    encode_mut(b, cmp::base64_encode_par_clang)
 }
 
 #[bench]
 fn b03_encode_mut_par_gcc(b: &mut Bencher) {
-    encode_mut(b, diff::base64_encode_par_gcc)
+    encode_mut(b, cmp::base64_encode_par_gcc)
 }
 
 #[bench]
@@ -80,22 +79,22 @@ fn b07_encode_base64(b: &mut Bencher) {
 
 #[bench]
 fn b08_decode_mut_seq_gcc(b: &mut Bencher) {
-    decode_mut(b, diff::base64_decode_seq_gcc);
+    decode_mut(b, cmp::base64_decode_seq_gcc);
 }
 
 #[bench]
 fn b09_decode_mut_seq_clang(b: &mut Bencher) {
-    decode_mut(b, diff::base64_decode_seq_clang);
+    decode_mut(b, cmp::base64_decode_seq_clang);
 }
 
 #[bench]
 fn b10_decode_mut_par_clang(b: &mut Bencher) {
-    decode_mut(b, diff::base64_decode_par_clang);
+    decode_mut(b, cmp::base64_decode_par_clang);
 }
 
 #[bench]
 fn b11_decode_mut_par_gcc(b: &mut Bencher) {
-    decode_mut(b, diff::base64_decode_par_gcc);
+    decode_mut(b, cmp::base64_decode_par_gcc);
 }
 
 #[bench]

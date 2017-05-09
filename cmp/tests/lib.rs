@@ -1,11 +1,11 @@
 extern crate base64;
 extern crate data_encoding;
-extern crate diff;
+extern crate cmp;
 #[macro_use]
 extern crate lazy_static;
 extern crate rustc_serialize;
 
-use data_encoding::{BASE64, NoPad, Builder, DecodeError};
+use data_encoding::{BASE64, Encoding, Specification, DecodeError};
 use data_encoding::DecodeKind::*;
 use rustc_serialize::base64::{FromBase64, ToBase64, STANDARD};
 
@@ -17,12 +17,12 @@ fn encode_exact() {
         (b"foobar" as &[u8], b"Zm9vYmFy" as &[u8])];
     for &(ref i, ref o) in tests {
         let mut r = vec![0u8; o.len()];
-        diff::base64_encode_seq_gcc(i, &mut r);
+        cmp::base64_encode_seq_gcc(i, &mut r);
         assert_eq!(&r, o);
     }
     for &(ref i, ref o) in tests {
         let mut r = vec![0u8; o.len()];
-        diff::base64_encode_par_gcc(i, &mut r);
+        cmp::base64_encode_par_gcc(i, &mut r);
         assert_eq!(&r, o);
     }
     for &(ref i, ref o) in tests {
@@ -71,21 +71,24 @@ fn difference() {
     assert_eq!(base64::decode(x).err().unwrap(),
                base64::DecodeError::InvalidByte(0, b'-'));
     let x = b"AA==AA==";
-    assert_eq!(BASE64.decode_concat(x).unwrap(), vec![0, 0]);
-    assert_eq!(BASE64.decode(x).err().unwrap(),
-               DecodeError { position: 2, kind: Symbol });
+    assert_eq!(BASE64.decode(x).unwrap(), vec![0, 0]);
     assert!(x.from_base64().is_err());
     assert_eq!(base64::decode(x).err().unwrap(),
                base64::DecodeError::InvalidByte(2, b'='));
 }
 
 lazy_static! {
-    static ref BASE: NoPad = Builder::new(b"0123456789abcdef")
-        .translate(b"ABCDEF", b"abcdef").no_pad().unwrap();
+    static ref HEX: Encoding = {
+        let mut spec = Specification::new();
+        spec.symbols.push_str("0123456789abcdef");
+        spec.translate.from.push_str("ABCDEF");
+        spec.translate.to.push_str("abcdef");
+        spec.encoding().unwrap()
+    };
 }
 
 #[test]
-fn base() {
-    assert_eq!(BASE.encode(b"Hello"), "48656c6c6f");
-    assert_eq!(BASE.decode(b"48656c6c6f").unwrap(), b"Hello");
+fn lazy_static_hex() {
+    assert_eq!(HEX.encode(b"Hello"), "48656c6c6f");
+    assert_eq!(HEX.decode(b"48656c6c6f").unwrap(), b"Hello");
 }

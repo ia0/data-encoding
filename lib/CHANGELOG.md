@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.0-rc.2
+
+### Major
+
+- Merge the `NoPad` and `Padded` types as `Encoding`
+- Support for partial decoding in `decode_mut`
+
+### Minor
+
+- Support character translation while decoding
+- Support ignoring characters while decoding
+- Support column wrapping while encoding
+
 ### Patch
 
 - Link to docs.rs for documentation

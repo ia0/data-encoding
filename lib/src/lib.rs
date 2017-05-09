@@ -1,13 +1,18 @@
-//! Correct, efficient, canonical, and generic data-encoding functions
+//! Efficient and customizable data-encoding functions
 //!
 //! This [crate] provides little-endian ASCII base-conversion encodings for
-//! bases of size 2, 4, 8, 16, 32, and 64. It supports both padded and
-//! non-padded encodings. It supports canonical encodings (trailing bits are
-//! checked). It supports in-place encoding and decoding functions. It supports
-//! non-canonical symbols. And it supports both most and least significant
-//! bit-order. The performance of the encoding and decoding functions are
-//! similar to existing implementations (see how to run the benchmarks on
-//! [github]).
+//! bases of size 2, 4, 8, 16, 32, and 64. It supports:
+//!
+//! - padded and non-padded encodings
+//! - canonical encodings (trailing bits are checked)
+//! - in-place encoding and decoding functions
+//! - character translation (for case-insensitivity for example)
+//! - most and least significant bit-order
+//! - ignoring characters when decoding
+//! - wrapping the output when encoding
+//!
+//! The performance of the encoding and decoding functions are similar to
+//! existing implementations (see how to run the benchmarks on [github]).
 //!
 //! This is the library documentation. If you are looking for the [binary], see
 //! the installation instructions on [github].
@@ -15,27 +20,18 @@
 //! # Examples
 //!
 //! This crate provides predefined encodings as [constants]. These constants are
-//! of type [`Padded`] or [`NoPad`] whether they use padding or not. These types
-//! provide encoding and decoding functions with in-place or allocating
-//! variants. Here is an example using the allocating encoding function of
-//! [base64]:
+//! of type [`Encoding`]. This type provides encoding and decoding functions
+//! with in-place or allocating variants. Here is an example using the
+//! allocating encoding function of [base64]:
 //!
-//! ```
+//! ```rust
 //! use data_encoding::BASE64;
 //! assert_eq!(BASE64.encode(b"Hello world"), "SGVsbG8gd29ybGQ=");
 //! ```
 //!
-//! It is also possible to use the non-padded version of base64 by calling the
-//! [`no_pad`] method of [`Padded`]:
-//!
-//! ```
-//! use data_encoding::BASE64;
-//! assert_eq!(BASE64.no_pad().encode(b"Hello world"), "SGVsbG8gd29ybGQ");
-//! ```
-//!
 //! Here is an example using the in-place decoding function of [base32]:
 //!
-//! ```
+//! ```rust
 //! use data_encoding::BASE32;
 //! let input = b"JBSWY3DPEB3W64TMMQ======";
 //! let mut output = vec![0; BASE32.decode_len(input.len()).unwrap()];
@@ -45,20 +41,29 @@
 //!
 //! You are not limited to the predefined encodings. You may define your own
 //! encodings (with the same correctness and performance properties as the
-//! predefined ones) using the [`Builder`] type:
+//! predefined ones) using the [`Specification`] type:
 //!
 //! ```rust
-//! use data_encoding::Builder;
-//! let hex = Builder::new(b"0123456789abcdef").no_pad().unwrap();
+//! use data_encoding::Specification;
+//! let hex = {
+//!     let mut spec = Specification::new();
+//!     spec.symbols.push_str("0123456789abcdef");
+//!     spec.encoding().unwrap()
+//! };
 //! assert_eq!(hex.encode(b"hello"), "68656c6c6f");
 //! ```
 //!
-//! If you use the `lazy_static` crate, you can define a global base:
+//! If you use the [`lazy_static`] crate, you can define a global encoding:
 //!
 //! ```rust,ignore
 //! lazy_static! {
-//!     static ref BASE: NoPad = Builder::new(b"0123456789abcdef")
-//!         .translate(b"ABCDEF", b"abcdef").no_pad().unwrap();
+//!     static ref HEX: Encoding = {
+//!         let mut spec = Specification::new();
+//!         spec.symbols.push_str("0123456789abcdef");
+//!         spec.translate.from.push_str("ABCDEF");
+//!         spec.translate.to.push_str("abcdef");
+//!         spec.encoding().unwrap()
+//!     };
 //! }
 //! ```
 //!
@@ -67,21 +72,22 @@
 //! The [base16], [base32], [base32hex], [base64], and [base64url] predefined
 //! encodings are conform to [RFC4648].
 //!
-//! The encoding and decoding functions satisfy the following properties:
+//! In general, the encoding and decoding functions satisfy the following
+//! properties:
 //!
 //! - They are deterministic: their output only depends on their input
 //! - They have no side-effects: they do not modify a hidden mutable state
 //! - They are correct: encoding then decoding gives the initial data
-//! - They are canonical (unless non-canonical symbols are used or checking
-//! trailing bits is disabled): decoding then encoding gives the initial data
+//! - They are canonical (unless [`is_canonical`] returns false): decoding then
+//! encoding gives the initial data
 //!
 //! This last property is usually not satisfied by common base64 implementations
 //! (like the `rustc-serialize` crate, the `base64` crate, or the `base64` GNU
 //! program). This is a matter of choice and this crate has made the choice to
 //! let the user choose. Support for canonical encoding as described by the
 //! [RFC][canonical] is provided. But it is also possible to disable checking
-//! trailing bits, to add non-canonical symbols, and to decode concatenated
-//! padded inputs.
+//! trailing bits, to add characters translation, to decode concatenated padded
+//! inputs, and to ignore some characters.
 //!
 //! Since the RFC specifies the encoding function on all inputs and the decoding
 //! function on all possible encoded outputs, the differences between
@@ -99,24 +105,23 @@
 //! | `AAB`      | `Length(0)`     | `[0, 0]` | `[0, 0]` | Invalid input |
 //! | `A\rA\nB=` | `Length(4)`     | `[0, 0]` | `Err(1)` | Invalid input |
 //! | `-_\r\n`   | `Symbol(0)`     | `[251]`  | `Err(0)` | Invalid input |
-//! | `AA==AA==` | `Symbol(2)`     | `Err`    | `Err(2)` | `\x00\x00`    |
+//! | `AA==AA==` | `[0, 0]`        | `Err`    | `Err(2)` | `\x00\x00`    |
 //!
 //! We can summarize these discrepancies as follows:
 //!
 //! | Discrepancy | `data-encoding` | `rustc` | `base64` | GNU `base64` |
 //! | ----------- | --------------- | ------- | -------- | ------------ |
-//! | Non-zero trailing bits | No | Yes | Yes | Yes |
+//! | Check trailing bits | Yes | No | No | No |
 //! | Ignored characters | None | `\r` and `\n` | None | `\n` |
 //! | Translated characters | None | `-_` mapped to `+/` | None | None |
-//! | Padding is optional | No | Yes | Yes | No |
-//! | Concatenated padded input | No | No | No | Yes |
+//! | Check padding | Yes | No | No | Yes |
+//! | Support concatenated input | Yes | No | No | Yes |
 //!
-//! This crate permits to [ignore][trailing] non-zero trailing bits. It permits
-//! to [translate] symbols. It permits to use [non-padded][`NoPad`] encodings.
-//! And it also permits to [decode][decode_concat] concatenated padded inputs.
-//! However, it does not permit to ignore characters. This has to be done in a
-//! preprocessing stage, as it is done in the [binary]. Support in the library
-//! may be added in future versions.
+//! This crate permits to disable checking trailing bits. It permits to ignore
+//! some characters. It permits to translate characters. It permits to use
+//! non-padded encodings. However, for padded encodings, support for
+//! concatenated inputs cannot be disabled. This is simply because it doesn't
+//! make sense to use padding if it is not to support concatenated inputs.
 //!
 //! # Migration
 //!
@@ -127,11 +132,12 @@
 //! | --------------------------- | --------------------------- |
 //! | `use data_encoding::baseNN` | `use data_encoding::BASENN` |
 //! | `baseNN::function`          | `BASENN.method`             |
-//! | `baseNN::function_nopad`    | `BASENN.no_pad().method`    |
+//! | `baseNN::function_nopad`    | `BASENN_NOPAD.method`       |
 //!
-//! [`Builder`]: struct.Builder.html
-//! [`NoPad`]: struct.NoPad.html
-//! [`Padded`]: struct.Padded.html
+//! [`Encoding`]: struct.Encoding.html
+//! [`Specification`]: struct.Specification.html
+//! [`is_canonical`]: struct.Encoding.html#method.is_canonical
+//! [`lazy_static`]: https://crates.io/crates/lazy_static
 //! [RFC4648]: https://tools.ietf.org/html/rfc4648
 //! [base16]: constant.HEXUPPER.html
 //! [base32]: constant.BASE32.html
@@ -143,26 +149,102 @@
 //! [changelog]: https://github.com/ia0/data-encoding/blob/master/lib/CHANGELOG.md
 //! [constants]: index.html#constants
 //! [crate]: https://crates.io/crates/data-encoding
-//! [decode_concat]: struct.Padded.html#method.decode_concat
 //! [github]: https://github.com/ia0/data-encoding
-//! [`no_pad`]: struct.Padded.html#method.no_pad
-//! [trailing]: struct.Builder.html#method.ignore_trailing_bits
-//! [translate]: struct.Builder.html#method.translate
 
 #![warn(unused_results, missing_docs)]
+
+macro_rules! check { ($e: expr, $c: expr) => { if !$c { return Err($e); } }; }
+
+trait Static<T: Copy>: Copy { fn val(self) -> T; }
+
+macro_rules! define {
+    ($name: ident: $type: ty = $val: expr) => {
+        #[derive(Copy, Clone)] struct $name;
+        impl Static<$type> for $name { fn val(self) -> $type { $val } }
+    };
+}
+
+define!(Bf: bool = false);
+define!(Bt: bool = true);
+define!(N1: usize = 1);
+define!(N2: usize = 2);
+define!(N3: usize = 3);
+define!(N4: usize = 4);
+define!(N5: usize = 5);
+define!(N6: usize = 6);
+
+#[derive(Copy, Clone)] struct On;
+impl<T: Copy> Static<Option<T>> for On { fn val(self) -> Option<T> { None } }
+
+#[derive(Copy, Clone)] struct Os<T>(T);
+impl<T: Copy> Static<Option<T>> for Os<T> {
+    fn val(self) -> Option<T> { Some(self.0) }
+}
+
+macro_rules! dispatch {
+    (let $var: ident: bool = $val: expr; $($body: tt)*) => {
+        match $val {
+            false => { let $var = Bf; dispatch!($($body)*) },
+            true => { let $var = Bt; dispatch!($($body)*) },
+        }
+    };
+    (let $var: ident: usize = $val: expr; $($body: tt)*) => {
+        match $val {
+            1 => { let $var = N1; dispatch!($($body)*) },
+            2 => { let $var = N2; dispatch!($($body)*) },
+            3 => { let $var = N3; dispatch!($($body)*) },
+            4 => { let $var = N4; dispatch!($($body)*) },
+            5 => { let $var = N5; dispatch!($($body)*) },
+            6 => { let $var = N6; dispatch!($($body)*) },
+            _ => panic!(),
+        }
+    };
+    (let $var: ident: Option<$type: ty> = $val: expr; $($body: tt)*) => {
+        match $val {
+            None => { let $var = On; dispatch!($($body)*) },
+            Some(x) => { let $var = Os(x); dispatch!($($body)*) },
+        }
+    };
+    ($body: expr) => { $body };
+}
+
+unsafe fn chunk_unchecked(x: &[u8], n: usize, i: usize) -> &[u8] {
+    debug_assert!((i + 1) * n <= x.len());
+    let ptr = x.as_ptr().offset((n * i) as isize);
+    std::slice::from_raw_parts(ptr, n)
+}
+unsafe fn chunk_mut_unchecked(x: &mut [u8], n: usize, i: usize) -> &mut [u8] {
+    debug_assert!((i + 1) * n <= x.len());
+    let ptr = x.as_mut_ptr().offset((n * i) as isize);
+    std::slice::from_raw_parts_mut(ptr, n)
+}
+unsafe fn as_array(x: &[u8]) -> &[u8; 256] {
+    debug_assert_eq!(x.len(), 256);
+    &*(x.as_ptr() as *const [u8; 256])
+}
+fn div_ceil(x: usize, m: usize) -> usize { (x + m - 1) / m }
+fn floor(x: usize, m: usize) -> usize { x / m * m }
+
+fn vectorize<F: FnMut(usize)>(n: usize, bs: usize, mut f: F) {
+    for k in 0 .. n / bs {
+        for i in k * bs .. (k + 1) * bs {
+            f(i);
+        }
+    }
+    for i in floor(n, bs) .. n {
+        f(i);
+    }
+}
 
 /// Decoding error kind
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DecodeKind {
     /// Invalid length
     Length,
-
     /// Invalid symbol
     Symbol,
-
     /// Non-zero trailing bits
     Trailing,
-
     /// Invalid padding length
     Padding,
 }
@@ -171,8 +253,10 @@ pub enum DecodeKind {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct DecodeError {
     /// Error position
+    ///
+    /// This position is always a valid input position and represents the first
+    /// encountered error.
     pub position: usize,
-
     /// Error kind
     pub kind: DecodeKind,
 }
@@ -193,72 +277,34 @@ impl std::fmt::Display for DecodeError {
     }
 }
 
-macro_rules! check { ($e: expr, $c: expr) => { if !$c { return Err($e); } }; }
+/// Decoding error with partial result
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct DecodePartial {
+    /// Number of bytes read from input
+    ///
+    /// This number does not exceed the error position: `read <=
+    /// error.position`.
 
-fn div_ceil(x: usize, m: usize) -> usize { (x + m - 1) / m }
-fn floor(x: usize, m: usize) -> usize { x / m * m }
+    pub read: usize,
+    /// Number of bytes written to output
+    ///
+    /// This number does not exceed the decoded length: `written <=
+    /// decode_len(read)`.
+    pub written: usize,
 
-unsafe fn chunk_unchecked(x: &[u8], n: usize, i: usize) -> &[u8] {
-    debug_assert!((i + 1) * n <= x.len());
-    let ptr = x.as_ptr().offset((n * i) as isize);
-    std::slice::from_raw_parts(ptr, n)
-}
-unsafe fn chunk_mut_unchecked(x: &mut [u8], n: usize, i: usize) -> &mut [u8] {
-    debug_assert!((i + 1) * n <= x.len());
-    let ptr = x.as_mut_ptr().offset((n * i) as isize);
-    std::slice::from_raw_parts_mut(ptr, n)
-}
-
-trait Base: Copy {
-    fn bit(&self) -> usize;
-    fn msb(&self) -> bool;
+    /// Decoding error
+    pub error: DecodeError,
 }
 
-macro_rules! make {
-    ($val: expr, $msb: ident, $lsb: ident) => {
-        #[derive(Copy, Clone)] struct $msb;
-        impl Base for $msb {
-            fn bit(&self) -> usize { $val }
-            fn msb(&self) -> bool { true }
-        }
-        #[derive(Copy, Clone)] struct $lsb;
-        impl Base for $lsb {
-            fn bit(&self) -> usize { $val }
-            fn msb(&self) -> bool { false }
-        }
-    };
-}
-make!(1, M1, L1);
-make!(2, M2, L2);
-make!(3, M3, L3);
-make!(4, M4, L4);
-make!(5, M5, L5);
-make!(6, M6, L6);
-
-macro_rules! dispatch {
-    ($fun: ident; $bit: expr, $msb: expr, $($arg: expr),*) => {
-        match ($bit, $msb) {
-            (1, true) => $fun(M1, $($arg),*),
-            (2, true) => $fun(M2, $($arg),*),
-            (3, true) => $fun(M3, $($arg),*),
-            (4, true) => $fun(M4, $($arg),*),
-            (5, true) => $fun(M5, $($arg),*),
-            (6, true) => $fun(M6, $($arg),*),
-            (1, false) => $fun(L1, $($arg),*),
-            (2, false) => $fun(L2, $($arg),*),
-            (3, false) => $fun(L3, $($arg),*),
-            (4, false) => $fun(L4, $($arg),*),
-            (5, false) => $fun(L5, $($arg),*),
-            (6, false) => $fun(L6, $($arg),*),
-            _ => unreachable!(),
-        }
-    };
-}
+const INVALID: u8 = 128;
+const IGNORE: u8 = 129;
+const PADDING: u8 = 130;
 
 fn order(msb: bool, n: usize, i: usize) -> usize {
     if msb { n - 1 - i } else { i }
 }
 fn enc(bit: usize) -> usize {
+    debug_assert!(1 <= bit && bit <= 6);
     match bit {
         1 | 2 | 4 => 1,
         3 | 6 => 3,
@@ -268,10 +314,15 @@ fn enc(bit: usize) -> usize {
 }
 fn dec(bit: usize) -> usize { enc(bit) * 8 / bit }
 
-fn encode_block<B: Base>(base: B, symbols: &[u8; 256], input: &[u8],
-                         output: &mut [u8]) {
-    let bit = base.bit();
-    let msb = base.msb();
+fn encode_len<B: Static<usize>>(bit: B, len: usize) -> usize {
+    div_ceil(8 * len, bit.val())
+}
+fn encode_block<B: Static<usize>, M: Static<bool>>(
+    bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8]) {
+    debug_assert!(input.len() <= enc(bit.val()));
+    debug_assert_eq!(output.len(), encode_len(bit, input.len()));
+    let bit = bit.val();
+    let msb = msb.val();
     let mut x = 0u64;
     for i in 0 .. input.len() {
         x |= (input[i] as u64) << 8 * order(msb, enc(bit), i);
@@ -281,23 +332,35 @@ fn encode_block<B: Base>(base: B, symbols: &[u8; 256], input: &[u8],
         output[i] = symbols[y as usize % 256];
     }
 }
-fn encode_mut<B: Base>(base: B, symbols: &[u8; 256], input: &[u8],
-                       output: &mut [u8]) {
-    let enc = enc(base.bit());
-    let dec = dec(base.bit());
+fn encode_mut<B: Static<usize>, M: Static<bool>>(
+    bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8]) {
+    debug_assert_eq!(output.len(), encode_len(bit, input.len()));
+    let enc = enc(bit.val());
+    let dec = dec(bit.val());
     let n = input.len() / enc;
-    for i in 0 .. n {
+    let bs = match bit.val() {
+        5 => 2,
+        6 => 4,
+        _ => 1,
+    };
+    vectorize(n, bs, |i| {
         let input = unsafe { chunk_unchecked(input, enc, i) };
         let output = unsafe { chunk_mut_unchecked(output, dec, i) };
-        encode_block(base, symbols, input, output);
-    }
-    encode_block(base, symbols, &input[enc * n ..], &mut output[dec * n ..]);
+        encode_block(bit, msb, symbols, input, output);
+    });
+    encode_block(bit, msb, symbols, &input[enc * n ..],
+                 &mut output[dec * n ..]);
 }
 
-fn decode_block<B: Base>(base: B, values: &[u8; 256], input: &[u8],
-                         output: &mut [u8]) -> Result<(), usize> {
-    let bit = base.bit();
-    let msb = base.msb();
+// Fails if an input character does not translate to a symbol. The error is the
+// lowest index of such character. The output is not written to.
+fn decode_block<B: Static<usize>, M: Static<bool>>(
+    bit: B, msb: M, values: &[u8; 256], input: &[u8], output: &mut [u8])
+    -> Result<(), usize> {
+    debug_assert!(output.len() <= enc(bit.val()));
+    debug_assert_eq!(input.len(), encode_len(bit, output.len()));
+    let bit = bit.val();
+    let msb = msb.val();
     let mut x = 0u64;
     for j in 0 .. input.len() {
         let y = values[input[j] as usize];
@@ -309,74 +372,330 @@ fn decode_block<B: Base>(base: B, values: &[u8; 256], input: &[u8],
     }
     Ok(())
 }
-fn decode_mut<B: Base>(base: B, values: &[u8; 256], input: &[u8],
-                       output: &mut [u8]) -> Result<(), usize> {
-    let enc = enc(base.bit());
-    let dec = dec(base.bit());
+// Fails if an input character does not translate to a symbol. The error `pos`
+// is the lowest index of such character. The output is valid up to `pos / dec *
+// enc` excluded.
+fn decode_mut<B: Static<usize>, M: Static<bool>>(
+    bit: B, msb: M, values: &[u8; 256], input: &[u8], output: &mut [u8])
+    -> Result<(), usize> {
+    debug_assert_eq!(input.len(), encode_len(bit, output.len()));
+    let enc = enc(bit.val());
+    let dec = dec(bit.val());
     let n = input.len() / dec;
     for i in 0 .. n {
         let input = unsafe { chunk_unchecked(input, dec, i) };
         let output = unsafe { chunk_mut_unchecked(output, enc, i) };
-        decode_block(base, values, input, output).map_err(|e| dec * i + e)?;
+        decode_block(bit, msb, values, input, output).map_err(|e| dec * i + e)?;
     }
-    decode_block(base, values, &input[dec * n ..], &mut output[enc * n ..])
+    decode_block(bit, msb, values, &input[dec * n ..], &mut output[enc * n ..])
         .map_err(|e| dec * n + e)
 }
-fn check_trail<B: Base>(base: B, ctb: bool, values: &[u8; 256], input: &[u8])
-                        -> Result<(), ()> {
-    if !ctb { return Ok(()) }
-    let trail = base.bit() * input.len() % 8;
-    if trail == 0 { return Ok(()) }
+// Fails if there are non-zero trailing bits.
+fn check_trail<B: Static<usize>, M: Static<bool>>(
+    bit: B, msb: M, ctb: bool, values: &[u8; 256], input: &[u8])
+    -> Result<(), ()> {
+    if 8 % bit.val() == 0 || !ctb { return Ok(()); }
+    let trail = bit.val() * input.len() % 8;
+    if trail == 0 { return Ok(()); }
     let mut mask = (1 << trail) - 1;
-    if !base.msb() { mask <<= base.bit() - trail; }
+    if !msb.val() { mask <<= bit.val() - trail; }
     check!((), values[input[input.len() - 1] as usize] & mask == 0);
     Ok(())
 }
-fn check_pad<B: Base>(base: B, pad: u8, input: &[u8]) -> Result<usize, usize> {
-    let bit = base.bit();
+// Fails if the padding length is invalid. The error is the index of the first
+// padding character.
+fn check_pad<B: Static<usize>>(bit: B, values: &[u8; 256], input: &[u8])
+                               -> Result<usize, usize> {
+    let bit = bit.val();
     debug_assert_eq!(input.len(), dec(bit));
-    let count = input.iter().rev().take_while(|&x| *x == pad).count();
+    let is_pad = |x: &&u8| values[**x as usize] == PADDING;
+    let count = input.iter().rev().take_while(is_pad).count();
     let len = input.len() - count;
     check!(len, len > 0 && bit * len % 8 < bit);
     Ok(len)
 }
 
-macro_rules! make_array {
-    ($name: ident, $len: expr) => {
-        impl std::ops::Deref for $name {
-            type Target = [u8; $len];
-            fn deref(&self) -> &Self::Target { &self.0 }
-        }
-        impl std::ops::DerefMut for $name {
-            fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
-        }
-        impl Clone for $name { fn clone(&self) -> Self { *self } }
-        impl Copy for $name { }
-        impl std::fmt::Debug for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                <&[u8] as std::fmt::Debug>::fmt(&(&self.0 as &[u8]), f)
-            }
-        }
-        impl PartialEq for $name {
-            fn eq(&self, other: &Self) -> bool {
-                &self.0 as &[u8] == &other.0 as &[u8]
-            }
-        }
-        impl Eq for $name { }
-    };
+fn encode_base_len<B: Static<usize>>(bit: B, len: usize) -> usize {
+    encode_len(bit, len)
+}
+fn encode_base<B: Static<usize>, M: Static<bool>>(
+    bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8]) {
+    debug_assert_eq!(output.len(), encode_base_len(bit, input.len()));
+    encode_mut(bit, msb, symbols, input, output);
 }
 
-/// Convenience wrapper for `[u8; 128]`
-///
-/// Behaves as `[u8; 128]` through `Deref` and `DerefMut`, but also
-/// implements `Clone` and other traits.
-pub struct Array128([u8; 128]);
-make_array!(Array128, 128);
+fn encode_pad_len<B: Static<usize>, P: Static<Option<u8>>>(
+    bit: B, pad: P, len: usize) -> usize {
+    match pad.val() {
+        None => encode_base_len(bit, len),
+        Some(_) => div_ceil(len, enc(bit.val())) * dec(bit.val()),
+    }
+}
+fn encode_pad<B: Static<usize>, M: Static<bool>, P: Static<Option<u8>>>(
+    bit: B, msb: M, symbols: &[u8; 256], spad: P, input: &[u8],
+    output: &mut [u8]) {
+    let pad = match spad.val() {
+        None => return encode_base(bit, msb, symbols, input, output),
+        Some(pad) => pad,
+    };
+    debug_assert_eq!(output.len(), encode_pad_len(bit, spad, input.len()));
+    let olen = encode_base_len(bit, input.len());
+    encode_base(bit, msb, symbols, input, &mut output[.. olen]);
+    for i in olen .. output.len() { output[i] = pad; }
+}
 
-struct Array256([u8; 256]);
-make_array!(Array256, 256);
+fn encode_wrap_len<'a, B: Static<usize>, P: Static<Option<u8>>,
+                       W: Static<Option<(usize, &'a [u8])>>>(
+    bit: B, pad: P, wrap: W, ilen: usize) -> usize {
+    let olen = encode_pad_len(bit, pad, ilen);
+    match wrap.val() {
+        None => olen,
+        Some((col, end)) => olen + end.len() * div_ceil(olen, col),
+    }
+}
+fn encode_wrap_mut<'a, B: Static<usize>, M: Static<bool>, P: Static<Option<u8>>,
+                   W: Static<Option<(usize, &'a [u8])>>>(
+    bit: B, msb: M, symbols: &[u8; 256], pad: P, wrap: W, input: &[u8],
+    output: &mut [u8]) {
+    let (col, end) = match wrap.val() {
+        None => return encode_pad(bit, msb, symbols, pad, input, output),
+        Some((col, end)) => (col, end),
+    };
+    debug_assert_eq!(output.len(),
+                     encode_wrap_len(bit, pad, wrap, input.len()));
+    debug_assert_eq!(col % dec(bit.val()), 0);
+    let col = col / dec(bit.val());
+    let enc = col * enc(bit.val());
+    let dec = col * dec(bit.val()) + end.len();
+    let olen = dec - end.len();
+    let n = input.len() / enc;
+    for i in 0 .. n {
+        let input = unsafe { chunk_unchecked(input, enc, i) };
+        let output = unsafe { chunk_mut_unchecked(output, dec, i) };
+        encode_base(bit, msb, symbols, input, &mut output[.. olen]);
+        output[olen ..].copy_from_slice(end);
+    }
+    if input.len() > enc * n {
+        let olen = dec * n + encode_pad_len(bit, pad, input.len() - enc * n);
+        encode_pad(bit, msb, symbols, pad, &input[enc * n ..],
+                   &mut output[dec * n .. olen]);
+        output[olen ..].copy_from_slice(end);
+    }
+}
+
+// Returns the longest valid input length and associated output length.
+fn decode_wrap_len<B: Static<usize>, P: Static<bool>>(
+    bit: B, pad: P, len: usize) -> (usize, usize) {
+    let bit = bit.val();
+    if pad.val() {
+        (floor(len, dec(bit)), len / dec(bit) * enc(bit))
+    } else {
+        let trail = bit * len % 8;
+        (len - trail / bit, bit * len / 8)
+    }
+}
+
+// Fails with Length if length is invalid. The error is the largest valid
+// length.
+fn decode_pad_len<B: Static<usize>, P: Static<bool>>(
+    bit: B, pad: P, len: usize) -> Result<usize, DecodeError> {
+    let (ilen, olen) = decode_wrap_len(bit, pad, len);
+    check!(DecodeError { position: ilen, kind: DecodeKind::Length },
+           ilen == len);
+    Ok(olen)
+}
+
+// Fails with Length if length is invalid. The error is the largest valid
+// length.
+fn decode_base_len<B: Static<usize>>(bit: B, len: usize)
+                                     -> Result<usize, DecodeError> {
+    decode_pad_len(bit, Bf, len)
+}
+// Fails with Symbol if an input character does not translate to a symbol. The
+// error is the lowest index of such character.
+// Fails with Trailing if there are non-zero trailing bits.
+fn decode_base_mut<B: Static<usize>, M: Static<bool>>(
+    bit: B, msb: M, ctb: bool, values: &[u8; 256], input: &[u8],
+    output: &mut [u8]) -> Result<usize, DecodePartial> {
+    debug_assert_eq!(Ok(output.len()), decode_base_len(bit, input.len()));
+    let fail = |pos, kind| {
+        DecodePartial {
+            read: pos / dec(bit.val()) * dec(bit.val()),
+            written: pos / dec(bit.val()) * enc(bit.val()),
+            error: DecodeError { position: pos, kind },
+        }
+    };
+    decode_mut(bit, msb, values, input, output)
+        .map_err(|pos| fail(pos, DecodeKind::Symbol))?;
+    check_trail(bit, msb, ctb, values, input)
+        .map_err(|()| fail(input.len() - 1, DecodeKind::Trailing))?;
+    Ok(output.len())
+}
+
+// Fails with Symbol if an input character does not translate to a symbol. The
+// error is the lowest index of such character.
+// Fails with Padding if some padding length is invalid. The error is the index
+// of the first padding character of the invalid padding.
+// Fails with Trailing if there are non-zero trailing bits.
+fn decode_pad_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
+    bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, input: &[u8],
+    output: &mut [u8]) -> Result<usize, DecodePartial> {
+    if !pad.val() {
+        return decode_base_mut(bit, msb, ctb, values, input, output);
+    }
+    debug_assert_eq!(Ok(output.len()),
+                     decode_pad_len(bit, pad, input.len()));
+    let enc = enc(bit.val());
+    let dec = dec(bit.val());
+    let mut inpos = 0;
+    let mut outpos = 0;
+    let mut outend = output.len();
+    while inpos < input.len() {
+        match decode_base_mut(bit, msb, ctb, values, &input[inpos ..],
+                              &mut output[outpos .. outend]) {
+            Ok(written) => {
+                if cfg!(debug_assertions) { inpos = input.len(); }
+                outpos += written;
+                break;
+            },
+            Err(partial) => {
+                inpos += partial.read;
+                outpos += partial.written;
+            },
+        }
+        let inlen = check_pad(bit, values, &input[inpos .. inpos + dec])
+            .map_err(|pos| DecodePartial {
+                read: inpos,
+                written: outpos,
+                error: DecodeError { position: inpos + pos,
+                                     kind: DecodeKind::Padding },
+            })?;
+        let outlen = decode_base_len(bit, inlen).unwrap();
+        let written = decode_base_mut(bit, msb, ctb, values,
+                                      &input[inpos .. inpos + inlen],
+                                      &mut output[outpos .. outpos + outlen])
+            .map_err(|partial| {
+                debug_assert_eq!(partial.read, 0);
+                debug_assert_eq!(partial.written, 0);
+                DecodePartial {
+                    read: inpos,
+                    written: outpos,
+                    error: DecodeError {
+                        position: inpos + partial.error.position,
+                        kind: partial.error.kind,
+                    },
+                }
+            })?;
+        debug_assert_eq!(written, outlen);
+        inpos += dec;
+        outpos += outlen;
+        outend -= enc - outlen;
+    }
+    debug_assert_eq!(inpos, input.len());
+    debug_assert_eq!(outpos, outend);
+    Ok(outend)
+}
+
+fn skip_ignore(values: &[u8; 256], input: &[u8], mut inpos: usize) -> usize {
+    while inpos < input.len() && values[input[inpos] as usize] == IGNORE {
+        inpos += 1;
+    }
+    inpos
+}
+// Returns next input and output position.
+// Fails with Symbol if an input character does not translate to a symbol. The
+// error is the lowest index of such character.
+// Fails with Padding if some padding length is invalid. The error is the index
+// of the first padding character of the invalid padding.
+// Fails with Trailing if there are non-zero trailing bits.
+fn decode_wrap_block<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
+    bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, input: &[u8],
+    output: &mut [u8]) -> Result<(usize, usize), DecodeError> {
+    let dec = dec(bit.val());
+    let mut buf = [0u8; 8];
+    let mut shift = [0usize; 8];
+    let mut bufpos = 0;
+    let mut inpos = 0;
+    while bufpos < dec {
+        inpos = skip_ignore(values, input, inpos);
+        if inpos == input.len() { break; }
+        shift[bufpos] = inpos;
+        buf[bufpos] = input[inpos];
+        bufpos += 1;
+        inpos += 1;
+    }
+    let olen = decode_pad_len(bit, pad, bufpos)
+        .map_err(|mut e| { e.position = shift[e.position]; e })?;
+    let written = decode_pad_mut(bit, msb, ctb, values, pad, &buf[.. bufpos],
+                                 &mut output[.. olen])
+        .map_err(|partial| {
+            debug_assert_eq!(partial.read, 0);
+            debug_assert_eq!(partial.written, 0);
+            DecodeError { position: shift[partial.error.position],
+                          kind: partial.error.kind }
+        })?;
+    Ok((inpos, written))
+}
+// Fails with Symbol if an input character does not translate to a symbol. The
+// error is the lowest index of such character.
+// Fails with Padding if some padding length is invalid. The error is the index
+// of the first padding character of the invalid padding.
+// Fails with Trailing if there are non-zero trailing bits.
+// Fails with Length if input length (without ignored characters) is invalid.
+fn decode_wrap_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>,
+                   I: Static<bool>>(
+    bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, has_ignore: I,
+    input: &[u8], output: &mut [u8]) -> Result<usize, DecodePartial> {
+    if !has_ignore.val() {
+        return decode_pad_mut(bit, msb, ctb, values, pad, input, output);
+    }
+    debug_assert_eq!(output.len(), decode_wrap_len(bit, pad, input.len()).1);
+    let mut inpos = 0;
+    let mut outpos = 0;
+    while inpos < input.len() {
+        let (inlen, outlen) = decode_wrap_len(bit, pad, input.len() - inpos);
+        match decode_pad_mut(bit, msb, ctb, values, pad,
+                             &input[inpos .. inpos + inlen],
+                             &mut output[outpos .. outpos + outlen]) {
+            Ok(written) => {
+                inpos += inlen;
+                outpos += written;
+                break;
+            },
+            Err(partial) => {
+                inpos += partial.read;
+                outpos += partial.written;
+            },
+        }
+        let (ipos, opos) = decode_wrap_block(bit, msb, ctb, values, pad,
+                                             &input[inpos ..],
+                                             &mut output[outpos ..])
+            .map_err(|mut error| {
+                error.position += inpos;
+                DecodePartial { read: inpos, written: outpos, error }
+            })?;
+        inpos += ipos;
+        outpos += opos;
+    }
+    let inpos = skip_ignore(values, input, inpos);
+    if inpos == input.len() {
+        Ok(outpos)
+    } else {
+        Err(DecodePartial {
+            read: inpos,
+            written: outpos,
+            error: DecodeError { position: inpos, kind: DecodeKind::Length },
+        })
+    }
+}
 
 /// Order in which bits are read from a byte
+///
+/// The base-conversion encoding is always little-endian. This means that the
+/// least significant *byte* is always first. However, we can still choose
+/// whether, within a byte, this is the most significant or the least
+/// significant *bit* that is first. If the terminology is confusing, testing on
+/// an asymmetrical example should be enough to choose the correct value.
 ///
 /// # Examples
 ///
@@ -388,10 +707,13 @@ make_array!(Array256, 256);
 /// reverse order.
 ///
 /// ```rust
-/// use data_encoding::Builder;
-/// let mut builder = Builder::new(b"01");
-/// let msb = builder.no_pad().unwrap();
-/// let lsb = builder.least_significant_bit_first().no_pad().unwrap();
+/// use data_encoding::{Specification, BitOrder};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str("01");
+/// // spec.bit_order = BitOrder::MostSignificantFirst;  // default
+/// let msb = spec.encoding().unwrap();
+/// spec.bit_order = BitOrder::LeastSignificantFirst;
+/// let lsb = spec.encoding().unwrap();
 /// assert_eq!(msb.encode(&[0b01010011]), "01010011");
 /// assert_eq!(lsb.encode(&[0b01010011]), "11001010");
 /// ```
@@ -402,7 +724,7 @@ pub enum BitOrder {
     /// This is the most common and most intuitive bit-order. In particular,
     /// this is the bit-order used by [RFC4648] and thus the usual hexadecimal,
     /// base64, base32, base64url, and base32hex encodings. This is the default
-    /// bit-order when [building](struct.Builder.html) a base.
+    /// bit-order when [specifying](struct.Specification.html) a base.
     ///
     /// [RFC4648]: https://tools.ietf.org/html/rfc4648
     MostSignificantFirst,
@@ -414,10 +736,15 @@ pub enum BitOrder {
     /// Here is how one would implement the [DNSCurve] base32 encoding:
     ///
     /// ```rust
-    /// use data_encoding::Builder;
-    /// let dns_curve = Builder::new(b"0123456789bcdfghjklmnpqrstuvwxyz")
-    ///     .translate(b"BCDFGHJKLMNPQRSTUVWXYZ", b"bcdfghjklmnpqrstuvwxyz")
-    ///     .least_significant_bit_first().no_pad().unwrap();
+    /// let dns_curve = {
+    ///     use data_encoding::{Specification, BitOrder};
+    ///     let mut spec = Specification::new();
+    ///     spec.symbols.push_str("0123456789bcdfghjklmnpqrstuvwxyz");
+    ///     spec.translate.from.push_str("BCDFGHJKLMNPQRSTUVWXYZ");
+    ///     spec.translate.to.push_str("bcdfghjklmnpqrstuvwxyz");
+    ///     spec.bit_order = BitOrder::LeastSignificantFirst;
+    ///     spec.encoding().unwrap()
+    /// };
     /// assert_eq!(dns_curve.encode(&[0x64, 0x88]), "4321");
     /// assert_eq!(dns_curve.decode(b"4321").unwrap(), vec![0x64, 0x88]);
     /// ```
@@ -427,9 +754,79 @@ pub enum BitOrder {
 }
 use BitOrder::*;
 
-/// Base-conversion encoding (without padding)
+/// Base-conversion encoding
+///
+/// See [Specification](struct.Specification.html) for technical details or how
+/// to define a new one.
+// Required fields:
+//   0 - 256 (256) symbols
+// 256 - 512 (256) values
+// 512 - 513 (  1) padding
+// 513 - 514 (  1) reserved(3),ctb(1),msb(1),bit(3)
+// Optional fields:
+// 514 - 515 (  1) width
+// 515 -   * (  N) separator
+// Invariants:
+// - symbols is 2^bit unique characters repeated 2^(8-bit) times
+// - values[128 ..] are INVALID
+// - values[0 .. 128] are either INVALID, IGNORE, PADDING, or < 2^bit
+// - padding is either < 128 or INVALID
+// - values[padding] is PADDING if padding < 128
+// - values and symbols are inverse
+// - ctb is true if 8 % bit == 0
+// - width is present if there is x such that values[x] is IGNORE
+// - width % dec(bit) == 0
+// - for all x in separator values[x] is IGNORE
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Encoding(std::borrow::Cow<'static, [u8]>);
+
+/// How to translate characters when decoding
+///
+/// The order matters. The first character of the `from` field is translated to
+/// the first character of the `to` field. The second to the second. Etc.
+///
+/// See [Specification](struct.Specification.html) for more information.
+#[derive(Debug, Clone)]
+pub struct Translate {
+    /// Characters to translate from
+    pub from: String,
+    /// Characters to translate to
+    pub to: String,
+}
+
+/// How to wrap the output when encoding
+///
+/// See [Specification](struct.Specification.html) for more information.
+#[derive(Debug, Clone)]
+pub struct Wrap {
+    /// Wrapping width
+    ///
+    /// Must be a multiple of:
+    ///
+    /// - 8 for a bit-width of 1 (binary), 3 (octal), and 5 (base32)
+    /// - 4 for a bit-width of 2 (base4) and 6 (base64)
+    /// - 2 for a bit-width of 4 (hexadecimal)
+    ///
+    /// Wrapping is disabled if null.
+    pub width: usize,
+
+    /// Wrapping characters
+    ///
+    /// Wrapping is disabled if empty.
+    pub separator: String,
+}
+
+/// Base-conversion specification
+///
+/// It is possible to define custom encodings given a specification. To do so,
+/// it is important to understand the theory first.
 ///
 /// # Theory
+///
+/// Each subsection has an equivalent subsection in the [Practice](#practice)
+/// section.
+///
+/// ## Basics
 ///
 /// The main idea of a [base-conversion] encoding is to see `[u8]` as numbers
 /// written in little-endian base256 and convert them in another little-endian
@@ -455,8 +852,9 @@ use BitOrder::*;
 /// For the encoding to be correct (i.e. encoding then decoding gives back the
 /// initial input), V(S(i)) must be defined and equal to i for all i in [0,
 /// 2<sup>N</sup>). For the encoding to be [canonical][canonical] (i.e.
-/// different inputs decode to different outputs), trailing bits must be checked
-/// and if V(i) is defined then S(V(i)) is equal to i for all i.
+/// different inputs decode to different outputs, or equivalently, decoding then
+/// encoding gives back the initial input), trailing bits must be checked and if
+/// V(i) is defined then S(V(i)) is equal to i for all i.
 ///
 /// Encoding and decoding are given by the following pipeline:
 ///
@@ -464,17 +862,75 @@ use BitOrder::*;
 /// [u8] <--1--> [[bit; 8]] <--2--> [[bit; N]] <--3--> [uN] <--4--> [u8]
 /// 1: Map bit-order between each u8 and [bit; 8]
 /// 2: Base conversion between base 2^8 and base 2^N (check trailing bits)
-/// 3: Map bit-order between each [bit; N] and [uN]
+/// 3: Map bit-order between each [bit; N] and uN
 /// 4: Map symbols/values between each uN and u8 (values must be defined)
 /// ```
 ///
+/// ## Extensions
+///
+/// All these extensions make the encoding not canonical.
+///
+/// ### Padding
+///
+/// Padding is useful if the following conditions are met:
+///
+/// - the bit-width is 3 (octal), 5 (base32), or 6 (base64)
+/// - the length of the data to encode is not known in advance
+///
+/// Bases for which the bit-width N does not divide 8 may not concatenate
+/// encoded data. This comes from the fact that it is not possible to make the
+/// difference between trailing bits and encoding bits. Padding solves this
+/// issue by adding a new character (which is not a symbol) to discriminate
+/// between trailing bits and encoding bits. The idea is to work by blocks of
+/// lcm(8, N) bits, where lcm(8, N) is the least common multiple of 8 and N.
+/// When such block is not complete, it is padded.
+///
+/// To preserve correctness, the padding character must not be a symbol.
+///
+/// ### Ignore characters when decoding
+///
+/// Ignoring characters when decoding is useful if after encoding some
+/// characters are added for convenience or any other reason (like wrapping). In
+/// that case we want to first ignore thoses characters before decoding.
+///
+/// To preserve correctness, ignored characters must not contain symbols or the
+/// padding character.
+///
+/// ### Wrap output when encoding
+///
+/// Wrapping output when encoding is useful if the output is meant to be printed
+/// in a document where width is limited (typically 80-columns documents). In
+/// that case, the wrapping width and the wrapping separator have to be defined.
+///
+/// To preserve correctness, the wrapping separator characters must be ignored
+/// (see previous subsection). As such, wrapping separator characters must also
+/// not contain symbols or the padding character.
+///
+/// ### Translate characters when decoding
+///
+/// Translating characters when decoding is useful when encoded data may be
+/// copied by a humain instead of a machine. Humans tend to confuse some
+/// characters for others. In that case we want to translate those characters
+/// before decoding.
+///
+/// To preserve correctness, the characters we translate from must not contain
+/// symbols or the padding character, and the characters we translate to must
+/// only contain symbols or the padding character.
+///
 /// # Practice
 ///
+/// ## Basics
+///
 /// ```rust
-/// use data_encoding::Builder;
-/// let binary = Builder::new(b"01").no_pad().unwrap();
-/// let octal = Builder::new(b"01234567").no_pad().unwrap();
-/// let hexadecimal = Builder::new(b"0123456789abcdef").no_pad().unwrap();
+/// use data_encoding::{Encoding, Specification};
+/// fn make_encoding(symbols: &str) -> Encoding {
+///     let mut spec = Specification::new();
+///     spec.symbols.push_str(symbols);
+///     spec.encoding().unwrap()
+/// }
+/// let binary = make_encoding("01");
+/// let octal = make_encoding("01234567");
+/// let hexadecimal = make_encoding("0123456789abcdef");
 /// assert_eq!(binary.encode(b"Bit"), "010000100110100101110100");
 /// assert_eq!(octal.encode(b"Bit"), "20464564");
 /// assert_eq!(hexadecimal.encode(b"Bit"), "426974");
@@ -503,9 +959,13 @@ use BitOrder::*;
 /// have trailing bits in similar circumstances:
 ///
 /// ```rust
-/// use data_encoding::{BASE64, Builder};
-/// let octal = Builder::new(b"01234567").no_pad().unwrap();
-/// assert_eq!(BASE64.no_pad().encode(b"B"), "Qg");
+/// use data_encoding::{BASE64_NOPAD, Specification};
+/// let octal = {
+///     let mut spec = Specification::new();
+///     spec.symbols.push_str("01234567");
+///     spec.encoding().unwrap()
+/// };
+/// assert_eq!(BASE64_NOPAD.encode(b"B"), "Qg");
 /// assert_eq!(octal.encode(b"B"), "204");
 /// ```
 ///
@@ -520,234 +980,21 @@ use BitOrder::*;
 ///                           ^-^-^-^-- leading zeros / trailing bits
 /// ```
 ///
-/// [base-conversion]: https://en.wikipedia.org/wiki/Positional_notation#Base_conversion
-/// [canonical]: https://tools.ietf.org/html/rfc4648#section-3.5
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct NoPad {
-    sym: Array256,
-    val: Array256,
-    bit: u8,
-    msb: bool,
-    ctb: bool,
-}
-
-impl NoPad {
-    fn bit(&self) -> usize { self.bit as usize }
-
-    /// Returns the encoded length of an input of length `len`
-    ///
-    /// See [`encode_mut`] for when to use it.
-    ///
-    /// [`encode_mut`]: struct.NoPad.html#method.encode_mut
-    pub fn encode_len(&self, len: usize) -> usize {
-        div_ceil(8 * len, self.bit())
-    }
-
-    /// Encodes `input` in `output`
-    ///
-    /// # Panics
-    ///
-    /// Panics if `output`'s length does not match the result of [`encode_len`]
-    /// for `input`'s length.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use data_encoding::BASE64;
-    /// # let mut buffer = vec![0; 100];
-    /// # let base64 = BASE64.no_pad();
-    /// # let input = b"Hello world";
-    /// let output = &mut buffer[0 .. base64.encode_len(input.len())];
-    /// base64.encode_mut(input, output);
-    /// # assert_eq!(output, b"SGVsbG8gd29ybGQ");
-    /// ```
-    ///
-    /// [`encode_len`]: struct.NoPad.html#method.encode_len
-    pub fn encode_mut(&self, input: &[u8], output: &mut [u8]) {
-        assert_eq!(output.len(), self.encode_len(input.len()));
-        dispatch!(encode_mut; self.bit(), self.msb, &self.sym, input, output)
-    }
-
-    /// Returns encoded `input`
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use data_encoding::BASE64;
-    /// assert_eq!(BASE64.no_pad().encode(b"Hello world"), "SGVsbG8gd29ybGQ");
-    /// ```
-    pub fn encode(&self, input: &[u8]) -> String {
-        let mut output = vec![0u8; self.encode_len(input.len())];
-        self.encode_mut(input, &mut output);
-        unsafe { String::from_utf8_unchecked(output) }
-    }
-
-    /// Returns the decoded length of an input of length `len`
-    ///
-    /// See [`decode_mut`] for when to use it.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if `len` is invalid. The error kind is [`Length`] and
-    /// the error [position] is the greatest valid length smaller than `len`.
-    ///
-    /// [`decode_mut`]: struct.NoPad.html#method.decode_mut
-    /// [`Length`]: enum.DecodeKind.html#variant.Length
-    /// [position]: struct.DecodeError.html#structfield.position
-    pub fn decode_len(&self, len: usize) -> Result<usize, DecodeError> {
-        let bit = self.bit();
-        let trail = bit * len % 8;
-        check!(DecodeError { position: len - trail / bit,
-                             kind: DecodeKind::Length }, trail < bit);
-        Ok(bit * len / 8)
-    }
-
-    /// Decodes `input` in `output`
-    ///
-    /// # Panics
-    ///
-    /// Panics if `output`'s length does not match the result of [`decode_len`]
-    /// for `input`'s length. Also panics if `decode_len` fails for `input`'s
-    /// length.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if `input` is invalid. The error kind can be [`Symbol`]
-    /// or [`Trailing`].
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use data_encoding::BASE64;
-    /// # let mut buffer = vec![0; 100];
-    /// # let base64 = BASE64.no_pad();
-    /// # let input = b"SGVsbG8gd29ybGQ";
-    /// let output = &mut buffer[0 .. base64.decode_len(input.len()).unwrap()];
-    /// base64.decode_mut(input, output).unwrap();
-    /// # assert_eq!(output, b"Hello world");
-    /// ```
-    ///
-    /// [`decode_len`]: struct.NoPad.html#method.decode_len
-    /// [`Symbol`]: enum.DecodeKind.html#variant.Symbol
-    /// [`Trailing`]: enum.DecodeKind.html#variant.Trailing
-    pub fn decode_mut(&self, input: &[u8], output: &mut [u8])
-                      -> Result<(), DecodeError> {
-        assert_eq!(output.len(), self.decode_len(input.len()).unwrap());
-        dispatch!(decode_mut; self.bit(), self.msb, &self.val, input, output)
-            .map_err(|pos| DecodeError { position: pos,
-                                         kind: DecodeKind::Symbol })?;
-        dispatch!(check_trail; self.bit(), self.msb, self.ctb, &self.val, input)
-            .map_err(|()| DecodeError { position: input.len() - 1,
-                                        kind: DecodeKind::Trailing })?;
-        Ok(())
-    }
-
-    /// Returns decoded `input`
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if `input` is invalid. The error kind can be
-    /// [`Length`], [`Symbol`], or [`Trailing`].
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use data_encoding::BASE64;
-    /// assert_eq!(BASE64.no_pad().decode(b"SGVsbG8gd29ybGQ").unwrap(),
-    ///            b"Hello world");
-    /// ```
-    ///
-    /// [`Length`]: enum.DecodeKind.html#variant.Length
-    /// [`Symbol`]: enum.DecodeKind.html#variant.Symbol
-    /// [`Trailing`]: enum.DecodeKind.html#variant.Trailing
-    pub fn decode(&self, input: &[u8]) -> Result<Vec<u8>, DecodeError> {
-        let mut output = vec![0u8; self.decode_len(input.len())?];
-        self.decode_mut(input, &mut output)?;
-        Ok(output)
-    }
-
-    /// Returns the bit-width
-    pub fn bit_width(&self) -> usize { self.bit() }
-
-    /// Returns the bit-order
-    pub fn bit_order(&self) -> BitOrder {
-        if self.msb { MostSignificantFirst } else { LeastSignificantFirst }
-    }
-
-    /// Returns the symbols
-    pub fn symbols(&self) -> &str {
-        let symbols = &self.sym[0 .. 1 << self.bit()];
-        unsafe { std::str::from_utf8_unchecked(symbols) }
-    }
-
-    /// Returns the non-canonical symbols
-    ///
-    /// Non-canonical symbols are ASCII characters i for which V(i) is defined
-    /// but S(V(i)) is different from i. In other words, these characters cannot
-    /// be produced by the encoding function but are still recognized by the
-    /// decoding function and behave as the canonical symbol of the same value.
-    ///
-    /// The result `(from, to)` has the following properties:
-    ///
-    /// - `from` and `to` are ASCII and have the same length
-    /// - All non-canonical symbols are listed in `from` in ascending order
-    /// - `from[i]` is a non-canonical symbol that behaves as `to[i]` for all i
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// let (from, to) = data_encoding::HEXLOWER_PERMISSIVE.translate();
-    /// assert_eq!((from.as_str(), to.as_str()), ("ABCDEF", "abcdef"));
-    /// ```
-    pub fn translate(&self) -> (String, String) {
-        let mut from = vec![];
-        let mut to = vec![];
-        for i in 0 .. 128 {
-            if self.val[i] == 128 { continue; }
-            let canonical = self.sym[self.val[i] as usize];
-            if i as u8 == canonical { continue; }
-            from.push(i as u8);
-            to.push(canonical);
-        }
-        let from = unsafe { String::from_utf8_unchecked(from) };
-        let to = unsafe { String::from_utf8_unchecked(to) };
-        (from, to)
-    }
-
-    /// Whether trailing bits are checked
-    ///
-    /// Returns `None` for bases that don't need to check trailing bits (like
-    /// base2, base4, and base16). Otherwise, for bases that would need it (like
-    /// base8, base32, and base64), returns whether trailing bits are checked.
-    pub fn check_trailing_bits(&self) -> Option<bool> {
-        if 8 % self.bit() == 0 { None } else { Some(self.ctb) }
-    }
-}
-
-/// Padded base-conversion encoding
+/// ## Extensions
 ///
-/// The padded encoding extends the [base-conversion] encoding. This is only
-/// useful for octal, base32, and base64. And for those bases, it is only useful
-/// if the length of the data to encode is not known in advance.
-///
-/// # Theory
-///
-/// Bases for which the bit-width N does not divide 8 may not concatenate
-/// encoded data. This comes from the fact that it is not possible to make the
-/// difference between trailing bits and encoding bits. Padding solves this
-/// issue by adding a new character (which is not a symbol) to discriminate
-/// between trailing bits and encoding bits. The idea is to work by blocks of
-/// lcm(8, N) bits, where lcm(8, N) is the least common multiple of 8 and N.
-/// When such block is not complete, it is padded.
-///
-/// # Practice
+/// ### Padding
 ///
 /// For octal and base64, lcm(8, 3) == lcm(8, 6) == 24 bits or 3 bytes. For
 /// base32, lcm(8, 5) is 40 bits or 5 bytes. Let's consider octal and base64:
 ///
 /// ```rust
-/// use data_encoding::{BASE64, Builder};
-/// let octal = Builder::new(b"01234567").pad(b'=').padded().unwrap();
+/// use data_encoding::{BASE64, Specification};
+/// let octal = {
+///     let mut spec = Specification::new();
+///     spec.symbols.push_str("01234567");
+///     spec.padding = Some('=');
+///     spec.encoding().unwrap()
+/// };
 /// // We start encoding but we only have "B" for now.
 /// assert_eq!(BASE64.encode(b"B"), "Qg==");
 /// assert_eq!(octal.encode(b"B"), "204=====");
@@ -755,8 +1002,8 @@ impl NoPad {
 /// assert_eq!(BASE64.encode(b"it"), "aXQ=");
 /// assert_eq!(octal.encode(b"it"), "322720==");
 /// // By concatenating everything, we may decode the original data.
-/// assert_eq!(BASE64.decode_concat(b"Qg==aXQ=").unwrap(), b"Bit");
-/// assert_eq!(octal.decode_concat(b"204=====322720==").unwrap(), b"Bit");
+/// assert_eq!(BASE64.decode(b"Qg==aXQ=").unwrap(), b"Bit");
+/// assert_eq!(octal.decode(b"204=====322720==").unwrap(), b"Bit");
 /// ```
 ///
 /// We have the following diagrams:
@@ -774,30 +1021,149 @@ impl NoPad {
 /// [ ascii] |       i       |       t       |
 /// ```
 ///
-/// [base-conversion]: struct.NoPad.html
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Padded {
-    no_pad: NoPad,
-    pad: u8,
+/// ### Ignore characters when decoding
+///
+/// The typical use-case is to ignore newlines (`\r` and `\n`). But to keep the
+/// example small, we will ignore spaces.
+///
+/// ```rust
+/// let mut spec = data_encoding::HEXLOWER.specification();
+/// spec.ignore.push_str(" \t");
+/// let base = spec.encoding().unwrap();
+/// assert_eq!(base.decode(b"42 69 74"), base.decode(b"426974"));
+/// ```
+///
+/// ### Wrap output when encoding
+///
+/// The typical use-case is to wrap after 64 or 76 characters with a newline
+/// (`\r\n` or `\n`). But to keep the example small, we will wrap after 8
+/// characters with a space.
+///
+/// ```rust
+/// let mut spec = data_encoding::BASE64.specification();
+/// spec.wrap.width = 8;
+/// spec.wrap.separator.push_str(" ");
+/// let base64 = spec.encoding().unwrap();
+/// assert_eq!(base64.encode(b"Hey you"), "SGV5IHlv dQ== ");
+/// ```
+///
+/// Note that the output always ends with the separator.
+///
+/// ### Translate characters when decoding
+///
+/// The typical use-case is to translate lowercase to uppercase or reciprocally,
+/// but it is also used for letters that look alike, like `O0` or `Il1`. Let's
+/// illustrate both examples.
+///
+/// ```rust
+/// let mut spec = data_encoding::HEXLOWER.specification();
+/// spec.translate.from.push_str("ABCDEFOIl");
+/// spec.translate.to  .push_str("abcdef011");
+/// let base = spec.encoding().unwrap();
+/// assert_eq!(base.decode(b"BOIl"), base.decode(b"b011"));
+/// ```
+///
+/// [base-conversion]: https://en.wikipedia.org/wiki/Positional_notation#Base_conversion
+/// [canonical]: https://tools.ietf.org/html/rfc4648#section-3.5
+#[derive(Debug, Clone)]
+pub struct Specification {
+    /// Symbols
+    ///
+    /// The number of symbols must be 2, 4, 8, 16, 32, or 64. Symbols must be
+    /// ASCII characters (smaller than 128) and they must be unique.
+    pub symbols: String,
+
+    /// Bit-order
+    ///
+    /// The default is to use most significant bit first since it is the most
+    /// common.
+    pub bit_order: BitOrder,
+
+    /// Check trailing bits
+    ///
+    /// The default is to check trailing bits. This field is ignored when
+    /// unnecessary (i.e. for base2, base4, and base16).
+    pub check_trailing_bits: bool,
+
+    /// Padding
+    ///
+    /// The default is to not use padding. The padding character must be ASCII
+    /// and must not be a symbol.
+    pub padding: Option<char>,
+
+    /// Characters to ignore when decoding
+    ///
+    /// The default is to not ignore characters when decoding. The characters to
+    /// ignore must be ASCII and must not be symbols or the padding character.
+    pub ignore: String,
+
+    /// How to wrap the output when encoding
+    ///
+    /// The default is to not wrap the output when encoding. The wrapping
+    /// characters must be ASCII and must not be symbols or the padding
+    /// character.
+    pub wrap: Wrap,
+
+    /// How to translate characters when decoding
+    ///
+    /// The default is to not translate characters when decoding. The characters
+    /// to translate from must be ASCII and must not have already been assigned
+    /// a semantics. The characters to translate to must be ASCII and must have
+    /// been assigned a semantics (symbol, padding character, or ignored
+    /// character).
+    pub translate: Translate,
 }
 
-impl Padded {
+impl Specification {
+    /// Returns a default specification
+    pub fn new() -> Specification {
+        Specification {
+            symbols: String::new(),
+            bit_order: MostSignificantFirst,
+            check_trailing_bits: true,
+            padding: None,
+            ignore: String::new(),
+            wrap: Wrap { width: 0, separator: String::new() },
+            translate: Translate { from: String::new(), to: String::new() },
+        }
+    }
+}
+
+impl Encoding {
+    fn sym(&self) -> &[u8; 256] { unsafe { as_array(&self.0[0 .. 256]) } }
+    fn val(&self) -> &[u8; 256] { unsafe { as_array(&self.0[256 .. 512]) } }
+    fn pad(&self) -> Option<u8> {
+        if self.0[512] < 128 { Some(self.0[512]) } else { None }
+    }
+    fn ctb(&self) -> bool { self.0[513] & 0x10 != 0 }
+    fn msb(&self) -> bool { self.0[513] & 0x8 != 0 }
+    fn bit(&self) -> usize { (self.0[513] & 0x7) as usize }
+    fn wrap(&self) -> Option<(usize, &[u8])> {
+        if self.0.len() <= 515 { return None; }
+        Some((self.0[514] as usize, &self.0[515 ..]))
+    }
+    fn has_ignore(&self) -> bool { self.0.len() >= 515 }
+
     /// Returns the encoded length of an input of length `len`
     ///
     /// See [`encode_mut`] for when to use it.
     ///
-    /// [`encode_mut`]: struct.Padded.html#method.encode_mut
+    /// [`encode_mut`]: struct.Encoding.html#method.encode_mut
     pub fn encode_len(&self, len: usize) -> usize {
-        let bit = self.no_pad.bit();
-        div_ceil(len, enc(bit)) * dec(bit)
+        dispatch!{
+            let bit: usize = self.bit();
+            let pad: Option<u8> = self.pad();
+            let wrap: Option<(usize, &[u8])> = self.wrap();
+            encode_wrap_len(bit, pad, wrap, len)
+        }
     }
 
-    /// Encodes `input` in `output`.
+    /// Encodes `input` in `output`
     ///
     /// # Panics
     ///
-    /// Panics if `output`'s length does not match the result of [`encode_len`]
-    /// for `input`'s length.
+    /// Panics if the `output` length does not match the result of
+    /// [`encode_len`] for the `input` length.
     ///
     /// # Examples
     ///
@@ -810,13 +1176,15 @@ impl Padded {
     /// assert_eq!(output, b"SGVsbG8gd29ybGQ=");
     /// ```
     ///
-    /// [`encode_len`]: struct.Padded.html#method.encode_len
+    /// [`encode_len`]: struct.Encoding.html#method.encode_len
     pub fn encode_mut(&self, input: &[u8], output: &mut [u8]) {
         assert_eq!(output.len(), self.encode_len(input.len()));
-        let last = self.no_pad.encode_len(input.len());
-        self.no_pad.encode_mut(input, &mut output[0 .. last]);
-        for i in output[last ..].iter_mut() {
-            *i = self.pad;
+        dispatch!{
+            let bit: usize = self.bit();
+            let msb: bool = self.msb();
+            let pad: Option<u8> = self.pad();
+            let wrap: Option<(usize, &[u8])> = self.wrap();
+            encode_wrap_mut(bit, msb, self.sym(), pad, wrap, input, output)
         }
     }
 
@@ -841,107 +1209,44 @@ impl Padded {
     /// # Errors
     ///
     /// Returns an error if `len` is invalid. The error kind is [`Length`] and
-    /// the error [position] is the greatest valid length smaller than `len`.
+    /// the [position] is the greatest valid input length.
     ///
-    /// [`decode_mut`]: struct.Padded.html#method.decode_mut
+    /// [`decode_mut`]: struct.Encoding.html#method.decode_mut
     /// [`Length`]: enum.DecodeKind.html#variant.Length
     /// [position]: struct.DecodeError.html#structfield.position
     pub fn decode_len(&self, len: usize) -> Result<usize, DecodeError> {
-        let bit = self.no_pad.bit();
-        check!(DecodeError { position: floor(len, dec(bit)),
-                             kind: DecodeKind::Length },
-               len % dec(bit) == 0);
-        Ok(len / dec(bit) * enc(bit))
+        let (ilen, olen) = dispatch!{
+            let bit: usize = self.bit();
+            let pad: bool = self.pad().is_some();
+            decode_wrap_len(bit, pad, len)
+        };
+        check!(DecodeError { position: ilen, kind: DecodeKind::Length },
+               self.has_ignore() || len == ilen);
+        Ok(olen)
     }
 
     /// Decodes `input` in `output`
     ///
     /// Returns the length of the decoded output. This length may be smaller
-    /// than output's length if the input is padded. The output bytes after the
-    /// returned length are not initialized and should not be read.
+    /// than the output length if the input contained padding or ignored
+    /// characters. The output bytes after the returned length are not
+    /// initialized and should not be read.
     ///
     /// # Panics
     ///
-    /// Panics if `output`'s length does not match the result of [`decode_len`]
-    /// for `input`'s length. Also panics if `decode_len` fails for `input`'s
-    /// length.
+    /// Panics if the `output` length does not match the result of
+    /// [`decode_len`] for the `input` length. Also panics if `decode_len` fails
+    /// for the `input` length.
     ///
     /// # Errors
     ///
-    /// Returns an error if `input` is invalid. The error kind can be
-    /// [`Symbol`], [`Trailing`], or [`Padding`].
+    /// Returns an error if `input` is invalid. See [`decode`] for more details.
+    /// The are two differences though:
     ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use data_encoding::BASE64;
-    /// # let mut buffer = vec![0; 100];
-    /// let input = b"SGVsbG8gd29ybGQ=";
-    /// let output = &mut buffer[0 .. BASE64.decode_len(input.len()).unwrap()];
-    /// let len = BASE64.decode_mut(input, output).unwrap();
-    /// assert_eq!(&output[0 .. len], b"Hello world");
-    /// ```
-    ///
-    /// [`decode_len`]: struct.Padded.html#method.decode_len
-    /// [`Symbol`]: enum.DecodeKind.html#variant.Symbol
-    /// [`Trailing`]: enum.DecodeKind.html#variant.Trailing
-    /// [`Padding`]: enum.DecodeKind.html#variant.Padding
-    pub fn decode_mut(&self, input: &[u8], output: &mut [u8])
-                      -> Result<usize, DecodeError> {
-        if input.len() == 0 { return Ok(0); }
-        assert_eq!(output.len(), self.decode_len(input.len()).unwrap());
-        let dec = dec(self.no_pad.bit());
-        let ilen = input.len() - dec;
-        let irem = dispatch!(check_pad; self.no_pad.bit(), self.no_pad.msb,
-                             self.pad, &input[ilen ..])
-            .map_err(|e| DecodeError { position: ilen + e,
-                                       kind: DecodeKind::Padding })?;
-        let olen = self.no_pad.decode_len(ilen + irem).unwrap();
-        self.no_pad.decode_mut(&input[.. ilen + irem], &mut output[.. olen])?;
-        Ok(olen)
-    }
-
-    /// Returns decoded `input`
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if `input` is invalid. The error kind can be
-    /// [`Length`], [`Symbol`], [`Trailing`], or [`Padding`].
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use data_encoding::BASE64;
-    /// assert_eq!(BASE64.decode(b"SGVsbG8gd29ybGQ=").unwrap(), b"Hello world");
-    /// ```
-    ///
-    /// [`Length`]: enum.DecodeKind.html#variant.Length
-    /// [`Symbol`]: enum.DecodeKind.html#variant.Symbol
-    /// [`Trailing`]: enum.DecodeKind.html#variant.Trailing
-    /// [`Padding`]: enum.DecodeKind.html#variant.Padding
-    pub fn decode(&self, input: &[u8]) -> Result<Vec<u8>, DecodeError> {
-        let mut output = vec![0u8; self.decode_len(input.len())?];
-        let len = self.decode_mut(input, &mut output)?;
-        output.truncate(len);
-        Ok(output)
-    }
-
-    /// Decodes concatenated `input` in `output`
-    ///
-    /// Returns the length of the decoded output. This length may be smaller
-    /// than output's length if the input contained padding. The output bytes
-    /// after the returned length are not initialized and should not be read.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `output`'s length does not match the result of [`decode_len`]
-    /// for `input`'s length. Also panics if `decode_len` fails for `input`'s
-    /// length.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if `input` is invalid. The error kind can be
-    /// [`Symbol`], [`Trailing`], or [`Padding`].
+    /// - [`Length`] may be returned only if the encoding allows ignored
+    /// characters, because otherwise this is already checked by [`decode_len`].
+    /// - The [`read`] first bytes of the input have been successfully decoded
+    /// to the [`written`] first bytes of the output.
     ///
     /// # Examples
     ///
@@ -950,61 +1255,50 @@ impl Padded {
     /// # let mut buffer = vec![0; 100];
     /// let input = b"SGVsbA==byB3b3JsZA==";
     /// let output = &mut buffer[0 .. BASE64.decode_len(input.len()).unwrap()];
-    /// let len = BASE64.decode_concat_mut(input, output).unwrap();
+    /// let len = BASE64.decode_mut(input, output).unwrap();
     /// assert_eq!(&output[0 .. len], b"Hello world");
     /// ```
     ///
-    /// [`decode_len`]: struct.Padded.html#method.decode_len
-    /// [`Symbol`]: enum.DecodeKind.html#variant.Symbol
-    /// [`Trailing`]: enum.DecodeKind.html#variant.Trailing
-    /// [`Padding`]: enum.DecodeKind.html#variant.Padding
-    pub fn decode_concat_mut(&self, input: &[u8], output: &mut [u8])
-                             -> Result<usize, DecodeError> {
-        assert_eq!(output.len(), self.decode_len(input.len()).unwrap());
-        let bit = self.no_pad.bit();
-        let enc = enc(bit);
-        let dec = dec(bit);
-        let mut inpos = 0;
-        let mut outpos = 0;
-        let mut outend = output.len();
-        while inpos < input.len() {
-            let ret = self.no_pad.decode_mut(
-                &input[inpos ..], &mut output[outpos .. outend]);
-            match ret {
-                Ok(()) => break,
-                Err(err) => {
-                    debug_assert_eq!(err.kind, DecodeKind::Symbol);
-                    inpos += err.position / dec * dec;
-                    outpos += err.position / dec * enc;
-                },
-            }
-            let inlen = dispatch!(check_pad; self.no_pad.bit(), self.no_pad.msb,
-                                  self.pad, &input[inpos .. inpos + dec])
-                .map_err(|e| DecodeError { position: inpos + e,
-                                           kind: DecodeKind::Padding })?;
-            let outlen = self.no_pad.decode_len(inlen).unwrap();
-            self.no_pad.decode_mut(&input[inpos .. inpos + inlen],
-                                   &mut output[outpos .. outpos + outlen])
-                .map_err(|mut e| { e.position += inpos; e })?;
-            inpos += dec;
-            outpos += outlen;
-            outend -= enc - outlen;
+    /// [`decode_len`]: struct.Encoding.html#method.decode_len
+    /// [`decode`]: struct.Encoding.html#method.decode
+    /// [`Length`]: enum.DecodeKind.html#variant.Length
+    /// [`read`]: struct.DecodePartial.html#structfield.read
+    /// [`written`]: struct.DecodePartial.html#structfield.written
+    pub fn decode_mut(&self, input: &[u8], output: &mut [u8])
+                      -> Result<usize, DecodePartial> {
+        assert_eq!(Ok(output.len()), self.decode_len(input.len()));
+        dispatch!{
+            let bit: usize = self.bit();
+            let msb: bool = self.msb();
+            let pad: bool = self.pad().is_some();
+            let has_ignore: bool = self.has_ignore();
+            decode_wrap_mut(bit, msb, self.ctb(), self.val(), pad, has_ignore,
+                            input, output)
         }
-        Ok(outend)
     }
 
-    /// Returns decoded concatenated `input`
+    /// Returns decoded `input`
     ///
     /// # Errors
     ///
-    /// Returns an error if `input` is invalid. The error kind can be
-    /// [`Length`], [`Symbol`], [`Trailing`], or [`Padding`].
+    /// Returns an error if `input` is invalid. The error kind can be:
+    ///
+    /// - [`Length`] if the input length is invalid. The [position] is the
+    /// greatest valid input length.
+    /// - [`Symbol`] if the input contains an invalid character. The [position]
+    /// is the first invalid character.
+    /// - [`Trailing`] if the input has non-zero trailing bits. This is only
+    /// possible if the encoding checks trailing bits. The [position] is the
+    /// first character containing non-zero trailing bits.
+    /// - [`Padding`] if the input has an invalid padding length. This is only
+    /// possible if the encoding uses padding. The [position] is the first
+    /// padding character of the first padding of invalid length.
     ///
     /// # Examples
     ///
     /// ```rust
     /// use data_encoding::BASE64;
-    /// assert_eq!(BASE64.decode_concat(b"SGVsbA==byB3b3JsZA==").unwrap(),
+    /// assert_eq!(BASE64.decode(b"SGVsbA==byB3b3JsZA==").unwrap(),
     ///            b"Hello world");
     /// ```
     ///
@@ -1012,340 +1306,209 @@ impl Padded {
     /// [`Symbol`]: enum.DecodeKind.html#variant.Symbol
     /// [`Trailing`]: enum.DecodeKind.html#variant.Trailing
     /// [`Padding`]: enum.DecodeKind.html#variant.Padding
-    pub fn decode_concat(&self, input: &[u8]) -> Result<Vec<u8>, DecodeError> {
+    /// [position]: struct.DecodeError.html#structfield.position
+    pub fn decode(&self, input: &[u8]) -> Result<Vec<u8>, DecodeError> {
         let mut output = vec![0u8; self.decode_len(input.len())?];
-        let len = self.decode_concat_mut(input, &mut output)?;
+        let len = self.decode_mut(input, &mut output)
+            .map_err(|partial| partial.error)?;
         output.truncate(len);
         Ok(output)
     }
 
-    /// Returns the associated base-conversion encoding
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use data_encoding::BASE64;
-    /// assert_eq!(BASE64.encode(b"Helo"), "SGVsbw==");
-    /// assert_eq!(BASE64.no_pad().encode(b"Helo"), "SGVsbw");
-    /// ```
-    pub fn no_pad(&self) -> &NoPad { &self.no_pad }
+    /// Returns the bit-width
+    pub fn bit_width(&self) -> usize { self.bit() }
 
-    /// Returns the padding character
-    pub fn padding(&self) -> u8 { self.pad }
-}
+    /// Returns whether the encoding is canonical
+    ///
+    /// An encoding is not canonical if one of the following conditions holds:
+    ///
+    /// - trailing bits are not checked
+    /// - padding is used
+    /// - characters are ignored
+    /// - characters are translated
+    pub fn is_canonical(&self) -> bool {
+        if !self.ctb() { return false; }
+        let bit = self.bit();
+        let sym = self.sym();
+        let val = self.val();
+        for i in 0..256 {
+            if val[i] == INVALID { continue; }
+            if val[i] >= 1 << bit { return false; }
+            if sym[val[i] as usize] != i as u8 { return false; }
+        }
+        true
+    }
 
-/// Base representation
-///
-/// Convenience methods are provided to edit the fields, although they may be
-/// manually edited.
-///
-/// # Examples
-///
-/// See the [lower-case hexadecimal][1], [upper-case hexadecimal][2],
-/// [lower-case permissive hexadecimal][3], [base32], [base32hex], [base64], and
-/// [base64url] encodings.
-///
-/// [1]: constant.HEXLOWER.html
-/// [2]: constant.HEXUPPER.html
-/// [3]: constant.HEXLOWER_PERMISSIVE.html
-/// [base32]: constant.BASE32.html
-/// [base32hex]: constant.BASE32HEX.html
-/// [base64]: constant.BASE64.html
-/// [base64url]: constant.BASE64URL.html
-#[derive(Debug, Clone)]
-pub struct Builder {
-    /// Symbols
-    ///
-    /// The number of symbols must be 2, 4, 8, 16, 32, or 64. Symbols must be
-    /// ASCII characters (smaller than 128) and they must be unique.
-    pub symbols: Box<[u8]>,
-
-    /// Values
-    ///
-    /// A value of 128 means that the index is not a symbol. In other words, if
-    /// `values[s] != 128` then `s` is a symbol (canonical if
-    /// `symbols[values[s]]` is equal to `s`) and `values[s]` is its value.
-    ///
-    /// Default is the inverse of symbols.
-    pub values: Box<Array128>,
-
-    /// Bit-order
-    ///
-    /// Default is most significant bit first.
-    pub bit_order: BitOrder,
-
-    /// Padding
-    ///
-    /// Default is no padding.
-    pub padding: Option<u8>,
-
-    /// Whether trailing bits are checked
-    ///
-    /// Default is to check trailing bits. This field is ignored when
-    /// unnecessary (i.e. for base2, base4, and base16).
-    pub check_trailing_bits: bool,
+    /// Returns the encoding specification
+    pub fn specification(&self) -> Specification {
+        let mut specification = Specification::new();
+        specification.symbols.push_str(std::str::from_utf8(
+            &self.sym()[0 .. 1 << self.bit()]).unwrap());
+        specification.bit_order = if self.msb() {
+            MostSignificantFirst
+        } else {
+            LeastSignificantFirst
+        };
+        specification.check_trailing_bits = self.ctb();
+        if let Some(pad) = self.pad() {
+            specification.padding = Some(pad as char);
+        }
+        for i in 0 .. 128u8 {
+            if self.val()[i as usize] != IGNORE { continue; }
+            specification.ignore.push(i as char);
+        }
+        if let Some((col, end)) = self.wrap() {
+            specification.wrap.width = col;
+            specification.wrap.separator =
+                std::str::from_utf8(end).unwrap().to_owned();
+        }
+        for i in 0 .. 128u8 {
+            let canonical =
+                if self.val()[i as usize] < 1 << self.bit() {
+                    self.sym()[self.val()[i as usize] as usize]
+                } else if self.val()[i as usize] == PADDING {
+                    self.pad().unwrap()
+                } else {
+                    continue;
+                };
+            if i == canonical { continue; }
+            specification.translate.from.push(i as char);
+            specification.translate.to.push(canonical as char);
+        }
+        specification
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
-enum BuilderErrorImpl {
+enum SpecificationErrorImpl {
     BadSize,
-    BadSym(u8),
-    BadVal(u8),
-    BadPad(Option<u8>),
+    NotAscii,
+    Duplicate(u8),
+    ExtraPadding,
+    WrapLength,
+    WrapWidth(u8),
+    FromTo,
+    Undefined(u8),
 }
-use BuilderErrorImpl::*;
+use SpecificationErrorImpl::*;
 
-/// Base building error
+/// Specification error
 #[derive(Debug, Copy, Clone)]
-pub struct BuilderError(BuilderErrorImpl);
+pub struct SpecificationError(SpecificationErrorImpl);
 
-impl std::fmt::Display for BuilderError {
+impl std::fmt::Display for SpecificationError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
             BadSize => write!(f, "invalid number of symbols"),
-            BadSym(s) => write!(f, "non-ascii symbol {:#x}", s),
-            BadVal(s) => write!(f, "invalid value for {:?}", s as char),
-            BadPad(Some(s)) if s < 128 => write!(f, "padding symbol conflict"),
-            BadPad(Some(pad)) => write!(f, "non-ascii padding {:#x}", pad),
-            BadPad(None) => write!(f, "unnecessary or missing padding"),
+            NotAscii => write!(f, "non-ascii character"),
+            Duplicate(c) => write!(f, "{:?} has conflicting definitions",
+                                   c as char),
+            ExtraPadding => write!(f, "unnecessary padding"),
+            WrapLength => write!(f, "invalid wrap width or separator length"),
+            WrapWidth(x) => write!(f, "wrap width not a multiple of {}", x),
+            FromTo => write!(f, "translate from/to length mismatch"),
+            Undefined(c) => write!(f, "{:?} is undefined", c as char),
         }
     }
 }
 
-impl std::error::Error for BuilderError {
+impl std::error::Error for SpecificationError {
     fn description(&self) -> &str {
         match self.0 {
             BadSize => "invalid number of symbols",
-            BadSym(_) => "non-ascii symbol",
-            BadVal(_) => "invalid value",
-            BadPad(Some(s)) if s < 128 => "padding symbol conflict",
-            BadPad(Some(_)) => "non-ascii padding",
-            BadPad(None) => "unnecessary or missing padding",
+            NotAscii => "non-ascii character",
+            Duplicate(_) => "conflicting definitions",
+            ExtraPadding => "unnecessary padding",
+            WrapLength => "invalid wrap width or separator length",
+            WrapWidth(_) => "wrap width not a multiple",
+            FromTo => "translate from/to length mismatch",
+            Undefined(_) => "undefined character",
         }
     }
 }
 
-impl Builder {
-    fn bit(&self) -> Result<u8, BuilderError> {
-        match self.symbols.len() {
-            2 => Ok(1),
-            4 => Ok(2),
-            8 => Ok(3),
-            16 => Ok(4),
-            32 => Ok(5),
-            64 => Ok(6),
-            _ => Err(BuilderError(BadSize)),
-        }
-    }
-
-    fn check(&self) -> Result<(), BuilderError> {
-        let bit = self.bit()?;
-        let even = 8 % bit == 0;
-        check!(BuilderError(BadPad(None)), self.padding.is_none() || !even);
-        for v in 0 .. self.symbols.len() {
-            let s = self.symbols[v];
-            check!(BuilderError(BadSym(s)), s < 128);
-            check!(BuilderError(BadVal(s)), self.values[s as usize] == v as u8);
-        }
-        for s in 0 .. self.values.len() {
-            if self.values[s] == 128 { continue; }
-            check!(BuilderError(BadVal(s as u8)), self.values[s] < 1 << bit);
-        }
-        if let Some(pad) = self.padding {
-            check!(BuilderError(BadPad(Some(pad))), pad < 128);
-            for s in 0 .. self.values.len() {
-                if self.values[s] == 128 { continue; }
-                check!(BuilderError(BadPad(Some(pad))), pad != s as u8);
-            }
-        }
-        Ok(())
-    }
-
-    fn no_pad_unchecked(&self) -> NoPad {
-        let bit = self.bit().unwrap();
-        let mut base = NoPad {
-            sym: Array256([0; 256]), val: Array256([128; 256]), bit: bit,
-            msb: self.bit_order == MostSignificantFirst,
-            ctb: 8 % bit != 0 && self.check_trailing_bits,
-        };
-        for i in 0 .. base.sym.len() {
-            base.sym[i] = self.symbols[i % self.symbols.len()];
-        }
-        for i in 0 .. self.values.len() {
-            base.val[i] = self.values[i];
-        }
-        base
-    }
-
-    /// Returns a canonical base representation for `symbols`
-    ///
-    /// By default, the base representation does not have non-canonical symbols.
-    /// It does not have padding. It is most significant bit first. And it
-    /// checks the trailing bits if necessary.
+impl Specification {
+    /// Returns the specified encoding
     ///
     /// # Errors
     ///
-    /// Errors are silently ignored. In other words, if a symbol is not ASCII,
-    /// if there are duplicate symbols, or if the number of symbols is not a
-    /// power of 2 smaller than 128, then no errors are signaled. However, when
-    /// building the base with [`no_pad`] or [`padded`], if the base
-    /// representation is still invalid, an error will be returned.
-    ///
-    /// [`no_pad`]: struct.Builder.html#method.no_pad
-    /// [`padded`]: struct.Builder.html#method.padded
-    pub fn new(symbols: &[u8]) -> Builder {
-        let mut builder = Builder {
-            symbols: symbols.to_vec().into_boxed_slice(),
-            values: Box::new(Array128([128; 128])),
-            bit_order: MostSignificantFirst,
-            padding: None,
-            check_trailing_bits: true,
+    /// Returns an error if the specification is invalid.
+    pub fn encoding(&self) -> Result<Encoding, SpecificationError> {
+        let symbols = self.symbols.as_bytes();
+        let bit: usize = match symbols.len() {
+            2 => 1,
+            4 => 2,
+            8 => 3,
+            16 => 4,
+            32 => 5,
+            64 => 6,
+            _ => return Err(SpecificationError(BadSize)),
+        };
+        let mut values = [INVALID; 128];
+        let set = |v: &mut [u8; 128], i: u8, x: u8| {
+            check!(SpecificationError(NotAscii), i < 128);
+            check!(SpecificationError(Duplicate(i)), v[i as usize] == INVALID);
+            Ok(v[i as usize] = x)
         };
         for v in 0 .. symbols.len() {
-            if symbols[v] >= 128 { continue; }
-            builder.values[symbols[v] as usize] = v as u8;
+            set(&mut values, symbols[v], v as u8)?;
         }
-        builder
-    }
-
-    /// Sets padding
-    pub fn pad(&mut self, pad: u8) -> &mut Builder {
-        self.padding = Some(pad);
-        self
-    }
-
-    /// Adds non-canonical symbols
-    ///
-    /// For all i, `from[i]` is given the same value as `to[i]`.
-    ///
-    /// By default there are only canonical symbols. Non-canonical symbols
-    /// cannot be produced by encoding functions, but they are recognized by
-    /// decoding functions. They behave as the canonical symbol of the same
-    /// value.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `from` and `to` don't have the same length.
-    ///
-    /// # Errors
-    ///
-    /// Errors are silently ignored. If a character in `from` or `to` is not
-    /// ASCII then the pair is skipped. If the character in `from` is already a
-    /// symbol it is overwritten. If the character in `to` is not a symbol,
-    /// `from` is reset.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use data_encoding::Builder;
-    /// let base = Builder::new(b"0123456789abcdef")
-    ///     .translate(b"ABCDEF", b"abcdef").no_pad().unwrap();
-    /// assert_eq!(base.decode(b"Bb").unwrap(), vec![0xbb]);
-    /// ```
-    pub fn translate(&mut self, from: &[u8], to: &[u8]) -> &mut Builder {
-        assert_eq!(from.len(), to.len());
-        for i in 0 .. from.len() {
-            if from[i] >= 128 || to[i] >= 128 { continue; }
-            self.values[from[i] as usize] = self.values[to[i] as usize];
-        }
-        self
-    }
-
-    /// Sets bit-order to least significant bit first
-    pub fn least_significant_bit_first(&mut self) -> &mut Builder {
-        self.bit_order = LeastSignificantFirst;
-        self
-    }
-
-    /// Ignores trailing bits
-    pub fn ignore_trailing_bits(&mut self) -> &mut Builder {
-        self.check_trailing_bits = false;
-        self
-    }
-
-    /// Returns the represented base-conversion encoding
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the base representation is invalid.
-    pub fn no_pad(&self) -> Result<NoPad, BuilderError> {
-        check!(BuilderError(BadPad(None)), self.padding.is_none());
-        self.check()?;
-        Ok(self.no_pad_unchecked())
-    }
-
-    /// Returns the represented padded base-conversion encoding
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the base representation is invalid.
-    pub fn padded(&self) -> Result<Padded, BuilderError> {
-        let pad = self.padding.ok_or(BuilderError(BadPad(None)))?;
-        self.check()?;
-        Ok(Padded { no_pad: self.no_pad_unchecked(), pad: pad })
-    }
-}
-
-impl<'a> From<&'a NoPad> for Builder {
-    fn from(no_pad: &NoPad) -> Builder {
-        let mut builder = Builder {
-            symbols: no_pad.symbols().as_bytes().to_vec().into_boxed_slice(),
-            values: Box::new(Array128([0; 128])),
-            bit_order: no_pad.bit_order(),
-            padding: None,
-            check_trailing_bits: no_pad.ctb,
+        let msb = self.bit_order == MostSignificantFirst;
+        let ctb = self.check_trailing_bits || 8 % bit == 0;
+        let pad = match self.padding {
+            None => None,
+            Some(pad) => {
+                check!(SpecificationError(ExtraPadding), 8 % bit != 0);
+                check!(SpecificationError(NotAscii), pad.len_utf8() == 1);
+                set(&mut values, pad as u8, PADDING)?;
+                Some(pad as u8)
+            },
         };
-        builder.values.copy_from_slice(&no_pad.val[0 .. 128]);
-        builder
-    }
-}
-
-impl<'a> From<&'a Padded> for Builder {
-    fn from(padded: &Padded) -> Builder {
-        let mut builder = Builder::from(&padded.no_pad);
-        builder.padding = Some(padded.pad);
-        builder
-    }
-}
-
-const X_: u8 = 128;
-macro_rules! make_val {
-    ($($v: expr),*) => { [
-        X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-        X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-        $($v),*,
-        X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-        X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-        X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-        X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-        X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-        X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-        X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-        X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-        ] };
-}
-macro_rules! make_sym {
-    (7; $($s: expr),*) => { [ $($s),*, $($s),*, ] };
-    (6; $($s: expr),*) => { make_sym!(7; $($s),*, $($s),*) };
-    (5; $($s: expr),*) => { make_sym!(6; $($s),*, $($s),*) };
-    (4; $($s: expr),*) => { make_sym!(5; $($s),*, $($s),*) };
-}
-macro_rules! make_base {
-    ($b: tt; $($v: expr),*; $($s: expr),*;) => {
-        NoPad {
-            sym: Array256(make_sym!($b; $($s),*)),
-            val: Array256(make_val!($($v),*)),
-            bit: $b,
-            msb: true,
-            ctb: 8 % $b != 0,
+        for i in self.ignore.bytes() {
+            set(&mut values, i, IGNORE)?;
         }
-    };
-    ($p: expr; $b: tt; $($v: expr),*; $($s: expr),*;) => {
-        Padded {
-            no_pad: make_base!($b; $($v),*; $($s),*;),
-            pad: $p,
+        let wrap = if self.wrap.separator.is_empty() || self.wrap.width == 0 {
+            None
+        } else {
+            Some((self.wrap.width, self.wrap.separator.as_bytes()))
+        };
+        if let Some((col, end)) = wrap {
+            check!(SpecificationError(WrapLength),
+                   col < 256 && end.len() < 256);
+            check!(SpecificationError(WrapWidth(dec(bit) as u8)),
+                   col % dec(bit) == 0);
+            for i in end.iter() { set(&mut values, *i, IGNORE)?; }
         }
-    };
+        let from = self.translate.from.as_bytes();
+        let to = self.translate.to.as_bytes();
+        check!(SpecificationError(FromTo), from.len() == to.len());
+        for i in 0 .. from.len() {
+            check!(SpecificationError(NotAscii), to[i] < 128);
+            let v = values[to[i] as usize];
+            check!(SpecificationError(Undefined(to[i])), v != INVALID);
+            set(&mut values, from[i], v)?;
+        }
+        let mut encoding = Vec::new();
+        for _ in 0 .. 256 / symbols.len() {
+            encoding.extend_from_slice(symbols);
+        }
+        encoding.extend_from_slice(&values);
+        encoding.extend_from_slice(&[INVALID; 128]);
+        match pad {
+            None => encoding.push(INVALID),
+            Some(pad) => encoding.push(pad),
+        }
+        encoding.push(bit as u8);
+        if msb { encoding[513] |= 0x08; }
+        if ctb { encoding[513] |= 0x10; }
+        if let Some((col, end)) = wrap {
+            encoding.push(col as u8);
+            encoding.extend_from_slice(end);
+        } else if values.contains(&IGNORE) {
+            encoding.push(0);
+        }
+        Ok(Encoding(std::borrow::Cow::Owned(encoding)))
+    }
 }
 
 /// Lower-case hexadecimal encoding
@@ -1353,8 +1516,10 @@ macro_rules! make_base {
 /// This encoding is a static version of:
 ///
 /// ```rust
-/// # use data_encoding::{Builder, HEXLOWER};
-/// assert_eq!(HEXLOWER, &Builder::new(b"0123456789abcdef").no_pad().unwrap());
+/// # use data_encoding::{Specification, HEXLOWER};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str("0123456789abcdef");
+/// assert_eq!(HEXLOWER, spec.encoding().unwrap());
 /// ```
 ///
 /// # Examples
@@ -1365,62 +1530,52 @@ macro_rules! make_base {
 /// assert_eq!(HEXLOWER.decode(b"deadbeef").unwrap(), deadbeef);
 /// assert_eq!(HEXLOWER.encode(&deadbeef), "deadbeef");
 /// ```
-pub const HEXLOWER: &'static NoPad = HEXLOWER_IMPL;
-const HEXLOWER_IMPL: &'static NoPad = &make_base!{
-    4;
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, 10, 11, 12, 13, 14, 15, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_;
-    b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7',
-    b'8', b'9', b'a', b'b', b'c', b'd', b'e', b'f';
-};
-
-/// RFC4648 hex encoding (upper-case hexadecimal encoding)
-///
-/// This encoding is a static version of:
-///
-/// ```rust
-/// # use data_encoding::{Builder, HEXUPPER};
-/// assert_eq!(HEXUPPER, &Builder::new(b"0123456789ABCDEF").no_pad().unwrap());
-/// ```
-///
-/// It is compliant with [RFC4648] and known as "base16" or "hex".
-///
-/// # Examples
-///
-/// ```rust
-/// use data_encoding::HEXUPPER;
-/// let deadbeef = vec![0xde, 0xad, 0xbe, 0xef];
-/// assert_eq!(HEXUPPER.decode(b"DEADBEEF").unwrap(), deadbeef);
-/// assert_eq!(HEXUPPER.encode(&deadbeef), "DEADBEEF");
-/// ```
-///
-/// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-8
-pub const HEXUPPER: &'static NoPad = HEXUPPER_IMPL;
-const HEXUPPER_IMPL: &'static NoPad = &make_base!{
-    4;
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , X_, X_, X_, X_, X_, X_,
-    X_, 10, 11, 12, 13, 14, 15, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_;
-    b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7',
-    b'8', b'9', b'A', b'B', b'C', b'D', b'E', b'F';
-};
+pub const HEXLOWER: Encoding = HEXLOWER_IMPL;
+const HEXLOWER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49,
+    50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53,
+    54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98,
+    99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
+    101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49,
+    50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53,
+    54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98,
+    99, 100, 101, 102, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 28]));
 
 /// Lower-case permissive hexadecimal encoding
 ///
 /// This encoding is a static version of:
 ///
 /// ```rust
-/// # use data_encoding::{Builder, HEXLOWER_PERMISSIVE};
-/// let mut base = Builder::new(b"0123456789abcdef")
-///     .translate(b"ABCDEF", b"abcdef").no_pad().unwrap();
-/// assert_eq!(HEXLOWER_PERMISSIVE, &base);
+/// # use data_encoding::{Specification, HEXLOWER_PERMISSIVE};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str("0123456789abcdef");
+/// spec.translate.from.push_str("ABCDEF");
+/// spec.translate.to.push_str("abcdef");
+/// assert_eq!(HEXLOWER_PERMISSIVE, spec.encoding().unwrap());
 /// ```
 ///
 /// # Examples
@@ -1435,140 +1590,498 @@ const HEXUPPER_IMPL: &'static NoPad = &make_base!{
 /// You can also define a shorter name:
 ///
 /// ```rust
-/// use data_encoding::{HEXLOWER_PERMISSIVE, NoPad};
-/// const HEX: &'static NoPad = HEXLOWER_PERMISSIVE;
+/// use data_encoding::{Encoding, HEXLOWER_PERMISSIVE};
+/// const HEX: Encoding = HEXLOWER_PERMISSIVE;
 /// ```
-pub const HEXLOWER_PERMISSIVE: &'static NoPad = HEXLOWER_PERMISSIVE_IMPL;
-const HEXLOWER_PERMISSIVE_IMPL: &'static NoPad = &make_base!{
-    4;
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , X_, X_, X_, X_, X_, X_,
-    X_, 10, 11, 12, 13, 14, 15, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, 10, 11, 12, 13, 14, 15, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_;
-    b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7',
-    b'8', b'9', b'a', b'b', b'c', b'd', b'e', b'f';
-};
+pub const HEXLOWER_PERMISSIVE: Encoding = HEXLOWER_PERMISSIVE_IMPL;
+const HEXLOWER_PERMISSIVE_IMPL: Encoding =
+    Encoding(std::borrow::Cow::Borrowed(&[
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49,
+    50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53,
+    54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98,
+    99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
+    101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49,
+    50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53,
+    54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98,
+    99, 100, 101, 102, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128,
+    128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    28]));
+
+/// RFC4648 hex encoding (upper-case hexadecimal encoding)
+///
+/// This encoding is a static version of:
+///
+/// ```rust
+/// # use data_encoding::{Specification, HEXUPPER};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str("0123456789ABCDEF");
+/// assert_eq!(HEXUPPER, spec.encoding().unwrap());
+/// ```
+///
+/// It is compliant with [RFC4648] and known as "base16" or "hex".
+///
+/// # Examples
+///
+/// ```rust
+/// use data_encoding::HEXUPPER;
+/// let deadbeef = vec![0xde, 0xad, 0xbe, 0xef];
+/// assert_eq!(HEXUPPER.decode(b"DEADBEEF").unwrap(), deadbeef);
+/// assert_eq!(HEXUPPER.encode(&deadbeef), "DEADBEEF");
+/// ```
+///
+/// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-8
+pub const HEXUPPER: Encoding = HEXUPPER_IMPL;
+const HEXUPPER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50,
+    51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53,
+    54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56,
+    57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66,
+    67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69,
+    70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49,
+    50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52,
+    53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65,
+    66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68,
+    69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48,
+    49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54,
+    55, 56, 57, 65, 66, 67, 68, 69, 70, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+    9, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 28]));
+
+/// Upper-case permissive hexadecimal encoding
+///
+/// This encoding is a static version of:
+///
+/// ```rust
+/// # use data_encoding::{Specification, HEXUPPER_PERMISSIVE};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str("0123456789ABCDEF");
+/// spec.translate.from.push_str("abcdef");
+/// spec.translate.to.push_str("ABCDEF");
+/// assert_eq!(HEXUPPER_PERMISSIVE, spec.encoding().unwrap());
+/// ```
+///
+/// # Examples
+///
+/// ```rust
+/// use data_encoding::HEXUPPER_PERMISSIVE;
+/// let deadbeef = vec![0xde, 0xad, 0xbe, 0xef];
+/// assert_eq!(HEXUPPER_PERMISSIVE.decode(b"DeadBeef").unwrap(), deadbeef);
+/// assert_eq!(HEXUPPER_PERMISSIVE.encode(&deadbeef), "DEADBEEF");
+/// ```
+pub const HEXUPPER_PERMISSIVE: Encoding = HEXUPPER_PERMISSIVE_IMPL;
+const HEXUPPER_PERMISSIVE_IMPL: Encoding =
+    Encoding(std::borrow::Cow::Borrowed(&[
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50,
+    51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53,
+    54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56,
+    57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66,
+    67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69,
+    70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49,
+    50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52,
+    53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65,
+    66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68,
+    69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48,
+    49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54,
+    55, 56, 57, 65, 66, 67, 68, 69, 70, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+    9, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 28]));
 
 /// RFC4648 base32 encoding
 ///
 /// This encoding is a static version of:
 ///
 /// ```rust
-/// # use data_encoding::{Builder, BASE32};
-/// assert_eq!(BASE32, &Builder::new(b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567")
-///                        .pad(b'=').padded().unwrap());
+/// # use data_encoding::{Specification, BASE32};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567");
+/// spec.padding = Some('=');
+/// assert_eq!(BASE32, spec.encoding().unwrap());
 /// ```
 ///
-/// It is conformant with [RFC4648].
+/// It is conform to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-6
-pub const BASE32: &'static Padded = BASE32_IMPL;
-const BASE32_IMPL: &'static Padded = &make_base!{
-    b'='; 5;
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, 26, 27, 28, 29, 30, 31, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, 0_, 1_, 2_, 3_, 4_, 5_, 6_, 7_, 8_, 9_, 10, 11, 12, 13, 14,
-    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_;
-    b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H',
-    b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
-    b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X',
-    b'Y', b'Z', b'2', b'3', b'4', b'5', b'6', b'7';
-};
+pub const BASE32: Encoding = BASE32_IMPL;
+const BASE32_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+    84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+    90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
+    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54,
+    55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82,
+    83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69,
+    70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
+    76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53,
+    54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+    82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68,
+    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
+    88, 89, 90, 50, 51, 52, 53, 54, 55, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29,
+    30, 31, 128, 128, 128, 128, 128, 130, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7,
+    8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 29
+]));
+
+/// Non-padded base32 encoding
+///
+/// This encoding is a static version of:
+///
+/// ```rust
+/// # use data_encoding::{Specification, BASE32_NOPAD};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567");
+/// assert_eq!(BASE32_NOPAD, spec.encoding().unwrap());
+/// ```
+pub const BASE32_NOPAD: Encoding = BASE32_NOPAD_IMPL;
+const BASE32_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+    84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+    90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
+    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54,
+    55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82,
+    83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69,
+    70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
+    76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53,
+    54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+    82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68,
+    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
+    88, 89, 90, 50, 51, 52, 53, 54, 55, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29,
+    30, 31, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7,
+    8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    29]));
 
 /// RFC4648 base32hex encoding
 ///
 /// This encoding is a static version of:
 ///
 /// ```rust
-/// # use data_encoding::{Builder, BASE32HEX};
-/// assert_eq!(BASE32HEX, &Builder::new(b"0123456789ABCDEFGHIJKLMNOPQRSTUV")
-///                          .pad(b'=').padded().unwrap());
+/// # use data_encoding::{Specification, BASE32HEX};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str("0123456789ABCDEFGHIJKLMNOPQRSTUV");
+/// spec.padding = Some('=');
+/// assert_eq!(BASE32HEX, spec.encoding().unwrap());
 /// ```
 ///
-/// It is conformant with [RFC4648].
+/// It is conform to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-7
-pub const BASE32HEX: &'static Padded = BASE32HEX_IMPL;
-const BASE32HEX_IMPL: &'static Padded = &make_base!{
-    b'='; 5;
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    0_, 1_, 2_, 3_, 4_, 5_, 6_, 7_, 8_, 9_, X_, X_, X_, X_, X_, X_,
-    X_, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-    25, 26, 27, 28, 29, 30, 31, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_,
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_;
-    b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7',
-    b'8', b'9', b'A', b'B', b'C', b'D', b'E', b'F',
-    b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N',
-    b'O', b'P', b'Q', b'R', b'S', b'T', b'U', b'V';
-};
+pub const BASE32HEX: Encoding = BASE32HEX_IMPL;
+const BASE32HEX_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73,
+    74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53,
+    54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+    80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66,
+    67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+    86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72,
+    73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52,
+    53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+    79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65,
+    66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
+    85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71,
+    72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
+    78, 79, 80, 81, 82, 83, 84, 85, 86, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+    9, 128, 128, 128, 130, 128, 128, 128, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+    19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 29
+]));
 
 /// RFC4648 base64 encoding
 ///
 /// This encoding is a static version of:
 ///
 /// ```rust
-/// # use data_encoding::{Builder, BASE64};
-/// assert_eq!(BASE64, &Builder::new(
-///     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
-///         .pad(b'=').padded().unwrap());
+/// # use data_encoding::{Specification, BASE64};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str(
+///     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+/// spec.padding = Some('=');
+/// assert_eq!(BASE64, spec.encoding().unwrap());
 /// ```
 ///
-/// It is conformant with [RFC4648].
+/// It is conform to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-4
-pub const BASE64: &'static Padded = BASE64_IMPL;
-const BASE64_IMPL: &'static Padded = &make_base!{
-    b'='; 6;
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, 62, X_, X_, X_, 63,
-    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, X_, X_, X_, X_, X_, X_,
-    X_, 0_, 1_, 2_, 3_, 4_, 5_, 6_, 7_, 8_, 9_, 10, 11, 12, 13, 14,
-    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, X_, X_, X_, X_, X_,
-    X_, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, X_, X_, X_, X_, X_;
-    b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H',
-    b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
-    b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X',
-    b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
-    b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n',
-    b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
-    b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3',
-    b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/';
-};
+pub const BASE64: Encoding = BASE64_IMPL;
+const BASE64_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+    84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
+    122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+    90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
+    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52,
+    53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
+    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100,
+    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+    82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104,
+    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+    120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128, 128, 128,
+    63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 130, 128, 128,
+    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30,
+    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+    50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    61, 30]));
+
+/// Non-padded base64 encoding
+///
+/// This encoding is a static version of:
+///
+/// ```rust
+/// # use data_encoding::{Specification, BASE64_NOPAD};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str(
+///     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+/// assert_eq!(BASE64_NOPAD, spec.encoding().unwrap());
+/// ```
+pub const BASE64_NOPAD: Encoding = BASE64_NOPAD_IMPL;
+const BASE64_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+    84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
+    122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+    90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
+    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52,
+    53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
+    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100,
+    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+    82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104,
+    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+    120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128, 128, 128,
+    63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 128, 128, 128,
+    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30,
+    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+    50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 30]));
 
 /// RFC4648 base64url encoding
 ///
 /// This encoding is a static version of:
 ///
 /// ```rust
-/// # use data_encoding::{Builder, BASE64URL};
-/// assert_eq!(BASE64URL, &Builder::new(
-///     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
-///         .pad(b'=').padded().unwrap());
+/// # use data_encoding::{Specification, BASE64URL};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str(
+///     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
+/// spec.padding = Some('=');
+/// assert_eq!(BASE64URL, spec.encoding().unwrap());
 /// ```
 ///
-/// It is conformant with [RFC4648].
+/// It is conform to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-5
-pub const BASE64URL: &'static Padded = BASE64URL_IMPL;
-const BASE64URL_IMPL: &'static Padded = &make_base!{
-    b'='; 6;
-    X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, X_, 62, X_, X_,
-    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, X_, X_, X_, X_, X_, X_,
-    X_, 0_, 1_, 2_, 3_, 4_, 5_, 6_, 7_, 8_, 9_, 10, 11, 12, 13, 14,
-    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, X_, X_, X_, X_, 63,
-    X_, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, X_, X_, X_, X_, X_;
-    b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H',
-    b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
-    b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X',
-    b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
-    b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n',
-    b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
-    b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3',
-    b'4', b'5', b'6', b'7', b'8', b'9', b'-', b'_';
-};
+pub const BASE64URL: Encoding = BASE64URL_IMPL;
+const BASE64URL_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+    84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
+    122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+    90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
+    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52,
+    53, 54, 55, 56, 57, 45, 95, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
+    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100,
+    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    45, 95, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+    82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104,
+    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+    120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128,
+    128, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 130, 128, 128,
+    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 63, 128, 26, 27, 28, 29, 30, 31,
+    32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+    51, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 30
+]));
+
+/// MIME base64 encoding
+///
+/// This encoding is a static version of:
+///
+/// ```rust
+/// # use data_encoding::{Specification, Wrap, BASE64_MIME};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str(
+///     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+/// spec.padding = Some('=');
+/// spec.wrap.width = 76;
+/// spec.wrap.separator.push_str("\r\n");
+/// assert_eq!(BASE64_MIME, spec.encoding().unwrap());
+/// ```
+///
+/// It is not exactly conform to [RFC2045] because it does not print the header
+/// and does not ignore all characters.
+///
+/// [RFC2045]: https://tools.ietf.org/html/rfc2045
+pub const BASE64_MIME: Encoding = BASE64_MIME_IMPL;
+const BASE64_MIME_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+    84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
+    122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+    90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
+    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52,
+    53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
+    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100,
+    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+    82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104,
+    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+    120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 129, 128, 128, 129, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128, 128, 128,
+    63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 130, 128, 128,
+    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30,
+    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+    50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    61, 30, 76, 13, 10]));

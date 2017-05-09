@@ -1,17 +1,23 @@
 [package]
 name = "data-encoding-bin"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Julien Cretin <git@ia0.eu>"]
 license = "MIT"
 keywords = ["base-conversion", "encoding", "base64", "base32", "hex"]
 categories = ["encoding"]
+readme = "README.md"
 repository = "https://github.com/ia0/data-encoding"
 description = "Swiss Army knife for data-encoding"
-include = ["Cargo.toml", "src/*.rs"]
-
-[dependencies]
-data-encoding = { version = "2.0.0-rc.1", path = "../lib" }
-getopts = "0.2.14"
+include = ["Cargo.toml", "README.md", "src/main.rs"]
 
 [[bin]]
 name = "data-encoding"
+path = "src/main.rs"
+
+[dependencies]
+data-encoding = { version = "2.0.0-rc.2", path = "../lib" }
+getopts = "0.2.14"
+
+[badges]
+appveyor = { repository = "ia0/data-encoding" }
+travis-ci = { repository = "ia0/data-encoding" }
