@@ -6,7 +6,7 @@ license = "MIT"
 keywords = ["base-conversion", "encoding", "base64", "base32", "hex"]
 categories = ["encoding"]
 repository = "https://github.com/ia0/data-encoding"
-documentation = "https://ia0.github.com/data-encoding/v2.0.0-rc.1/data_encoding"
+documentation = "https://docs.rs/data-encoding"
 description = """
 Correct, efficient, canonical, and generic little-endian ASCII base-conversion
 encodings (base64, base32, hex, etc.). See the documentation for more details.

@@ -1,6 +1,8 @@
 # Data-encoding
 
-[![Latest Version][1]![Latest License][2]][crate]
+[![Latest Version][1]][crate]
+[![Documentation](https://docs.rs/data-encoding/badge.svg)][documentation]
+[![Latest License][2]][crate]
 [![Build Status][3]](https://travis-ci.org/ia0/data-encoding)
 [![Coverage Status][4]](https://coveralls.io/github/ia0/data-encoding?branch=master)
 
@@ -75,4 +77,4 @@ Examples:
 [4]: https://coveralls.io/repos/ia0/data-encoding/badge.svg?branch=master&service=github
 [changelog]: https://github.com/ia0/data-encoding/blob/master/lib/CHANGELOG.md
 [crate]: https://crates.io/crates/data-encoding
-[documentation]: https://ia0.github.io/data-encoding/v2.0.0-rc.1/data_encoding
+[documentation]: https://docs.rs/data-encoding
