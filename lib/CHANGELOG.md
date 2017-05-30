@@ -2,6 +2,7 @@
 
 ### Patch
 
+- Link to docs.rs for documentation
 - Add a `lazy_static` example to the documentation
 - Increase error message test coverage
 

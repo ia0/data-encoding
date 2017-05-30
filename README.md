@@ -1,10 +1,10 @@
 # Data-encoding
 
-[![Latest Version][1]][crate]
-[![Documentation](https://docs.rs/data-encoding/badge.svg)][documentation]
-[![Latest License][2]][crate]
-[![Build Status][3]](https://travis-ci.org/ia0/data-encoding)
-[![Coverage Status][4]](https://coveralls.io/github/ia0/data-encoding?branch=master)
+[![Latest Version][version_badge]][crate]
+[![Documentation][documentation_badge]][documentation]
+[![Latest License][license_badge]][license]
+[![Build Status][build_badge]](https://travis-ci.org/ia0/data-encoding)
+[![Coverage Status][coverage_badge]](https://coveralls.io/github/ia0/data-encoding?branch=master)
 
 This [crate] provides little-endian ASCII base-conversion encodings for bases of
 size 2, 4, 8, 16, 32, and 64. It supports both padded and non-padded encodings.
@@ -71,10 +71,12 @@ Examples:
         --least_significant_bit_first
 ```
 
-[1]: https://img.shields.io/crates/v/data-encoding.svg
-[2]: https://img.shields.io/crates/l/data-encoding.svg
-[3]: https://travis-ci.org/ia0/data-encoding.svg?branch=master
-[4]: https://coveralls.io/repos/ia0/data-encoding/badge.svg?branch=master&service=github
+[build_badge]: https://travis-ci.org/ia0/data-encoding.svg?branch=master
 [changelog]: https://github.com/ia0/data-encoding/blob/master/lib/CHANGELOG.md
+[coverage_badge]: https://coveralls.io/repos/ia0/data-encoding/badge.svg?branch=master&service=github
 [crate]: https://crates.io/crates/data-encoding
 [documentation]: https://docs.rs/data-encoding
+[documentation_badge]: https://docs.rs/data-encoding/badge.svg
+[license]: https://github.com/ia0/data-encoding/blob/master/LICENSE
+[license_badge]: https://img.shields.io/crates/l/data-encoding.svg
+[version_badge]: https://img.shields.io/crates/v/data-encoding.svg
