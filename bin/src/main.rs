@@ -143,11 +143,7 @@ Examples:
         output = Box::new(File::create(&file)
                           .map_err(|e| Error::Create(file, e))?);
     } else {
-        // TODO: Change the following lines when Stdout does not go
-        // through a LineWriter anymore.
-        output = Box::new(
-            unsafe { <File as std::os::unix::io::FromRawFd>::from_raw_fd(1) });
-        // output = Box::new(std::io::stdout());
+        output = stdout();
     }
     output = Box::new(std::io::BufWriter::new(output));
 
@@ -172,3 +168,12 @@ Examples:
         io::decode(base, input, output, size)
     }
 }
+
+// TODO: Change (and inline) the following lines when Stdout does not
+// go through a LineWriter anymore.
+#[cfg(target_os = "linux")]
+fn stdout() -> Box<Write> {
+    Box::new(unsafe { <File as std::os::unix::io::FromRawFd>::from_raw_fd(1) })
+}
+#[cfg(not(target_os = "linux"))]
+fn stdout() -> Box<Write> { Box::new(std::io::stdout()) }
