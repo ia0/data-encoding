@@ -3,8 +3,9 @@
 [![Latest Version][version_badge]][crate]
 [![Documentation][documentation_badge]][documentation]
 [![Latest License][license_badge]][license]
-[![Build Status][build_badge]](https://travis-ci.org/ia0/data-encoding)
-[![Coverage Status][coverage_badge]](https://coveralls.io/github/ia0/data-encoding?branch=master)
+[![Build Status][travis_badge]][travis]
+[![Build Status][appveyor_badge]][appveyor]
+[![Coverage Status][coveralls_badge]][coveralls]
 
 This [crate] provides little-endian ASCII base-conversion encodings for bases of
 size 2, 4, 8, 16, 32, and 64. It supports both padded and non-padded encodings.
@@ -71,12 +72,16 @@ Examples:
         --least_significant_bit_first
 ```
 
-[build_badge]: https://travis-ci.org/ia0/data-encoding.svg?branch=master
+[appveyor]: https://ci.appveyor.com/project/ia0/data-encoding
+[appveyor_badge]:https://ci.appveyor.com/api/projects/status/wm4ga69xnlriukhl/branch/master?svg=true
 [changelog]: https://github.com/ia0/data-encoding/blob/master/lib/CHANGELOG.md
-[coverage_badge]: https://coveralls.io/repos/ia0/data-encoding/badge.svg?branch=master&service=github
+[coveralls]: https://coveralls.io/github/ia0/data-encoding
+[coveralls_badge]: https://coveralls.io/repos/ia0/data-encoding/badge.svg?branch=master&service=github
 [crate]: https://crates.io/crates/data-encoding
 [documentation]: https://docs.rs/data-encoding
 [documentation_badge]: https://docs.rs/data-encoding/badge.svg
 [license]: https://github.com/ia0/data-encoding/blob/master/LICENSE
 [license_badge]: https://img.shields.io/crates/l/data-encoding.svg
+[travis]: https://travis-ci.org/ia0/data-encoding
+[travis_badge]: https://travis-ci.org/ia0/data-encoding.svg?branch=master
 [version_badge]: https://img.shields.io/crates/v/data-encoding.svg

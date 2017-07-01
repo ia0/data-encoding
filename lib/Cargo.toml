@@ -14,4 +14,6 @@ encodings (base64, base32, hex, etc.). See the documentation for more details.
 include = ["Cargo.toml", "src/lib.rs"]
 
 [badges]
+appveyor = { repository = "ia0/data-encoding" }
+coveralls = { repository = "ia0/data-encoding" }
 travis-ci = { repository = "ia0/data-encoding" }

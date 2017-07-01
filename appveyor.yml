@@ -1,0 +1,30 @@
+environment:
+  matrix:
+    - CHANNEL: stable
+      TARGET: x86_64-pc-windows-msvc
+    - CHANNEL: stable
+      TARGET: x86_64-pc-windows-gnu
+    - CHANNEL: stable
+      TARGET: i686-pc-windows-msvc
+    - CHANNEL: stable
+      TARGET: i686-pc-windows-gnu
+    - CHANNEL: nightly
+      TARGET: x86_64-pc-windows-msvc
+
+install:
+  - ps: Start-FileDownload "https://static.rust-lang.org/rustup/dist/${env:TARGET}/rustup-init.exe"
+  - rustup-init.exe -yv --default-toolchain %CHANNEL% --default-host %TARGET%
+  - set PATH=%PATH%;%USERPROFILE%\.cargo\bin
+  - rustc -vV
+  - cargo -vV
+
+build: false
+
+test_script:
+  - cd lib
+  - cargo test --verbose
+  - if [%CHANNEL%]==[nightly] cargo bench --verbose
+  - cd ..
+  - cd bin
+  - cargo build --verbose
+  - cd ..
