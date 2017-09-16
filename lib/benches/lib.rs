@@ -152,3 +152,35 @@ fn base64_decode_wrap(b: &mut Bencher) {
     let base64 = spec.encoding().unwrap();
     b.iter(|| base64.decode_mut(input, output).unwrap());
 }
+
+#[bench]
+fn dnscurve_decode_base(b: &mut Bencher) {
+    let dns_curve = {
+        use data_encoding::{Specification, BitOrder};
+        let mut spec = Specification::new();
+        spec.symbols.push_str("0123456789bcdfghjklmnpqrstuvwxyz");
+        spec.translate.from.push_str("BCDFGHJKLMNPQRSTUVWXYZ");
+        spec.translate.to.push_str("bcdfghjklmnpqrstuvwxyz");
+        spec.bit_order = BitOrder::LeastSignificantFirst;
+        spec.encoding().unwrap()
+    };
+    let input = &[b'0'; 4096];
+    let output = &mut [0u8; 2560];
+    b.iter(|| dns_curve.decode_mut(input, output));
+}
+
+#[bench]
+fn dnscurve_encode_base(b: &mut Bencher) {
+    let dns_curve = {
+        use data_encoding::{Specification, BitOrder};
+        let mut spec = Specification::new();
+        spec.symbols.push_str("0123456789bcdfghjklmnpqrstuvwxyz");
+        spec.translate.from.push_str("BCDFGHJKLMNPQRSTUVWXYZ");
+        spec.translate.to.push_str("bcdfghjklmnpqrstuvwxyz");
+        spec.bit_order = BitOrder::LeastSignificantFirst;
+        spec.encoding().unwrap()
+    };
+    let input = &[0u8; 4096];
+    let output = &mut [0u8; 6554];
+    b.iter(|| dns_curve.encode_mut(input, output));
+}
