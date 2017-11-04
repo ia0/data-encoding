@@ -65,8 +65,10 @@ unit "-mencode -b64 -p= -w4 -s'$LF'" foobar "Zm9v${LF}YmFy"
 echo
 echo -n 'skip:'
 unit "-mdecode -b64 -p= -g'$LF'" "Z${LF}m$LF$LF$LF${LF}8=" fo
-unit "-mdecode -b64 -p= -g'$LF'" "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" 'ffo' 'invalid symbol at 19'
-unit "-mdecode -b64 -p= -g'$LF' --block=8" "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" ffo 'invalid symbol at 19'
+unit "-mdecode -b64 -p= -g'$LF'" \
+  "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" 'ffo' 'invalid symbol at 19'
+unit "-mdecode -b64 -p= -g'$LF' --block=8" \
+  "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" ffo 'invalid symbol at 19'
 echo
 echo -n 'symbol:'
 unit '-mdecode -b64 -p=' Zg==Zm8=Zg-= '' 'invalid symbol at 10'
@@ -92,7 +94,8 @@ echo
 echo -n 'custom:'
 unit "--mode=info --symbols=0" '' '' 'invalid number of symbols'
 unit "--mode=info --symbols=$(printf '\303\251')" '' '' 'non-ascii character'
-unit "--mode=info --symbols=01 --translate=$(printf '\303\251')" '' '' 'Invalid translate'
+unit "--mode=info --symbols=01 --translate=$(printf '\303\251')" '' '' \
+  'Invalid translate'
 echo
 
 [ "$error" -eq 0 ]

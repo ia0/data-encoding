@@ -4,11 +4,12 @@
 //! bases of size 2, 4, 8, 16, 32, and 64. It supports:
 //!
 //! - padded and non-padded encodings
-//! - canonical encodings (trailing bits are checked)
+//! - canonical encodings (e.g. trailing bits are checked)
 //! - in-place encoding and decoding functions
-//! - character translation (for case-insensitivity for example)
+//! - partial decoding functions (e.g. for error recovery)
+//! - character translation (e.g. for case-insensitivity)
 //! - most and least significant bit-order
-//! - ignoring characters when decoding
+//! - ignoring characters when decoding (e.g. for skipping newlines)
 //! - wrapping the output when encoding
 //!
 //! The performance of the encoding and decoding functions are similar to
@@ -146,7 +147,8 @@
 //! [base64url]: constant.BASE64URL.html
 //! [binary]: https://crates.io/crates/data-encoding-bin
 //! [canonical]: https://tools.ietf.org/html/rfc4648#section-3.5
-//! [changelog]: https://github.com/ia0/data-encoding/blob/master/lib/CHANGELOG.md
+//! [changelog]:
+//!     https://github.com/ia0/data-encoding/blob/master/lib/CHANGELOG.md
 //! [constants]: index.html#constants
 //! [crate]: https://crates.io/crates/data-encoding
 //! [github]: https://github.com/ia0/data-encoding
@@ -284,8 +286,8 @@ pub struct DecodePartial {
     ///
     /// This number does not exceed the error position: `read <=
     /// error.position`.
-
     pub read: usize,
+
     /// Number of bytes written to output
     ///
     /// This number does not exceed the decoded length: `written <=
@@ -1063,7 +1065,8 @@ pub struct Wrap {
 /// assert_eq!(base.decode(b"BOIl"), base.decode(b"b011"));
 /// ```
 ///
-/// [base-conversion]: https://en.wikipedia.org/wiki/Positional_notation#Base_conversion
+/// [base-conversion]:
+///     https://en.wikipedia.org/wiki/Positional_notation#Base_conversion
 /// [canonical]: https://tools.ietf.org/html/rfc4648#section-3.5
 #[derive(Debug, Clone)]
 pub struct Specification {
@@ -2075,8 +2078,8 @@ const BASE64URL_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 30
-]));
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    30]));
 
 /// MIME base64 encoding
 ///

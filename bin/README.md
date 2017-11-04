@@ -5,7 +5,7 @@ This binary is a wrapper around the `data-encoding` [library].
 You can run `make install` to install the binary from the [github] repository.
 By default, it will be installed as `~/.cargo/bin/data-encoding`. You can also
 run `cargo install data-encoding-bin` to install the latest version published on
-`crates.io`. This does not require to clone the repository.
+`crates.io`. This second alternative does not require to clone the repository.
 
 ## Usage
 

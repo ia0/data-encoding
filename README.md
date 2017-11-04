@@ -15,15 +15,16 @@ common and custom data-encodings.
 The [library] provides the following common encodings:
 
 - `HEXLOWER`: lowercase hexadecimal
-- `HEXLOWER_PERMISSIVE`: lowercase hexadecimal with case-insensible decoding
+- `HEXLOWER_PERMISSIVE`: lowercase hexadecimal with case-insensitive decoding
 - `HEXUPPER`: uppercase hexadecimal
-- `HEXUPPER_PERMISSIVE`: uppercase hexadecimal with case-insensible decoding
+- `HEXUPPER_PERMISSIVE`: uppercase hexadecimal with case-insensitive decoding
 - `BASE32`: RFC4648 base32
 - `BASE32_NOPAD`: RFC4648 base32 without padding
 - `BASE32HEX`: RFC4648 base32hex
 - `BASE64`: RFC4648 base64
 - `BASE64_NOPAD`: RFC4648 base64 without padding
 - `BASE64URL`: RFC4648 base64url
+- `BASE64URL_NOPAD`: RFC4648 base64url without padding
 - `BASE64_MIME`: RFC2045-like base64
 
 Typical usage looks like:
@@ -43,15 +44,15 @@ See the [documentation] or the [changelog] for more details.
 
 The [library] also provides the possibility to define custom little-endian ASCII
 base-conversion encodings for bases of size 2, 4, 8, 16, 32, and 64 (for which
-all above use-cases are simply instances). It supports:
+all above use-cases are particular instances). It supports:
 
 - padded and non-padded encodings
-- canonical encodings (trailing bits are checked)
+- canonical encodings (e.g. trailing bits are checked)
 - in-place encoding and decoding functions
-- partial decoding functions
-- character translation (for case-insensitivity for example)
+- partial decoding functions (e.g. for error recovery)
+- character translation (e.g. for case-insensitivity)
 - most and least significant bit-order
-- ignoring characters when decoding
+- ignoring characters when decoding (e.g. for skipping newlines)
 - wrapping the output when encoding
 
 The typical definition of a custom encoding looks like:
@@ -83,8 +84,8 @@ high-performance languages. You may run the benchmarks with `make bench`.
 The [binary] is mostly a wrapper around the library. You can run `make install`
 to install it from the repository. By default, it will be installed as
 `~/.cargo/bin/data-encoding`. You can also run `cargo install data-encoding-bin`
-to install the latest version published on `crates.io`. This does not require to
-clone the repository.
+to install the latest version published on `crates.io`. This second alternative
+does not require to clone the repository.
 
 Once installed, you can run `data-encoding --help` (assuming `~/.cargo/bin` is
 in your `PATH` environment variable) to see the usage:

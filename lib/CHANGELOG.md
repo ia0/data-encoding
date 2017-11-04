@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0
+
+### Minor
+
+- Add `BASE64URL_NOPAD`
+
 ## 2.0.0-rc.2
 
 ### Major

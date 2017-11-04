@@ -15,7 +15,7 @@ name = "data-encoding"
 path = "src/main.rs"
 
 [dependencies]
-data-encoding = { version = "2.0.0-rc.2", path = "../lib" }
+data-encoding = { version = "2.0.0", path = "../lib" }
 getopts = "0.2.14"
 
 [badges]
