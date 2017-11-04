@@ -142,9 +142,7 @@ test!{
 
 test!{
     fn base64_no_pad;
-    let mut s = data_encoding::BASE64.specification();
-    s.padding = None;
-    let b = s.encoding().unwrap();
+    let b = &data_encoding::BASE64_NOPAD;
     test(&b, b"", b"");
     test(&b, b"f", b"Zg");
     test(&b, b"fo", b"Zm8");

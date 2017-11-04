@@ -20,12 +20,14 @@ The [library] provides the following common encodings:
 - `HEXUPPER_PERMISSIVE`: uppercase hexadecimal with case-insensitive decoding
 - `BASE32`: RFC4648 base32
 - `BASE32_NOPAD`: RFC4648 base32 without padding
+- `BASE32_DNSSEC`: RFC5155 base32
 - `BASE32HEX`: RFC4648 base32hex
+- `BASE32HEX_NOPAD`: RFC4648 base32hex without padding
 - `BASE64`: RFC4648 base64
 - `BASE64_NOPAD`: RFC4648 base64 without padding
+- `BASE64_MIME`: RFC2045-like base64
 - `BASE64URL`: RFC4648 base64url
 - `BASE64URL_NOPAD`: RFC4648 base64url without padding
-- `BASE64_MIME`: RFC2045-like base64
 
 Typical usage looks like:
 
@@ -46,7 +48,7 @@ The [library] also provides the possibility to define custom little-endian ASCII
 base-conversion encodings for bases of size 2, 4, 8, 16, 32, and 64 (for which
 all above use-cases are particular instances). It supports:
 
-- padded and non-padded encodings
+- padded and unpadded encodings
 - canonical encodings (e.g. trailing bits are checked)
 - in-place encoding and decoding functions
 - partial decoding functions (e.g. for error recovery)

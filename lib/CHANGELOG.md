@@ -1,5 +1,9 @@
 # Changelog
 
+### Minor
+
+- Add `BASE32HEX_NOPAD` and `BASE32_DNSSEC`
+
 ## 2.0.0
 
 ### Minor
