@@ -9,7 +9,7 @@ readme = "README.md"
 repository = "https://github.com/ia0/data-encoding"
 documentation = "https://docs.rs/data-encoding"
 description = "Efficient and customizable data-encoding functions"
-include = ["Cargo.toml", "README.md", "src/lib.rs"]
+include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 
 [badges]
 appveyor = { repository = "ia0/data-encoding" }
