@@ -4,6 +4,10 @@
 
 - Add `BASE32HEX_NOPAD` and `BASE32_DNSSEC`
 
+### Patch
+
+- Include LICENSE file in cargo package
+
 ## 2.0.0
 
 ### Minor

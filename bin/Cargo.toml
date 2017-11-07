@@ -8,7 +8,7 @@ categories = ["encoding"]
 readme = "README.md"
 repository = "https://github.com/ia0/data-encoding"
 description = "Swiss Army knife for data-encoding"
-include = ["Cargo.toml", "README.md", "src/main.rs"]
+include = ["Cargo.toml", "LICENSE", "README.md", "src/main.rs"]
 
 [[bin]]
 name = "data-encoding"
