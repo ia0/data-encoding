@@ -748,6 +748,9 @@ pub enum BitOrder {
 }
 use BitOrder::*;
 
+#[doc(hidden)]
+pub type InternalEncoding = std::borrow::Cow<'static, [u8]>;
+
 /// Base-conversion encoding
 ///
 /// See [Specification](struct.Specification.html) for technical details or how
@@ -772,7 +775,7 @@ use BitOrder::*;
 // - width % dec(bit) == 0
 // - for all x in separator values[x] is IGNORE
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Encoding(std::borrow::Cow<'static, [u8]>);
+pub struct Encoding(pub InternalEncoding);
 
 /// How to translate characters when decoding
 ///
@@ -1372,6 +1375,16 @@ impl Encoding {
         }
         specification
     }
+
+    #[doc(hidden)]
+    pub fn internal_new(implementation: &'static [u8]) -> Encoding {
+        Encoding(std::borrow::Cow::Borrowed(implementation))
+    }
+
+    #[doc(hidden)]
+    pub fn internal_implementation(&self) -> &[u8] {
+        &self.0
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -1442,6 +1455,7 @@ impl Specification {
         let mut values = [INVALID; 128];
         let set = |v: &mut [u8; 128], i: u8, x: u8| {
             check!(SpecificationError(NotAscii), i < 128);
+            if v[i as usize] == x { return Ok(()); }
             check!(SpecificationError(Duplicate(i)), v[i as usize] == INVALID);
             Ok(v[i as usize] = x)
         };

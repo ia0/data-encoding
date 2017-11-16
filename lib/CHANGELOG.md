@@ -2,6 +2,7 @@
 
 ### Minor
 
+- Accept duplicate but identical value specification
 - Add `BASE32_DNSCURVE`
 - Add `BASE32HEX_NOPAD` and `BASE32_DNSSEC`
 
