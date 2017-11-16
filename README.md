@@ -79,6 +79,21 @@ lazy_static! {
 }
 ```
 
+If you use a nightly compiler, you may use the [macro] library to define a
+compile-time custom encoding:
+
+```rust
+const HEX: Encoding = new_encoding!{
+    symbols: "0123456789abcdef",
+    translate_from: "ABCDEF",
+    translate_to: "abcdef",
+};
+const BASE64: Encoding = new_encoding!{
+    symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+    padding: '=',
+};
+```
+
 See the [documentation] or the [changelog] for more details.
 
 ## Performance
@@ -153,6 +168,7 @@ Examples:
 [library]: https://crates.io/crates/data-encoding
 [license]: https://github.com/ia0/data-encoding/blob/master/LICENSE
 [license_badge]: https://img.shields.io/crates/l/data-encoding.svg
+[macro]: https://crates.io/crates/data-encoding-macro
 [travis]: https://travis-ci.org/ia0/data-encoding
 [travis_badge]: https://travis-ci.org/ia0/data-encoding.svg?branch=master
 [version_badge]: https://img.shields.io/crates/v/data-encoding.svg

@@ -15,6 +15,14 @@ git clean -fxd
   if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
     info "Benchmark library"
     cargo bench --verbose
+
+    ( cd macro
+      info "Build macro library"
+      cargo build --verbose
+
+      info "Test macro library"
+      cargo test --verbose
+    )
   fi
 )
 ( cd bin

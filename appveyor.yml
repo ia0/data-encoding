@@ -24,6 +24,9 @@ test_script:
   - cd lib
   - cargo test --verbose
   - if [%CHANNEL%]==[nightly] cargo bench --verbose
+  - if [%CHANNEL%]==[nightly] cd macro
+  - if [%CHANNEL%]==[nightly] cargo test --verbose
+  - if [%CHANNEL%]==[nightly] cd ..
   - cd ..
   - cd bin
   - cargo build --verbose

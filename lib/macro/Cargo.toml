@@ -1,0 +1,15 @@
+[package]
+name = "data-encoding-macro"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "MIT"
+keywords = ["data-encoding", "macro", "static", "const", "compile-time"]
+categories = ["encoding"]
+readme = "README.md"
+repository = "https://github.com/ia0/data-encoding"
+documentation = "https://docs.rs/data-encoding-macro"
+include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
+
+[dependencies]
+data-encoding = { version = "2.0.0", path = ".." }
+data-encoding-macro-internal = { version = "0.1.0", path = "internal" }
