@@ -735,23 +735,15 @@ pub enum BitOrder {
     ///
     /// # Examples
     ///
-    /// Here is how one would implement the [DNSCurve] base32 encoding:
+    /// DNSCurve [base32] uses least significant bit first:
     ///
     /// ```rust
-    /// let dns_curve = {
-    ///     use data_encoding::{Specification, BitOrder};
-    ///     let mut spec = Specification::new();
-    ///     spec.symbols.push_str("0123456789bcdfghjklmnpqrstuvwxyz");
-    ///     spec.translate.from.push_str("BCDFGHJKLMNPQRSTUVWXYZ");
-    ///     spec.translate.to.push_str("bcdfghjklmnpqrstuvwxyz");
-    ///     spec.bit_order = BitOrder::LeastSignificantFirst;
-    ///     spec.encoding().unwrap()
-    /// };
-    /// assert_eq!(dns_curve.encode(&[0x64, 0x88]), "4321");
-    /// assert_eq!(dns_curve.decode(b"4321").unwrap(), vec![0x64, 0x88]);
+    /// use data_encoding::BASE32_DNSCURVE;
+    /// assert_eq!(BASE32_DNSCURVE.encode(&[0x64, 0x88]), "4321");
+    /// assert_eq!(BASE32_DNSCURVE.decode(b"4321").unwrap(), vec![0x64, 0x88]);
     /// ```
     ///
-    /// [DNSCurve]: https://dnscurve.org/in-implement.html
+    /// [base32]: constant.BASE32_DNSCURVE.html
     LeastSignificantFirst,
 }
 use BitOrder::*;
@@ -1986,6 +1978,59 @@ const BASE32_DNSSEC_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 29]));
+
+/// DNSCurve base32 encoding
+///
+/// This encoding is a static version of:
+///
+/// ```rust
+/// # use data_encoding::{BitOrder, Specification, BASE32_DNSCURVE};
+/// let mut spec = Specification::new();
+/// spec.symbols.push_str("0123456789bcdfghjklmnpqrstuvwxyz");
+/// spec.bit_order = BitOrder::LeastSignificantFirst;
+/// spec.translate.from.push_str("BCDFGHJKLMNPQRSTUVWXYZ");
+/// spec.translate.to.push_str("bcdfghjklmnpqrstuvwxyz");
+/// assert_eq!(BASE32_DNSCURVE, spec.encoding().unwrap());
+/// ```
+///
+/// It is conform to [DNSCurve].
+///
+/// [DNSCurve]: https://dnscurve.org/in-implement.html
+pub const BASE32_DNSCURVE: Encoding = BASE32_DNSCURVE_IMPL;
+const BASE32_DNSCURVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
+    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
+    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
+    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
+    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
+    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
+    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
+    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
+    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128, 128, 128,
+    128, 128, 10, 11, 12, 128, 13, 14, 15, 128, 16, 17, 18, 19, 20, 128, 21, 22,
+    23, 24, 25, 26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128, 128, 128, 10,
+    11, 12, 128, 13, 14, 15, 128, 16, 17, 18, 19, 20, 128, 21, 22, 23, 24, 25,
+    26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 21]));
 
 /// Padded base64 encoding
 ///

@@ -2,6 +2,7 @@
 
 ### Minor
 
+- Add `BASE32_DNSCURVE`
 - Add `BASE32HEX_NOPAD` and `BASE32_DNSSEC`
 
 ### Patch

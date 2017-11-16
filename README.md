@@ -61,13 +61,18 @@ The typical definition of a custom encoding looks like:
 
 ```rust
 lazy_static! {
-    static ref DNSCURVE: data_encoding::Encoding = {
-        use data_encoding::{Specification, BitOrder};
+    static ref HEX: Encoding = {
         let mut spec = Specification::new();
-        spec.symbols.push_str("0123456789bcdfghjklmnpqrstuvwxyz");
-        spec.translate.from.push_str("BCDFGHJKLMNPQRSTUVWXYZ");
-        spec.translate.to.push_str("bcdfghjklmnpqrstuvwxyz");
-        spec.bit_order = BitOrder::LeastSignificantFirst;
+        spec.symbols.push_str("0123456789abcdef");
+        spec.translate.from.push_str("ABCDEF");
+        spec.translate.to.push_str("abcdef");
+        spec.encoding().unwrap()
+    };
+    static ref BASE64: Encoding = {
+        let mut spec = Specification::new();
+        spec.symbols.push_str(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+        spec.padding = Some('=');
         spec.encoding().unwrap()
     };
 }
