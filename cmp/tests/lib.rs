@@ -91,4 +91,5 @@ lazy_static! {
 fn lazy_static_hex() {
     assert_eq!(HEX.encode(b"Hello"), "48656c6c6f");
     assert_eq!(HEX.decode(b"48656c6c6f").unwrap(), b"Hello");
+    assert_eq!(*HEX, data_encoding::HEXLOWER_PERMISSIVE);
 }

@@ -115,6 +115,26 @@ test!{
 }
 
 test!{
+    fn base32_dnscurve;
+    let b = &data_encoding::BASE32_DNSCURVE;
+    test(b, &[0x64, 0x88], b"4321");
+    test(b, b"f", b"63");
+    test(b, b"fo", b"6vv0");
+    test(b, b"foo", b"6vvy6");
+    test(b, b"foob", b"6vvy6k1");
+    test(b, b"fooba", b"6vvy6k5d");
+    test(b, b"foobar", b"6vvy6k5dl3");
+    assert_eq!(b.decode(b"6VVY6K5DL3").unwrap(), b"foobar");
+    assert!(b.decode(b"4322").is_err());
+    assert!(b.decode(b"4324").is_err());
+    assert!(b.decode(b"4328").is_err());
+    assert!(b.decode(b"432j").is_err());
+    assert!(b.decode(b"08").is_err());
+    assert!(b.decode(b"0000j").is_err());
+    assert!(b.decode(b"0000004").is_err());
+}
+
+test!{
     fn base64;
     let b = &data_encoding::BASE64;
     test(b, b"", b"");
@@ -324,32 +344,6 @@ fn translate() {
     assert_eq!(base.decode(b" O OO= =  = == ").unwrap(), [0]);
     assert_eq!(base.decode(b"O__OO__--_--.-").unwrap(), [0]);
     assert_eq!(base.decode(b"_____.  . . ...   ..").unwrap(), []);
-}
-
-#[test]
-fn dns_curve() {
-    let mut spec = Specification::new();
-    spec.symbols.push_str("0123456789bcdfghjklmnpqrstuvwxyz");
-    spec.bit_order = data_encoding::BitOrder::LeastSignificantFirst;
-    spec.translate.from.push_str("BCDFGHJKLMNPQRSTUVWXYZ");
-    spec.translate.to.push_str("bcdfghjklmnpqrstuvwxyz");
-    let base = spec.encoding().unwrap();
-    assert_eq!(base.encode(&[0x64, 0x88]), "4321");
-    assert_eq!(base.decode(b"4321").unwrap(), vec![0x64, 0x88]);
-    assert!(base.decode(b"4322").is_err());
-    assert!(base.decode(b"4324").is_err());
-    assert!(base.decode(b"4328").is_err());
-    assert!(base.decode(b"432j").is_err());
-    assert!(base.decode(b"08").is_err());
-    assert!(base.decode(b"0000j").is_err());
-    assert!(base.decode(b"0000004").is_err());
-    assert_eq!(base.encode(b"f"), "63");
-    assert_eq!(base.encode(b"fo"), "6vv0");
-    assert_eq!(base.encode(b"foo"), "6vvy6");
-    assert_eq!(base.encode(b"foob"), "6vvy6k1");
-    assert_eq!(base.encode(b"fooba"), "6vvy6k5d");
-    assert_eq!(base.encode(b"foobar"), "6vvy6k5dl3");
-    assert_eq!(base.decode(b"6VVY6K5DL3").unwrap(), b"foobar");
 }
 
 #[test]
