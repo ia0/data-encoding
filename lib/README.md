@@ -9,6 +9,7 @@ This library provides the following common encodings:
 - `BASE32`: RFC4648 base32
 - `BASE32_NOPAD`: RFC4648 base32 without padding
 - `BASE32_DNSSEC`: RFC5155 base32
+- `BASE32_DNSCURVE`: DNSCurve base32
 - `BASE32HEX`: RFC4648 base32hex
 - `BASE32HEX_NOPAD`: RFC4648 base32hex without padding
 - `BASE64`: RFC4648 base64
