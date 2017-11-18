@@ -1,5 +1,7 @@
 # Changelog
 
+## 2.1.0
+
 ### Minor
 
 - Accept duplicate but identical value specification
@@ -8,6 +10,7 @@
 
 ### Patch
 
+- Expose internal methods for `data-encoding-macro-internal`
 - Include LICENSE file in cargo package
 
 ## 2.0.0
