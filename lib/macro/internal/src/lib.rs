@@ -280,6 +280,7 @@ fn check_empty<T>(hash_map: HashMap<String, T>) {
 
 #[cfg(not(feature = "stable"))]
 #[proc_macro]
+#[doc(hidden)]
 pub fn internal_new_encoding(input: TokenStream) -> TokenStream {
     let mut hash_map = parse_map(input.into_iter());
     let encoding = get_encoding(&mut hash_map);
@@ -290,6 +291,7 @@ pub fn internal_new_encoding(input: TokenStream) -> TokenStream {
 }
 #[cfg(feature = "stable")]
 proc_macro_expr_impl! {
+    #[doc(hidden)]
     pub fn internal_new_encoding_impl(input: &str) -> String {
         let mut hash_map = parse_map(input);
         let encoding = get_encoding(&mut hash_map);
@@ -300,6 +302,7 @@ proc_macro_expr_impl! {
 
 #[cfg(not(feature = "stable"))]
 #[proc_macro]
+#[doc(hidden)]
 pub fn internal_decode_array(input: TokenStream) -> TokenStream {
     let mut hash_map = parse_map(input.into_iter());
     let encoding = get_encoding(&mut hash_map);
@@ -315,6 +318,7 @@ pub fn internal_decode_array(input: TokenStream) -> TokenStream {
 }
 #[cfg(not(feature = "stable"))]
 #[proc_macro]
+#[doc(hidden)]
 pub fn internal_decode_slice(input: TokenStream) -> TokenStream {
     let mut hash_map = parse_map(input.into_iter());
     let encoding = get_encoding(&mut hash_map);
@@ -327,6 +331,7 @@ pub fn internal_decode_slice(input: TokenStream) -> TokenStream {
 }
 #[cfg(feature = "stable")]
 proc_macro_expr_impl! {
+    #[doc(hidden)]
     pub fn internal_decode_slice_impl(input: &str) -> String {
         let mut hash_map = parse_map(input);
         let encoding = get_encoding(&mut hash_map);
