@@ -12,16 +12,24 @@ git clean -fxd
   info "Test library"
   cargo test --verbose
 
+  ( cd macro
+    info "Build macro library"
+    cargo build --verbose
+
+    info "Test macro library"
+    cargo test --verbose
+  )
+
   if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
     info "Benchmark library"
     cargo bench --verbose
 
     ( cd macro
-      info "Build macro library"
-      cargo build --verbose
+      info "Build macro library (no stable feature)"
+      cargo build --no-default-features --verbose
 
-      info "Test macro library"
-      cargo test --verbose
+      info "Test macro library (no stable feature)"
+      cargo test --no-default-features --verbose
     )
   fi
 )
