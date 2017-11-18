@@ -1,21 +1,28 @@
-This library requires a nightly compiler.
-
-It provides macros to define compile-time byte arrays from encoded strings
-(using common bases like base64, base32, or hexadecimal, and also custom bases).
-It also provides a macro to define compile-time custom encodings to be used with
-the [data-encoding] crate at run-time.
+This library provides macros to define compile-time byte slices and arrays from
+encoded strings (using common bases like base64, base32, or hexadecimal, and
+also custom bases). It also provides a macro to define compile-time custom
+encodings to be used with the [data-encoding] crate.
 
 If you were familiar with the [binary_macros] crate, this library is actually
 [inspired][binary_macros_issue] from it.
 
+If you use a nightly compiler, you may disable the "stable" feature:
+
+```
+data-encoding-macro = { version = "0.1.0", default-features = false }
+```
+
 ### Examples
 
-You can define a compile-time byte array using the `hexlower` or `base64`
-macros:
+You can define a compile-time byte slice or array (using the `hexlower` or
+`base64` macros for example):
 
 ```rust
-hexlower!("const HELLO" = "68656c6c6f");
-base64!("const FOOBAR" = "Zm9vYmFy");
+const HELLO: &'static [u8] = &hexlower!("68656c6c6f");
+const FOOBAR: &'static [u8] = &base64!("Zm9vYmFy");
+// In nightly, it is possible to define an array instead of a slice:
+hexlower_array!("const HELLO" = "68656c6c6f");
+base64_array!("const FOOBAR" = "Zm9vYmFy");
 ```
 
 You can define a compile-time custom encoding using the `new_encoding` macro:

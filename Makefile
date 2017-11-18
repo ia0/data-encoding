@@ -21,6 +21,8 @@ bench:
 .PHONY: test
 test:
 	cargo test --all
+	rustc -V | grep -v nightly >/dev/null || { \
+	  cd lib/macro && cargo test --no-default-features; }
 	cd bin && ./test.sh
 
 .PHONY: clean

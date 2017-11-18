@@ -1,4 +1,4 @@
-#![feature(use_extern_macros)]
+#![cfg_attr(not(feature = "stable"), feature(use_extern_macros))]
 
 extern crate data_encoding;
 #[macro_use]
@@ -7,7 +7,6 @@ extern crate data_encoding_macro;
 use std::ops::Deref;
 
 use data_encoding::{BASE64, HEXLOWER};
-use data_encoding_macro::decode;
 
 // Test the macro invocation from inside a module.
 mod test {
@@ -24,8 +23,9 @@ mod test {
     }
 }
 
+#[cfg(not(feature = "stable"))]
 #[test]
-fn decode() {
+fn decode_array() {
     macro_rules! base {
         ($f: ident; $($x: tt)*) => {
             $f!{
@@ -36,7 +36,7 @@ fn decode() {
             }
         };
     }
-    base!{decode;
+    base!{decode_array;
         name: "const OUTPUT",
         input: "deadbeef",
     }
@@ -45,13 +45,47 @@ fn decode() {
 }
 
 #[test]
-fn hexlower_decode() {
-    hexlower!("const OUTPUT" = "deadbeef");
+fn decode_slice() {
+    macro_rules! base {
+        ($f: ident; $($x: tt)*) => {
+            $f!{
+                symbols: "0123456789abcdef",
+                bit_order: LeastSignificantFirst,
+                padding: None,
+                $($x)*
+            }
+        };
+    }
+    const OUTPUT: &'static [u8] = &base!{
+        decode_slice;
+        input: "deadbeef",
+    };
+    const BASE: ::data_encoding::Encoding = base!(new_encoding;);
+    assert_eq!(OUTPUT, BASE.decode(b"deadbeef").unwrap().deref());
+}
+
+#[cfg(not(feature = "stable"))]
+#[test]
+fn hexlower_decode_array() {
+    hexlower_array!("const OUTPUT" = "deadbeef");
     assert_eq!(&OUTPUT, HEXLOWER.decode(b"deadbeef").unwrap().deref());
+}
+
+#[cfg(not(feature = "stable"))]
+#[test]
+fn base64_decode_array() {
+    base64_array!("const OUTPUT" = "deadbeef");
+    assert_eq!(&OUTPUT, BASE64.decode(b"deadbeef").unwrap().deref());
+}
+
+#[test]
+fn hexlower_decode() {
+    const OUTPUT: &'static [u8] = &hexlower!("deadbeef");
+    assert_eq!(OUTPUT, HEXLOWER.decode(b"deadbeef").unwrap().deref());
 }
 
 #[test]
 fn base64_decode() {
-    base64!("const OUTPUT" = "deadbeef");
-    assert_eq!(&OUTPUT, BASE64.decode(b"deadbeef").unwrap().deref());
+    const OUTPUT: &'static [u8] = &base64!("deadbeef");
+    assert_eq!(OUTPUT, BASE64.decode(b"deadbeef").unwrap().deref());
 }
