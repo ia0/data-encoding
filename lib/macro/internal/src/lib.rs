@@ -44,7 +44,6 @@ fn parse_op<'a>(input: &'a str, op: Token, key: &str) -> &'a str {
     }
 }
 
-
 #[cfg(not(feature = "stable"))]
 fn parse_map(mut tokens: TokenTreeIter) -> HashMap<String, TokenNode> {
     let mut map = HashMap::new();
@@ -91,7 +90,6 @@ fn parse_map(mut input: &str) -> HashMap<String, Token> {
     }
     map
 }
-
 
 #[cfg(not(feature = "stable"))]
 fn get_string(map: &mut HashMap<String, TokenNode>, key: &str) -> String {
