@@ -14,4 +14,7 @@ include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 [badges]
 appveyor = { repository = "ia0/data-encoding" }
 coveralls = { repository = "ia0/data-encoding" }
+is-it-maintained-issue-resolution = { repository = "ia0/data-encoding" }
+is-it-maintained-open-issues = { repository = "ia0/data-encoding" }
+maintenance = { status = "passively-maintained" }
 travis-ci = { repository = "ia0/data-encoding" }
