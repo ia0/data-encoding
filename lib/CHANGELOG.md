@@ -1,5 +1,9 @@
 # Changelog
 
+### Patch
+
+- Add maintenance-related badges to Cargo.toml
+
 ## 2.1.0
 
 ### Minor
