@@ -2,6 +2,7 @@
 
 ### Patch
 
+- Increase test coverage for specifications
 - Update readme and documentation
 - Add maintenance-related badges to Cargo.toml
 
