@@ -67,8 +67,7 @@ lazy_static! {
 }
 ```
 
-If you use a nightly compiler, you may use the [macro] library to define a
-compile-time custom encoding:
+You may also use the [macro] library to define a compile-time custom encoding:
 
 ```rust
 const HEX: Encoding = new_encoding!{

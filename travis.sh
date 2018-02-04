@@ -63,8 +63,8 @@ info "Test library coverage"
 find target/debug -maxdepth 1 -type f -perm /u+x -printf '%P\n' |
   while IFS= read -r test; do
     info "Run $test"
-    ./kcov-master/build/src/kcov --verify --include-path=lib/src/ \
-                                 target/kcov-"$test" ./target/debug/"$test"
+    ./kcov-master/build/src/kcov --include-path=lib/src/ target/kcov-"$test" \
+                                 ./target/debug/"$test"
   done; unset test
 
 info "Send coverage to coveralls.io"

@@ -68,6 +68,20 @@
 //! }
 //! ```
 //!
+//! You may also use the [macro] library to define a compile-time custom encoding:
+//!
+//! ```rust,ignore
+//! const HEX: Encoding = new_encoding!{
+//!     symbols: "0123456789abcdef",
+//!     translate_from: "ABCDEF",
+//!     translate_to: "abcdef",
+//! };
+//! const BASE64: Encoding = new_encoding!{
+//!     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+//!     padding: '=',
+//! };
+//! ```
+//!
 //! # Properties
 //!
 //! The [base16], [base32], [base32hex], [base64], and [base64url] predefined
@@ -152,6 +166,7 @@
 //! [constants]: index.html#constants
 //! [crate]: https://crates.io/crates/data-encoding
 //! [github]: https://github.com/ia0/data-encoding
+//! [macro]: https://crates.io/crates/data-encoding-macro
 
 #![warn(unused_results, missing_docs)]
 
