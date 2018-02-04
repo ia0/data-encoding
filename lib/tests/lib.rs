@@ -369,6 +369,11 @@ fn specification() {
     spec.translate.from.push_str("1");
     spec.translate.to.push_str("0");
     assert_eq!(errmsg(spec.encoding()), "'1' has conflicting definitions");
+    spec.translate.from.push_str("12");
+    assert_eq!(errmsg(spec.encoding()), "translate from/to length mismatch");
+    spec.translate.from = "Z".to_string();
+    spec.translate.to = "2".to_string();
+    assert_eq!(errmsg(spec.encoding()), "'2' is undefined");
     let mut spec = Specification::new();
     spec.wrap.width = 1;
     spec.wrap.separator.push_str("\n");
@@ -392,6 +397,28 @@ fn specification() {
     spec.wrap.width = 256;
     assert_eq!(errmsg(spec.encoding()),
                "invalid wrap width or separator length");
+}
+
+#[test]
+fn round_trip() {
+    let test = |e: Encoding| {
+        assert_eq!(e.specification().encoding().unwrap(), e);
+    };
+    test(data_encoding::HEXLOWER);
+    test(data_encoding::HEXLOWER_PERMISSIVE);
+    test(data_encoding::HEXUPPER);
+    test(data_encoding::HEXUPPER_PERMISSIVE);
+    test(data_encoding::BASE32);
+    test(data_encoding::BASE32_NOPAD);
+    test(data_encoding::BASE32HEX);
+    test(data_encoding::BASE32HEX_NOPAD);
+    test(data_encoding::BASE32_DNSSEC);
+    test(data_encoding::BASE32_DNSCURVE);
+    test(data_encoding::BASE64);
+    test(data_encoding::BASE64_NOPAD);
+    test(data_encoding::BASE64_MIME);
+    test(data_encoding::BASE64URL);
+    test(data_encoding::BASE64URL_NOPAD);
 }
 
 #[test]
