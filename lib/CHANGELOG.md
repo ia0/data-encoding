@@ -1,5 +1,7 @@
 # Changelog
 
+## 2.1.1
+
 ### Patch
 
 - Increase test coverage for specifications
