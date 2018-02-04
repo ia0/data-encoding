@@ -2,6 +2,7 @@
 
 ### Patch
 
+- Update readme and documentation
 - Add maintenance-related badges to Cargo.toml
 
 ## 2.1.0
