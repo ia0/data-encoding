@@ -47,7 +47,7 @@ fn difference() {
                DecodeError { position: 4, kind: Length });
     assert_eq!(x.from_base64().unwrap(), vec![0, 0]);
     assert_eq!(base64::decode(x).err().unwrap(),
-               base64::DecodeError::InvalidByte(2, b'\n'));
+               base64::DecodeError::InvalidLength);
     let x = b"AAB";
     assert_eq!(BASE64.decode(x).err().unwrap(),
                DecodeError { position: 0, kind: Length });
