@@ -20,6 +20,7 @@
 //!
 //! ```rust
 //! # #![cfg_attr(not(feature = "stable"), feature(use_extern_macros))]
+//! # #![cfg_attr(not(feature = "stable"), feature(proc_macro_non_items))]
 //! #[macro_use]
 //! extern crate data_encoding_macro;
 //!
@@ -44,7 +45,8 @@
 //! You can define a compile-time custom encoding from its specification:
 //!
 //! ```rust
-//! #![cfg_attr(not(feature = "stable"), feature(use_extern_macros))]
+//! # #![cfg_attr(not(feature = "stable"), feature(use_extern_macros))]
+//! # #![cfg_attr(not(feature = "stable"), feature(proc_macro_non_items))]
 //! extern crate data_encoding;
 //! #[macro_use]
 //! extern crate data_encoding_macro;
@@ -70,6 +72,7 @@
 //! [hexadecimal]: macro.hexlower_permissive.html
 
 #![cfg_attr(not(feature = "stable"), feature(use_extern_macros))]
+#![cfg_attr(not(feature = "stable"), feature(proc_macro_non_items))]
 #![warn(unused_results)]
 
 #[cfg(feature = "stable")]
@@ -138,7 +141,7 @@ macro_rules! decode_array {
 /// # Examples
 ///
 /// ```rust
-/// #![feature(use_extern_macros)]
+/// #![feature(use_extern_macros, proc_macro_non_items)]
 /// #[macro_use]
 /// extern crate data_encoding_macro;
 ///
@@ -212,7 +215,7 @@ macro_rules! decode_slice {
 /// # Examples
 ///
 /// ```rust
-/// #![feature(use_extern_macros)]
+/// #![feature(use_extern_macros, proc_macro_non_items)]
 /// extern crate data_encoding;
 /// #[macro_use] extern crate data_encoding_macro;
 ///
