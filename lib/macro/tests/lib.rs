@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "stable"), feature(use_extern_macros))]
+#![cfg_attr(not(feature = "stable"), feature(proc_macro_non_items))]
 
 extern crate data_encoding;
 #[macro_use]

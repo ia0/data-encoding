@@ -33,7 +33,7 @@ use data_encoding::{BitOrder, Encoding, Specification, Translate, Wrap};
 #[cfg(not(feature = "stable"))]
 fn parse_op(tokens: &mut IntoIter, op: char, key: &str) {
     match tokens.next() {
-        Some(TokenTree::Op(x)) if x.op() == op => (),
+        Some(TokenTree::Punct(ref x)) if x.as_char() == op => (),
         _ => panic!("expected {:?} after {}", op, key),
     }
 }
@@ -50,7 +50,7 @@ fn parse_map(mut tokens: IntoIter) -> HashMap<String, TokenTree> {
     let mut map = HashMap::new();
     while let Some(key) = tokens.next() {
         let key = match key {
-            TokenTree::Term(term) => term.as_str().to_string(),
+            TokenTree::Ident(ident) => format!("{}", ident),
             _ => panic!("expected key got {}", key),
         };
         parse_op(&mut tokens, ':', &key);
@@ -147,7 +147,7 @@ fn get_padding(map: &mut HashMap<String, TokenTree>) -> Option<char> {
         Some(node) => node,
     };
     let literal = match node {
-        TokenTree::Term(term) if term.as_str() == "None" => return None,
+        TokenTree::Ident(ref ident) if format!("{}", ident) == "None" => return None,
         TokenTree::Literal(literal) => literal,
         _ => panic!("expected literal for padding"),
     };
@@ -169,11 +169,11 @@ fn get_bool(map: &mut HashMap<String, TokenTree>, key: &str) -> Option<bool> {
         None => return None,
         Some(node) => node,
     };
-    let term = match node {
-        TokenTree::Term(term) => term,
+    let ident = match node {
+        TokenTree::Ident(ident) => format!("{}", ident),
         _ => panic!("expected literal for padding"),
     };
-    Some(syn::parse::boolean(term.as_str()).expect("expected bool for padding"))
+    Some(syn::parse::boolean(&ident).expect("expected bool for padding"))
 }
 #[cfg(feature = "stable")]
 fn get_bool(map: &mut HashMap<String, Token>, key: &str) -> Option<bool> {
@@ -193,8 +193,12 @@ fn get_bit_order(map: &mut HashMap<String, TokenTree>) -> BitOrder {
     let msb = "MostSignificantFirst";
     let lsb = "LeastSignificantFirst";
     match node {
-        TokenTree::Term(term) if term.as_str() == msb => BitOrder::MostSignificantFirst,
-        TokenTree::Term(term) if term.as_str() == lsb => BitOrder::LeastSignificantFirst,
+        TokenTree::Ident(ref ident) if format!("{}", ident) == msb => {
+            BitOrder::MostSignificantFirst
+        }
+        TokenTree::Ident(ref ident) if format!("{}", ident) == lsb => {
+            BitOrder::LeastSignificantFirst
+        }
         _ => panic!("expected {} or {} for bit_order", msb, lsb),
     }
 }
