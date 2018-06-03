@@ -11,7 +11,7 @@
 //! If you use a nightly compiler, you may disable the "stable" feature:
 //!
 //! ```text
-//! data-encoding-macro = { version = "0.1.0", default-features = false }
+//! data-encoding-macro = { version = "0.1.3", default-features = false }
 //! ```
 //!
 //! # Examples
