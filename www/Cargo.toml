@@ -1,0 +1,22 @@
+[package]
+name = "data-encoding-www"
+version = "0.1.0"
+authors = ["Julien Cretin <cretin@google.com>"]
+license = "MIT"
+repository = "https://github.com/ia0/data-encoding"
+description = "Website for data-encoding"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+data-encoding = "2"
+lazy_static = "1"
+wasm-bindgen = "0.2"
+
+[profile.release]
+codegen-units = 1
+incremental = false
+lto = true
+opt-level = "z"

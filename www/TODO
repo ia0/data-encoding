@@ -1,0 +1,14 @@
+- Add "add"/"remove" buttons to add/remove encodings
+- Only show part of the specification that are relevant
+  - The whole specification but symbols if symbols is empty
+  - Trailing bits and padding for base8, base32, base64
+- Write a better CSS
+- Add support for file upload/download
+- Print a message if no javascript and a message while loading wasm
+- Add a "share" button that returns a short link
+  - Parse URL to setup the initial state
+  - Generate URL with current state
+  - Use https://firebase.google.com/docs/dynamic-links/create-links to get a
+    short URL
+- Advertise the binary (cargo install) and the library (code snippet to create
+  the encoding)

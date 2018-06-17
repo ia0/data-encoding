@@ -1,0 +1,45 @@
+body {
+    font-family: sans-serif;
+}
+
+.encodings {
+    display: flex;
+    flex-flow: row wrap;
+}
+
+.encoding {
+    display: flex;
+    flex-flow: column nowrap;
+}
+
+.specification {
+    display: grid;
+    grid-template-columns: 30% auto;
+    grid-gap: 2px;
+}
+
+.switch {
+    display: flex;
+    flex-flow: row nowrap;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    position: absolute;
+    z-index: 1;
+    background-color: #eee;
+}
+
+.tooltip:hover .tooltiptext,
+.tooltip:focus .tooltiptext {
+    visibility: visible;
+}
+
+.error {
+    font-weight: bold;
+    color: #c00;
+}
+
+.invalid_input {
+    background-color: #fee;
+}
