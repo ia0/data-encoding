@@ -85,7 +85,7 @@ pub fn decode(input: &str) -> Result<Vec<u8>, String> {
                 let low = from_hex(next(&mut input)?);
                 result.push(high << 4 | low);
             }
-            x => return Err(format!("unexpected escape sequence '\\{}'", x as char)),
+            x => return Err(format!("invalid escape sequence '\\{}'", x as char)),
         }
     }
     Ok(result)

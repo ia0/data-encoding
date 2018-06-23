@@ -5,9 +5,11 @@ extern crate data_encoding;
 extern crate lazy_static;
 extern crate wasm_bindgen;
 
+mod range;
+mod state;
 mod utf8;
 
-use data_encoding::{Encoding, Specification};
+use data_encoding::{BASE64URL_NOPAD, Encoding, Specification};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
@@ -25,6 +27,10 @@ extern "C" {
     fn removeClass(node: &JsValue, name: &str);
     fn is_checked(node: &JsValue) -> bool;
     fn set_checked(node: &JsValue);
+    fn setStorage(name: &str, value: &str);
+    fn getStorage(name: &str) -> String;
+    fn setHistory(name: &str, value: &str);
+    fn getHistory(name: &str) -> String;
 }
 
 lazy_static! {
@@ -105,10 +111,10 @@ fn create_specification(id: i32) -> JsValue {
     let symbols_tooltip = "The number of symbols must be 2, 4, 8, 16, 32, or 64. Symbols must be \
                            ASCII characters (smaller than 128) and they must be unique.";
     appendChild(&specification, &create_tooltip("Symbols", symbols_tooltip));
-    let symbols = createElement("textarea");
-    setAttribute(&symbols, "id", &format!("symbols_{}", id));
-    setAttribute(&symbols, "class", "tooltip");
+    let symbols = createElement("input");
+    setAttribute(&symbols, "type", "text");
     setAttribute(&symbols, "placeholder", "no encoding");
+    setAttribute(&symbols, "id", &format!("symbols_{}", id));
     setAttribute(&symbols, "oninput", &spec_update);
     appendChild(&specification, &symbols);
 
@@ -265,27 +271,6 @@ fn create_encoding(id: i32) -> JsValue {
 
 const MAX_ID: i32 = 2;
 
-#[wasm_bindgen]
-pub fn init() {
-    let encodings = createElement("div");
-    setAttribute(&encodings, "class", "encodings");
-    appendChild(&body(), &encodings);
-
-    let input = createElement("textarea");
-    setAttribute(&input, "id", "input");
-    setAttribute(&input, "style", "display: none;");
-    appendChild(&encodings, &input);
-
-    for i in 0 .. MAX_ID {
-        appendChild(&encodings, &create_encoding(i));
-    }
-    for i in 0 .. MAX_ID {
-        spec_update(i);
-    }
-
-    setAttribute(&getElementById("text_0"), "autofocus", "");
-}
-
 fn get_encoding(id: i32) -> Result<Option<Encoding>, String> {
     let utf8_decode = |name| -> Result<_, String> {
         let value = value(&getElementById(&format!("{}_{}", name, id)));
@@ -296,15 +281,24 @@ fn get_encoding(id: i32) -> Result<Option<Encoding>, String> {
         return Ok(None);
     }
     let mut spec = Specification::new();
-    spec.symbols = symbols;
+    spec.symbols = range::decode(&symbols)?;
     if is_checked(&getElementById(&format!("bit_order_lsb_{}", id))) {
         spec.bit_order = data_encoding::BitOrder::LeastSignificantFirst;
     }
     if is_checked(&getElementById(&format!("trailing_bits_ignore_{}", id))) {
         spec.check_trailing_bits = false;
     }
-    spec.padding = utf8_decode("padding")?.chars().next();
-    spec.ignore = utf8_decode("ignore")?;
+    let padding = utf8_decode("padding")?;
+    let mut padding_iter = padding.chars().fuse();
+    spec.padding = padding_iter.next();
+    if padding_iter.next().is_some() {
+        return Err("padding has more than one character".to_string());
+    }
+    match spec.symbols.len() {
+        2 | 4 | 16 => spec.padding = None,
+        _ => (),
+    }
+    spec.ignore = range::decode(&utf8_decode("ignore")?)?;
     let wrap_width = value(&getElementById(&format!("wrap_width_{}", id)));
     if !wrap_width.is_empty() {
         match wrap_width.parse() {
@@ -313,8 +307,11 @@ fn get_encoding(id: i32) -> Result<Option<Encoding>, String> {
         }
     }
     spec.wrap.separator = utf8_decode("wrap_separator")?;
-    spec.translate.from = utf8_decode("translate_from")?;
-    spec.translate.to = utf8_decode("translate_to")?;
+    if (spec.wrap.width == 0) ^ spec.wrap.separator.is_empty() {
+        return Err("incomplete wrapping".to_string());
+    }
+    spec.translate.from = range::decode(&utf8_decode("translate_from")?)?;
+    spec.translate.to = range::decode(&utf8_decode("translate_to")?)?;
     spec.encoding()
         .map(Some)
         .map_err(|error| format!("{}", error))
@@ -348,6 +345,155 @@ fn reset_errors() {
     }
 }
 
+fn encoding_update(encoding: &Option<Encoding>, id: i32) {
+    reset_errors();
+    set_value(&getElementById(&format!("output_{}", id)), "");
+
+    let spec = encoding
+        .as_ref()
+        .map(|e| e.specification())
+        .unwrap_or_else(|| Specification::new());
+    let set = |name, value: &str| {
+        set_value(
+            &getElementById(&format!("{}_{}", name, id)),
+            &utf8::encode(value.as_bytes(), true),
+        );
+    };
+    let set_range = |name, value| {
+        set(name, &range::encode(value).unwrap());
+    };
+
+    set_range("symbols", &spec.symbols);
+    let bit_order = match spec.bit_order {
+        data_encoding::BitOrder::LeastSignificantFirst => "lsb",
+        data_encoding::BitOrder::MostSignificantFirst => "msb",
+    };
+    set_checked(&getElementById(&format!("bit_order_{}_{}", bit_order, id)));
+    if spec.check_trailing_bits {
+        set_checked(&getElementById(&format!("trailing_bits_check_{}", id)));
+    } else {
+        set_checked(&getElementById(&format!("trailing_bits_ignore_{}", id)));
+    }
+    let mut padding = String::new();
+    if let Some(c) = spec.padding {
+        padding.push(c);
+    }
+    set("padding", &padding);
+    set_range("ignore", &spec.ignore);
+    if spec.wrap.width == 0 {
+        set("wrap_width", "");
+    } else {
+        set("wrap_width", &format!("{}", spec.wrap.width));
+    }
+    set("wrap_separator", &spec.wrap.separator);
+    set_range("translate_from", &spec.translate.from);
+    set_range("translate_to", &spec.translate.to);
+
+    if let Some(encoding) = encoding {
+        let mut not = String::new();
+        if !encoding.is_canonical() {
+            not.push_str(" not");
+        }
+        set_value(
+            &getElementById(&format!("output_{}", id)),
+            &format!("Encoding is{} canonical", not),
+        );
+    }
+
+    let input = value(&getElementById("input"));
+    let output = match encoding {
+        None => input,
+        Some(encoding) => {
+            let input = match utf8::decode(&input) {
+                Ok(input) => input,
+                Err(error) => {
+                    set_error(id, &error);
+                    return;
+                }
+            };
+            utf8::encode(encoding.encode(&input).as_bytes(), false)
+        }
+    };
+    set_value(&getElementById(&format!("text_{}", id)), &output);
+
+    save_encoding(encoding, id);
+}
+
+fn read_state(name: &str) -> String {
+    let value = getHistory(name);
+    if value.is_empty() {
+        getStorage(name)
+    } else {
+        value
+    }
+}
+
+fn write_state(name: &str, value: &str) {
+    setStorage(name, value);
+    setHistory(name, value);
+}
+
+fn restore_encoding(id: i32) {
+    let encoding = BASE64URL_NOPAD
+        .decode(read_state(&format!("{}", id)).as_bytes())
+        .ok()
+        .and_then(|value| state::decode_encoding(&value));
+    encoding_update(&encoding, id);
+}
+
+fn save_encoding(encoding: &Option<Encoding>, id: i32) {
+    let name = format!("{}", id);
+    match encoding {
+        None => write_state(&name, ""),
+        Some(encoding) => {
+            let value = state::encode_encoding(&encoding);
+            write_state(&name, &BASE64URL_NOPAD.encode(&value));
+        }
+    }
+}
+
+fn restore_input() {
+    let value = BASE64URL_NOPAD
+        .decode(read_state("i").as_bytes())
+        .ok()
+        .and_then(|x| String::from_utf8(x).ok());
+    set_value(
+        &getElementById("input"),
+        value.as_ref().map(String::as_str).unwrap_or(""),
+    );
+    save_input();
+}
+
+fn save_input() {
+    write_state(
+        "i",
+        &BASE64URL_NOPAD.encode(value(&getElementById("input")).as_bytes()),
+    );
+}
+
+#[wasm_bindgen]
+pub fn init() {
+    let encodings = createElement("div");
+    setAttribute(&encodings, "class", "encodings");
+    appendChild(&body(), &encodings);
+
+    let input = createElement("textarea");
+    setAttribute(&input, "id", "input");
+    setAttribute(&input, "style", "display: none;");
+    appendChild(&encodings, &input);
+    restore_input();
+
+    for i in 0 .. MAX_ID {
+        appendChild(&encodings, &create_encoding(i));
+    }
+    for i in 0 .. MAX_ID {
+        restore_encoding(i);
+        spec_update(i);
+    }
+
+    setAttribute(&getElementById("text_0"), "autofocus", "");
+}
+
 #[wasm_bindgen]
 pub fn text_update(id: i32) {
     reset_errors();
@@ -379,6 +525,7 @@ pub fn text_update(id: i32) {
     }
 
     set_value(&getElementById("input"), &utf8::encode(&input, false));
+    save_input();
 
     for i in 0 .. MAX_ID {
         if i == id {
@@ -405,9 +552,6 @@ pub fn spec_update(id: i32) {
     set_value(&getElementById(&format!("output_{}", id)), "");
     set_value(&getElementById(&format!("preset_{}", id)), "");
 
-    let input = value(&getElementById("input"));
-    let output = getElementById(&format!("text_{}", id));
-
     let encoding = match get_encoding(id) {
         Ok(encoding) => encoding,
         Err(error) => {
@@ -421,73 +565,15 @@ pub fn spec_update(id: i32) {
             set_value(&getElementById(&format!("preset_{}", id)), k);
         }
     }
-    match encoding {
-        None => set_value(&output, &input),
-        Some(encoding) => {
-            let input = match utf8::decode(&input) {
-                Ok(input) => input,
-                Err(error) => {
-                    set_error(id, &error);
-                    return;
-                }
-            };
-            set_value(
-                &output,
-                &utf8::encode(encoding.encode(&input).as_bytes(), false),
-            );
-            let spec = encoding.specification();
-            if spec.check_trailing_bits {
-                set_checked(&getElementById(&format!("trailing_bits_check_{}", id)));
-            } else {
-                set_checked(&getElementById(&format!("trailing_bits_ignore_{}", id)));
-            }
-            let mut not = String::new();
-            if !encoding.is_canonical() {
-                not.push_str(" not");
-            }
-            set_value(
-                &getElementById(&format!("output_{}", id)),
-                &format!("Encoding is{} canonical", not),
-            );
-        }
-    }
+    encoding_update(&encoding, id);
 }
 
 #[wasm_bindgen]
 pub fn load_preset(id: i32) {
-    let spec = PRESETS
+    reset_errors();
+
+    let encoding = PRESETS
         .get(&value(&getElementById(&format!("preset_{}", id))))
-        .unwrap()
-        .as_ref()
-        .map(|e| e.specification())
-        .unwrap_or_else(|| Specification::new());
-    let set = |name, value: &str| {
-        set_value(
-            &getElementById(&format!("{}_{}", name, id)),
-            &utf8::encode(value.as_bytes(), true),
-        );
-    };
-
-    set("symbols", &spec.symbols);
-    let bit_order = match spec.bit_order {
-        data_encoding::BitOrder::LeastSignificantFirst => "lsb",
-        data_encoding::BitOrder::MostSignificantFirst => "msb",
-    };
-    set_checked(&getElementById(&format!("bit_order_{}_{}", bit_order, id)));
-    let mut padding = String::new();
-    if let Some(c) = spec.padding {
-        padding.push(c);
-    }
-    set("padding", &padding);
-    set("ignore", &spec.ignore);
-    if spec.wrap.width == 0 {
-        set("wrap_width", "");
-    } else {
-        set("wrap_width", &format!("{}", spec.wrap.width));
-    }
-    set("wrap_separator", &spec.wrap.separator);
-    set("translate_from", &spec.translate.from);
-    set("translate_to", &spec.translate.to);
-
-    spec_update(id);
+        .unwrap();
+    encoding_update(encoding, id);
 }

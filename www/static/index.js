@@ -17,3 +17,14 @@ function addClass(node, name) { node.classList.add(name); }
 function removeClass(node, name) { node.classList.remove(name); }
 function is_checked(node) { return node.checked; }
 function set_checked(node) { node.checked = true; }
+function setStorage(name, value) { localStorage.setItem(name, value); }
+function getStorage(name) { return localStorage.getItem(name) || ''; }
+function setHistory(name, value) {
+    var url = new URL(document.location);
+    url.searchParams.set(name, value);
+    window.history.replaceState('', '', url.search);
+}
+function getHistory(name) {
+    var value = (new URL(document.location)).searchParams.get(name);
+    return decodeURIComponent(value || '');
+}
