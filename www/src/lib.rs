@@ -19,6 +19,8 @@ extern "C" {
     fn createElement(name: &str) -> JsValue;
     fn createTextNode(text: &str) -> JsValue;
     fn appendChild(parent: &JsValue, child: &JsValue);
+    fn insertBefore(parent: &JsValue, child: &JsValue, node: &JsValue);
+    fn removeChild(parent: &JsValue, child: &JsValue);
     fn setAttribute(node: &JsValue, name: &str, value: &str);
     fn getElementById(id: &str) -> JsValue;
     fn value(node: &JsValue) -> String;
@@ -28,9 +30,12 @@ extern "C" {
     fn is_checked(node: &JsValue) -> bool;
     fn set_checked(node: &JsValue);
     fn setStorage(name: &str, value: &str);
-    fn getStorage(name: &str) -> String;
+    fn getStorage(name: &str) -> JsValue;
+    fn deleteStorage(name: &str);
+    fn clearStorage();
     fn setHistory(name: &str, value: &str);
-    fn getHistory(name: &str) -> String;
+    fn getHistory(name: &str) -> JsValue;
+    fn deleteHistory(name: &str);
 }
 
 lazy_static! {
@@ -86,6 +91,34 @@ fn create_switch(name: &str, id: i32) -> JsValue {
     let spec_update = format!("wasm_bindgen.spec_update({})", id);
     setAttribute(&switch, "oninput", &spec_update);
     switch
+}
+
+fn create_menu(id: i32) -> JsValue {
+    let menu = createElement("div");
+    setAttribute(&menu, "class", "menu");
+
+    let swap_left = createElement("button");
+    setAttribute(&swap_left, "type", "button");
+    let swap_left_onclick = format!("wasm_bindgen.swap_left({})", id);
+    setAttribute(&swap_left, "onclick", &swap_left_onclick);
+    appendChild(&swap_left, &createTextNode("<"));
+    appendChild(&menu, &swap_left);
+
+    let delete = createElement("button");
+    setAttribute(&delete, "type", "button");
+    let delete_onclick = format!("wasm_bindgen.delete_encoding({})", id);
+    setAttribute(&delete, "onclick", &delete_onclick);
+    appendChild(&delete, &createTextNode("\u{d7}"));
+    appendChild(&menu, &delete);
+
+    let swap_right = createElement("button");
+    setAttribute(&swap_right, "type", "button");
+    let swap_right_onclick = format!("wasm_bindgen.swap_right({})", id);
+    setAttribute(&swap_right, "onclick", &swap_right_onclick);
+    appendChild(&swap_right, &createTextNode(">"));
+    appendChild(&menu, &swap_right);
+
+    menu
 }
 
 fn create_specification(id: i32) -> JsValue {
@@ -236,6 +269,18 @@ fn create_specification(id: i32) -> JsValue {
     setAttribute(&translate_to, "oninput", &spec_update);
     appendChild(&specification, &translate_to);
 
+    // canonical
+    let canonical_tooltip = "The encoding is not canonical if trailing bits are not checked, \
+                             padding is used, characters are ignored, or characters are \
+                             translated.";
+    appendChild(
+        &specification,
+        &create_tooltip("Canonical", canonical_tooltip),
+    );
+    let canonical = createElement("output");
+    setAttribute(&canonical, "id", &format!("canonical_{}", id));
+    appendChild(&specification, &canonical);
+
     specification
 }
 
@@ -243,6 +288,9 @@ fn create_encoding(id: i32) -> JsValue {
     let encoding = createElement("div");
     setAttribute(&encoding, "id", &format!("encoding_{}", id));
     setAttribute(&encoding, "class", "encoding");
+
+    let menu = create_menu(id);
+    appendChild(&encoding, &menu);
 
     let text = createElement("textarea");
     setAttribute(&text, "id", &format!("text_{}", id));
@@ -257,10 +305,6 @@ fn create_encoding(id: i32) -> JsValue {
     let specification = create_specification(id);
     appendChild(&encoding, &specification);
 
-    let output = createElement("output");
-    setAttribute(&output, "id", &format!("output_{}", id));
-    appendChild(&encoding, &output);
-
     let error = createElement("output");
     setAttribute(&error, "id", &format!("error_{}", id));
     setAttribute(&error, "class", "error");
@@ -268,8 +312,6 @@ fn create_encoding(id: i32) -> JsValue {
 
     encoding
 }
-
-const MAX_ID: i32 = 2;
 
 fn get_encoding(id: i32) -> Result<Option<Encoding>, String> {
     let utf8_decode = |name| -> Result<_, String> {
@@ -338,16 +380,16 @@ fn set_error(id: i32, message: &str) {
 }
 
 fn reset_errors() {
-    for id in 0 .. MAX_ID {
+    for id in 0 .. next_id() {
         unset_invalid_input("text", id);
-        unset_invalid_input("spec", id);
+        unset_invalid_input("encoding", id);
         set_error(id, "");
     }
 }
 
 fn encoding_update(encoding: &Option<Encoding>, id: i32) {
     reset_errors();
-    set_value(&getElementById(&format!("output_{}", id)), "");
+    set_value(&getElementById(&format!("canonical_{}", id)), "");
 
     let spec = encoding
         .as_ref()
@@ -395,8 +437,8 @@ fn encoding_update(encoding: &Option<Encoding>, id: i32) {
             not.push_str(" not");
         }
         set_value(
-            &getElementById(&format!("output_{}", id)),
-            &format!("Encoding is{} canonical", not),
+            &getElementById(&format!("canonical_{}", id)),
+            if encoding.is_canonical() { "yes" } else { "no" },
         );
     }
 
@@ -419,12 +461,53 @@ fn encoding_update(encoding: &Option<Encoding>, id: i32) {
     save_encoding(encoding, id);
 }
 
-fn read_state(name: &str) -> String {
+fn swap_encoding(id: i32) {
+    assert!(id > 0);
+    let swap_value = |name: &str| {
+        let left = getElementById(&format!("{}_{}", name, id - 1));
+        let right = getElementById(&format!("{}_{}", name, id));
+        let saved_value = value(&left);
+        set_value(&left, &value(&right));
+        set_value(&right, &saved_value);
+    };
+    let swap_checked = |name: &str, active: &str, default: &str| {
+        let left = |side| getElementById(&format!("{}_{}_{}", name, side, id - 1));
+        let right = |side| getElementById(&format!("{}_{}_{}", name, side, id));
+        let saved_checked = is_checked(&left(active));
+        if is_checked(&right(active)) {
+            set_checked(&left(active));
+        } else {
+            set_checked(&left(default));
+        }
+        if saved_checked {
+            set_checked(&right(active));
+        } else {
+            set_checked(&right(default));
+        }
+    };
+    swap_value("text");
+    swap_value("preset");
+    swap_value("symbols");
+    swap_checked("bit_order", "lsb", "msb");
+    swap_checked("trailing_bits", "ignore", "check");
+    swap_value("padding");
+    swap_value("ignore");
+    swap_value("wrap_width");
+    swap_value("wrap_separator");
+    swap_value("translate_from");
+    swap_value("translate_to");
+    swap_value("canonical");
+    swap_value("error");
+    spec_update(id - 1);
+    spec_update(id);
+}
+
+fn read_state(name: &str) -> Option<String> {
     let value = getHistory(name);
-    if value.is_empty() {
-        getStorage(name)
+    if value.is_null() {
+        getStorage(name).as_string()
     } else {
-        value
+        value.as_string()
     }
 }
 
@@ -433,9 +516,14 @@ fn write_state(name: &str, value: &str) {
     setHistory(name, value);
 }
 
-fn restore_encoding(id: i32) {
+fn delete_state(name: &str) {
+    deleteStorage(name);
+    deleteHistory(name);
+}
+
+fn restore_encoding(id: i32, state: &[u8]) {
     let encoding = BASE64URL_NOPAD
-        .decode(read_state(&format!("{}", id)).as_bytes())
+        .decode(state)
         .ok()
         .and_then(|value| state::decode_encoding(&value));
     encoding_update(&encoding, id);
@@ -452,9 +540,9 @@ fn save_encoding(encoding: &Option<Encoding>, id: i32) {
     }
 }
 
-fn restore_input() {
+fn restore_input(state: &str) {
     let value = BASE64URL_NOPAD
-        .decode(read_state("i").as_bytes())
+        .decode(state.as_bytes())
         .ok()
         .and_then(|x| String::from_utf8(x).ok());
     set_value(
@@ -471,9 +559,21 @@ fn save_input() {
     );
 }
 
+const LIMIT_ID: i32 = 16;
+
+fn next_id() -> i32 {
+    for id in 0 .. LIMIT_ID {
+        if getElementById(&format!("encoding_{}", id)).is_null() {
+            return id;
+        }
+    }
+    LIMIT_ID
+}
+
 #[wasm_bindgen]
 pub fn init() {
     let encodings = createElement("div");
+    setAttribute(&encodings, "id", "encodings");
     setAttribute(&encodings, "class", "encodings");
     appendChild(&body(), &encodings);
 
@@ -481,17 +581,83 @@ pub fn init() {
     setAttribute(&input, "id", "input");
     setAttribute(&input, "style", "display: none;");
     appendChild(&encodings, &input);
-    restore_input();
-
-    for i in 0 .. MAX_ID {
-        appendChild(&encodings, &create_encoding(i));
+    if let Some(state) = getHistory("i").as_string() {
+        clearStorage();
+        restore_input(&state);
+    } else {
+        restore_input(
+            getStorage("i")
+                .as_string()
+                .as_ref()
+                .map(String::as_str)
+                .unwrap_or(""),
+        );
     }
-    for i in 0 .. MAX_ID {
-        restore_encoding(i);
-        spec_update(i);
+
+    for id in 0 .. LIMIT_ID {
+        let state = match read_state(&format!("{}", id)) {
+            None => break,
+            Some(state) => state,
+        };
+        appendChild(&encodings, &create_encoding(id));
+        restore_encoding(id, state.as_bytes());
+        spec_update(id);
     }
 
-    setAttribute(&getElementById("text_0"), "autofocus", "");
+    let next = createElement("div");
+    setAttribute(&next, "id", "next");
+    setAttribute(&next, "class", "encoding");
+    let button = createElement("button");
+    setAttribute(&button, "type", "button");
+    setAttribute(&button, "onclick", "wasm_bindgen.add_encoding()");
+    appendChild(&button, &createTextNode("+"));
+    appendChild(&next, &button);
+    appendChild(&encodings, &next);
+
+    if next_id() > 0 {
+        setAttribute(&getElementById("text_0"), "autofocus", "");
+    }
+}
+
+#[wasm_bindgen]
+pub fn swap_left(id: i32) {
+    if id > 0 {
+        swap_encoding(id);
+    }
+}
+
+#[wasm_bindgen]
+pub fn swap_right(id: i32) {
+    if id < next_id() - 1 {
+        swap_encoding(id + 1);
+    }
+}
+
+#[wasm_bindgen]
+pub fn delete_encoding(id: i32) {
+    let next_id = next_id();
+    for i in id + 1 .. next_id {
+        swap_encoding(i);
+    }
+    removeChild(
+        &getElementById("encodings"),
+        &getElementById(&format!("encoding_{}", next_id - 1)),
+    );
+    delete_state(&format!("{}", next_id - 1));
+}
+
+#[wasm_bindgen]
+pub fn add_encoding() {
+    let id = next_id();
+    if id == LIMIT_ID {
+        return;
+    }
+    insertBefore(
+        &getElementById("encodings"),
+        &create_encoding(id),
+        &getElementById("next"),
+    );
+    spec_update(id);
 }
 
 #[wasm_bindgen]
@@ -518,7 +684,7 @@ pub fn text_update(id: i32) {
             }
         },
         Err(error) => {
-            set_invalid_input("spec", id);
+            set_invalid_input("encoding", id);
             set_error(id, &error);
             return;
         }
@@ -527,7 +693,7 @@ pub fn text_update(id: i32) {
     set_value(&getElementById("input"), &utf8::encode(&input, false));
     save_input();
 
-    for i in 0 .. MAX_ID {
+    for i in 0 .. next_id() {
         if i == id {
             continue;
         }
@@ -539,7 +705,7 @@ pub fn text_update(id: i32) {
                 &utf8::encode(encoding.encode(&input).as_bytes(), false),
             ),
             Err(error) => {
-                set_invalid_input("spec", i);
+                set_invalid_input("encoding", i);
                 set_error(i, &error);
             }
         }
@@ -549,13 +715,13 @@ pub fn text_update(id: i32) {
 #[wasm_bindgen]
 pub fn spec_update(id: i32) {
     reset_errors();
-    set_value(&getElementById(&format!("output_{}", id)), "");
+    set_value(&getElementById(&format!("canonical_{}", id)), "");
     set_value(&getElementById(&format!("preset_{}", id)), "");
 
     let encoding = match get_encoding(id) {
         Ok(encoding) => encoding,
         Err(error) => {
-            set_invalid_input("spec", id);
+            set_invalid_input("encoding", id);
             set_error(id, &error);
             return;
         }

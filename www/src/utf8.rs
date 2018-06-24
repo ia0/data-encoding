@@ -41,14 +41,14 @@ pub fn encode(input: &[u8], whitespace: bool) -> String {
         };
         for c in from_utf8(&input[pos .. pos + len]).unwrap().chars() {
             match c {
-                '\t' | '\n' => {
+                '\n' => {
                     if whitespace {
                         escape_char(c, &mut result);
                     } else {
                         result.push(c);
                     }
                 }
-                '\r' | '\\' => escape_char(c, &mut result),
+                '\t' | '\r' | '\\' => escape_char(c, &mut result),
                 '\x00' ... '\x1f' | '\x7f' => escape_byte(c as u8, &mut result),
                 _ => result.push(c),
             }

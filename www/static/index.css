@@ -2,20 +2,40 @@ body {
     font-family: sans-serif;
 }
 
+button {
+    font-size: large;
+    background-color: #eef;
+    border: 1px solid #004;
+}
+
 .encodings {
     display: flex;
     flex-flow: row wrap;
+    align-items: flex-start;
 }
 
 .encoding {
     display: flex;
     flex-flow: column nowrap;
+    background-color: #efe;
+    border: 1px solid #040;
+    margin: 2px;
+    padding: 8px;
+}
+
+.menu {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+    margin-bottom: 8px;
 }
 
 .specification {
     display: grid;
     grid-template-columns: 30% auto;
     grid-gap: 2px;
+    margin-top: 8px;
+    margin-bottom: 5px;
 }
 
 .switch {
@@ -38,6 +58,7 @@ body {
 .error {
     font-weight: bold;
     color: #c00;
+    margin-top: 2px;
 }
 
 .invalid_input {

@@ -9,6 +9,8 @@ function body() { return document.body; }
 function createElement(name) { return document.createElement(name); }
 function createTextNode(text) { return document.createTextNode(text); }
 function appendChild(parent, child) { parent.appendChild(child); }
+function insertBefore(parent, child, node) { parent.insertBefore(child, node); }
+function removeChild(parent, child) { parent.removeChild(child); }
 function setAttribute(node, name, value) { node.setAttribute(name, value); }
 function getElementById(id) { return document.getElementById(id); }
 function value(node) { return node.value; }
@@ -18,7 +20,9 @@ function removeClass(node, name) { node.classList.remove(name); }
 function is_checked(node) { return node.checked; }
 function set_checked(node) { node.checked = true; }
 function setStorage(name, value) { localStorage.setItem(name, value); }
-function getStorage(name) { return localStorage.getItem(name) || ''; }
+function getStorage(name) { return localStorage.getItem(name); }
+function deleteStorage(name) { localStorage.removeItem(name); }
+function clearStorage() { localStorage.clear(); }
 function setHistory(name, value) {
     var url = new URL(document.location);
     url.searchParams.set(name, value);
@@ -26,5 +30,10 @@ function setHistory(name, value) {
 }
 function getHistory(name) {
     var value = (new URL(document.location)).searchParams.get(name);
-    return decodeURIComponent(value || '');
+    return value === null ? null : decodeURIComponent(value);
+}
+function deleteHistory(name) {
+    var url = new URL(document.location);
+    url.searchParams.delete(name);
+    window.history.replaceState('', '', url.search);
 }
