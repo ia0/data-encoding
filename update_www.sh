@@ -21,6 +21,7 @@ git rm -qrf .
 git clean -qfxde/www/html
 mv www/html/* .
 rm -r www
+echo -n 'data-encoding.rs' > CNAME
 git add .
 git commit -qm"$CUR_COMMIT"
 git checkout -q master
