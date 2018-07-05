@@ -1,0 +1,5 @@
+fn_args_density = "Compressed"
+format_strings = true
+normalize_comments = true
+spaces_around_ranges = true
+use_try_shorthand = true

@@ -15,20 +15,21 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[wasm_bindgen]
 extern "C" {
-    fn body() -> JsValue;
     fn createElement(name: &str) -> JsValue;
     fn createTextNode(text: &str) -> JsValue;
     fn appendChild(parent: &JsValue, child: &JsValue);
     fn insertBefore(parent: &JsValue, child: &JsValue, node: &JsValue);
     fn removeChild(parent: &JsValue, child: &JsValue);
     fn setAttribute(node: &JsValue, name: &str, value: &str);
+    fn removeAttribute(node: &JsValue, name: &str);
     fn getElementById(id: &str) -> JsValue;
+    fn getElementByClass(node: &JsValue, name: &str) -> JsValue;
     fn value(node: &JsValue) -> String;
     fn set_value(node: &JsValue, value: &str);
+    fn innerHTML(node: &JsValue) -> String;
+    fn set_innerHTML(node: &JsValue, value: &str);
     fn addClass(node: &JsValue, name: &str);
     fn removeClass(node: &JsValue, name: &str);
-    fn is_checked(node: &JsValue) -> bool;
-    fn set_checked(node: &JsValue);
     fn setStorage(name: &str, value: &str);
     fn getStorage(name: &str) -> JsValue;
     fn deleteStorage(name: &str);
@@ -37,6 +38,11 @@ extern "C" {
     fn getHistory(name: &str) -> JsValue;
     fn deleteHistory(name: &str);
 }
+
+const BUG_LINK: &'static str =
+    "https://github.com/ia0/data-encoding/issues/new?labels=enhancement&title=[data-encoding.\
+     rs]%20Short%20description%20of%20the%20bug&body=Steps%20to%20reproduce:\
+     %0aExpected%20behavior:%0aActual%20behavior:";
 
 lazy_static! {
     static ref PRESETS: HashMap<String, Option<Encoding>> = {
@@ -64,17 +70,74 @@ lazy_static! {
         add!(HEXUPPER_PERMISSIVE);
         map
     };
+    static ref TOP_BUTTONS: HashMap<String, Box<Fn() -> JsValue + Sync>> = {
+        let mut result: HashMap<String, Box<Fn() -> JsValue + Sync>> = HashMap::new();
+        result.insert("tutorial".to_string(), Box::new(|| create_tutorial()));
+        result.insert("settings".to_string(), Box::new(|| create_settings()));
+        result.insert("help".to_string(), Box::new(|| create_help()));
+        result
+    };
 }
 
-fn create_tooltip(text: &str, tooltip: &str) -> JsValue {
-    let node = createElement("div");
-    setAttribute(&node, "class", "tooltip");
-    let tooltip_node = createElement("span");
-    setAttribute(&tooltip_node, "class", "tooltiptext");
-    appendChild(&tooltip_node, &createTextNode(tooltip));
-    appendChild(&node, &tooltip_node);
-    appendChild(&node, &createTextNode(text));
+fn create_node(tag: &str, attributes: &[(&str, &str)], children: &[&JsValue]) -> JsValue {
+    let node = createElement(tag);
+    for &(name, value) in attributes {
+        setAttribute(&node, name, value);
+    }
+    for child in children {
+        appendChild(&node, child);
+    }
     node
+}
+
+macro_rules! html {
+    ({ $tag:ident [$($name:ident = $value:expr);*] $($children:tt)* }) => {
+        create_node(stringify!($tag),
+                    &[$((stringify!($name), $value)),*],
+                    &[$(&html!($children)),*])
+    };
+    (($node:expr)) => { $node };
+    ($text:expr) => { createTextNode($text) };
+}
+
+fn get_element(id: i32, name: &str) -> JsValue {
+    getElementByClass(&getElementById(&format!("encoding_{}", id)), name)
+}
+
+fn with_id(fun: &str) -> String {
+    format!("wasm_bindgen.{}(get_id(event))", fun)
+}
+
+fn ensure_class_if(node: &JsValue, class: &str, condition: bool) {
+    if condition {
+        addClass(node, class);
+    } else {
+        removeClass(node, class);
+    }
+}
+
+fn ensure_enabled_if(node: &JsValue, enabled: bool) {
+    if enabled {
+        removeAttribute(node, "disabled");
+        removeClass(node, "s_disabled");
+    } else {
+        setAttribute(node, "disabled", "");
+        addClass(node, "s_disabled");
+    }
+}
+
+fn create_tutorial() -> JsValue {
+    html!("There are no tutorials yet.")
+}
+
+fn create_settings() -> JsValue {
+    html!{
+        { button [ type = "button"; onclick = "reset()" ] "reset" }
+    }
+}
+
+fn create_help() -> JsValue {
+    html!("There is no help yet.")
 }
 
 fn create_option(value: &str) -> JsValue {
@@ -84,253 +147,217 @@ fn create_option(value: &str) -> JsValue {
     node
 }
 
-fn create_switch(name: &str, id: i32) -> JsValue {
-    let switch = createElement("input");
-    setAttribute(&switch, "type", "radio");
-    setAttribute(&switch, "name", &format!("{}_{}", name, id));
-    let spec_update = format!("wasm_bindgen.spec_update({})", id);
-    setAttribute(&switch, "oninput", &spec_update);
-    switch
-}
+fn create_specification() -> JsValue {
+    let spec_update = with_id("spec_update");
 
-fn create_menu(id: i32) -> JsValue {
-    let menu = createElement("div");
-    setAttribute(&menu, "class", "menu");
-
-    let swap_left = createElement("button");
-    setAttribute(&swap_left, "type", "button");
-    let swap_left_onclick = format!("wasm_bindgen.swap_left({})", id);
-    setAttribute(&swap_left, "onclick", &swap_left_onclick);
-    appendChild(&swap_left, &createTextNode("<"));
-    appendChild(&menu, &swap_left);
-
-    let delete = createElement("button");
-    setAttribute(&delete, "type", "button");
-    let delete_onclick = format!("wasm_bindgen.delete_encoding({})", id);
-    setAttribute(&delete, "onclick", &delete_onclick);
-    appendChild(&delete, &createTextNode("\u{d7}"));
-    appendChild(&menu, &delete);
-
-    let swap_right = createElement("button");
-    setAttribute(&swap_right, "type", "button");
-    let swap_right_onclick = format!("wasm_bindgen.swap_right({})", id);
-    setAttribute(&swap_right, "onclick", &swap_right_onclick);
-    appendChild(&swap_right, &createTextNode(">"));
-    appendChild(&menu, &swap_right);
-
-    menu
-}
-
-fn create_specification(id: i32) -> JsValue {
-    let specification = createElement("div");
-    setAttribute(&specification, "id", &format!("spec_{}", id));
-    setAttribute(&specification, "class", "specification");
-    let spec_update = format!("wasm_bindgen.spec_update({})", id);
-
-    let preset = createElement("select");
-    let load_preset = format!("wasm_bindgen.load_preset({})", id);
-    setAttribute(&preset, "id", &format!("preset_{}", id));
-    setAttribute(&preset, "onchange", &load_preset);
-    let mut presets: Vec<_> = PRESETS.keys().collect();
-    presets.sort();
-    for x in presets {
-        appendChild(&preset, &create_option(x));
-    }
-    appendChild(&specification, &createTextNode("Preset"));
-    appendChild(&specification, &preset);
-    set_value(&preset, "");
-
-    // symbols
     let symbols_tooltip = "The number of symbols must be 2, 4, 8, 16, 32, or 64. Symbols must be \
                            ASCII characters (smaller than 128) and they must be unique.";
-    appendChild(&specification, &create_tooltip("Symbols", symbols_tooltip));
-    let symbols = createElement("input");
-    setAttribute(&symbols, "type", "text");
-    setAttribute(&symbols, "placeholder", "no encoding");
-    setAttribute(&symbols, "id", &format!("symbols_{}", id));
-    setAttribute(&symbols, "oninput", &spec_update);
-    appendChild(&specification, &symbols);
+    let symbols = html!{
+        { span []
+          "Encode with "
+          { input [ type = "text";
+                    spellcheck = "false";
+                    size = "16";
+                    placeholder = "symbols";
+                    class = "i_symbols";
+                    oninput = &spec_update;
+                    title = symbols_tooltip ] }
+        }
+    };
 
-    // bit order: LSB | MSB
     let bit_order_tooltip =
         "The default is to use most significant bit first since it is the most common.";
-    appendChild(
-        &specification,
-        &create_tooltip("Bit order", bit_order_tooltip),
-    );
-    let bit_order = createElement("div");
-    setAttribute(&bit_order, "class", "switch");
-    let lsb = create_switch("bit_order", id);
-    setAttribute(&lsb, "id", &format!("bit_order_lsb_{}", id));
-    appendChild(&bit_order, &createTextNode("LSB first"));
-    appendChild(&bit_order, &lsb);
-    let msb = create_switch("bit_order", id);
-    setAttribute(&msb, "id", &format!("bit_order_msb_{}", id));
-    setAttribute(&msb, "checked", "");
-    appendChild(&bit_order, &msb);
-    appendChild(&bit_order, &createTextNode("MSB first"));
-    appendChild(&specification, &bit_order);
+    let bit_order = html!{
+        { span []
+          { button [ type = "button";
+                     class = "i_bit_order";
+                     onclick = &with_id("toggle_bit_order");
+                     title = bit_order_tooltip ]
+            "Most"
+          }
+          " significant bit first"
+        }
+    };
 
-    // trailing bits: check | ignore
     let trailing_bits_tooltip = "The default is to check trailing bits. This is ignored when \
                                  unnecessary (i.e. for base2, base4, and base16).";
-    appendChild(
-        &specification,
-        &create_tooltip("Trailing bits", trailing_bits_tooltip),
-    );
-    let trailing_bits = createElement("div");
-    setAttribute(&trailing_bits, "class", "switch");
-    let check = create_switch("trailing_bits", id);
-    setAttribute(&check, "id", &format!("trailing_bits_check_{}", id));
-    setAttribute(&check, "checked", "");
-    appendChild(&trailing_bits, &createTextNode("check"));
-    appendChild(&trailing_bits, &check);
-    let ignore = create_switch("trailing_bits", id);
-    setAttribute(&ignore, "id", &format!("trailing_bits_ignore_{}", id));
-    appendChild(&trailing_bits, &ignore);
-    appendChild(&trailing_bits, &createTextNode("ignore"));
-    appendChild(&specification, &trailing_bits);
+    let trailing_bits = html!{
+        { span []
+          { button [ type = "button";
+                     class = "i_trailing_bits";
+                     onclick = &with_id("toggle_trailing_bits");
+                     title = trailing_bits_tooltip ]
+            "Check"
+          }
+          " trailing bits"
+        }
+    };
 
-    // padding
     let padding_tooltip = "The padding character must be ASCII and must not be a symbol.";
-    appendChild(&specification, &create_tooltip("Padding", padding_tooltip));
-    let padding = createElement("input");
-    setAttribute(&padding, "type", "text");
-    setAttribute(&padding, "placeholder", "no padding");
-    setAttribute(&padding, "id", &format!("padding_{}", id));
-    setAttribute(&padding, "oninput", &spec_update);
-    appendChild(&specification, &padding);
+    let padding = html!{
+        { span []
+          "Pad with "
+          { input [ type = "text";
+                    spellcheck = "false";
+                    size = "6";
+                    placeholder = "character";
+                    class = "i_padding";
+                    oninput = &spec_update;
+                    title = padding_tooltip ] }
+        }
+    };
 
-    // ignore
     let ignore_tooltip =
         "The characters to ignore must be ASCII and must not be symbols or the padding character.";
-    appendChild(&specification, &create_tooltip("Ignore", ignore_tooltip));
-    let ignore = createElement("input");
-    setAttribute(&ignore, "type", "text");
-    setAttribute(&ignore, "placeholder", "no characters ignored");
-    setAttribute(&ignore, "id", &format!("ignore_{}", id));
-    setAttribute(&ignore, "oninput", &spec_update);
-    appendChild(&specification, &ignore);
+    let ignore = html!{
+        { span []
+          "Ignore "
+          { input [ type = "text";
+                    spellcheck = "false";
+                    size = "8";
+                    placeholder = "characters";
+                    class = "i_ignore";
+                    oninput = &spec_update;
+                    title = ignore_tooltip ] }
+        }
+    };
 
-    // wrap width
     let wrap_width_tooltip = "Must be a multiple of: 8 for base2, base8, and base32; 4 for base4 \
                               and base64; 2 for base16.";
-    appendChild(
-        &specification,
-        &create_tooltip("Wrap width", wrap_width_tooltip),
-    );
-    let wrap_width = createElement("input");
-    setAttribute(&wrap_width, "type", "text");
-    setAttribute(&wrap_width, "placeholder", "no wrapping");
-    setAttribute(&wrap_width, "id", &format!("wrap_width_{}", id));
-    setAttribute(&wrap_width, "oninput", &spec_update);
-    appendChild(&specification, &wrap_width);
-
-    // wrap separator
     let wrap_separator_tooltip =
         "The wrapping characters must be ASCII and must not be symbols or the padding character.";
-    appendChild(
-        &specification,
-        &create_tooltip("Wrap separator", wrap_separator_tooltip),
-    );
-    let wrap_separator = createElement("input");
-    setAttribute(&wrap_separator, "type", "text");
-    setAttribute(&wrap_separator, "placeholder", "no wrapping");
-    setAttribute(&wrap_separator, "id", &format!("wrap_separator_{}", id));
-    setAttribute(&wrap_separator, "oninput", &spec_update);
-    appendChild(&specification, &wrap_separator);
+    let wrap = html!{
+        { span []
+          "Wrap every "
+          { input [ type = "text";
+                    spellcheck = "false";
+                    size = "4";
+                    placeholder = "width";
+                    class = "i_wrap_width";
+                    oninput = &spec_update;
+                    title = wrap_width_tooltip ] }
+          " characters with "
+          { input [ type = "text";
+                    spellcheck = "false";
+                    size = "8";
+                    placeholder = "separator";
+                    class = "i_wrap_separator";
+                    oninput = &spec_update;
+                    title = wrap_separator_tooltip ] }
+        }
+    };
 
-    // translate from
     let translate_from_tooltip = "The characters to translate from must be ASCII and must not \
                                   have already been assigned a semantics.";
-    appendChild(
-        &specification,
-        &create_tooltip("Translate from", translate_from_tooltip),
-    );
-    let translate_from = createElement("input");
-    setAttribute(&translate_from, "type", "text");
-    setAttribute(&translate_from, "placeholder", "no translation");
-    setAttribute(&translate_from, "id", &format!("translate_from_{}", id));
-    setAttribute(&translate_from, "oninput", &spec_update);
-    appendChild(&specification, &translate_from);
-
-    // translate to
     let translate_to_tooltip = "The characters to translate to must be ASCII and must have been \
                                 assigned a semantics (symbol, padding character, or ignored \
                                 character).";
-    appendChild(
-        &specification,
-        &create_tooltip("Translate to", translate_to_tooltip),
-    );
-    let translate_to = createElement("input");
-    setAttribute(&translate_to, "type", "text");
-    setAttribute(&translate_to, "placeholder", "no translation");
-    setAttribute(&translate_to, "id", &format!("translate_to_{}", id));
-    setAttribute(&translate_to, "oninput", &spec_update);
-    appendChild(&specification, &translate_to);
+    let translate = html!{
+        { span []
+          "Translate "
+          { input [ type = "text";
+                    spellcheck = "false";
+                    size = "12";
+                    placeholder = "source";
+                    class = "i_translate_from";
+                    oninput = &spec_update;
+                    title = translate_from_tooltip ] }
+          " into "
+          { input [ type = "text";
+                    spellcheck = "false";
+                    size = "12";
+                    placeholder = "destination";
+                    class = "i_translate_to";
+                    oninput = &spec_update;
+                    title = translate_to_tooltip ] }
+        }
+    };
 
-    // canonical
     let canonical_tooltip = "The encoding is not canonical if trailing bits are not checked, \
                              padding is used, characters are ignored, or characters are \
                              translated.";
-    appendChild(
-        &specification,
-        &create_tooltip("Canonical", canonical_tooltip),
-    );
-    let canonical = createElement("output");
-    setAttribute(&canonical, "id", &format!("canonical_{}", id));
-    appendChild(&specification, &canonical);
+    let canonical = html!{
+        { span []
+          { output [ class = "i_canonical";
+                     title = canonical_tooltip ] }
+        }
+    };
 
-    specification
+    html!{
+        { div [ class = "s_specification" ]
+          { div [ class = "s_control" ]
+            { div [ class = "e_symbols" ] (symbols) }
+            { div [ class = "e_bit_order" ] (bit_order) }
+            { div [ class = "e_trailing_bits" ] (trailing_bits) }
+            { div [ class = "e_padding" ] (padding) }
+            { div [ class = "e_ignore" ] (ignore) }
+            { div [ class = "e_wrap" ] (wrap) }
+            { div [ class = "e_translate" ] (translate) } }
+          { div [] (canonical) } }
+    }
 }
 
 fn create_encoding(id: i32) -> JsValue {
-    let encoding = createElement("div");
-    setAttribute(&encoding, "id", &format!("encoding_{}", id));
-    setAttribute(&encoding, "class", "encoding");
+    let preset = createElement("select");
+    addClass(&preset, "s_preset");
+    addClass(&preset, "i_preset");
+    setAttribute(&preset, "onchange", &with_id("load_preset"));
+    let mut presets: Vec<_> = PRESETS.keys().map(String::as_str).collect();
+    presets.push("custom encoding");
+    presets.sort();
+    for x in presets {
+        let option = create_option(x);
+        if x == "custom encoding" {
+            setAttribute(&option, "disabled", "");
+        }
+        appendChild(&preset, &option);
+    }
 
-    let menu = create_menu(id);
-    appendChild(&encoding, &menu);
-
-    let text = createElement("textarea");
-    setAttribute(&text, "id", &format!("text_{}", id));
-    let text_update = format!("wasm_bindgen.text_update({})", id);
-    setAttribute(&text, "rows", "5");
-    setAttribute(&text, "cols", "50");
-    setAttribute(&text, "placeholder", "enter your text here");
-    setAttribute(&text, "oninput", &text_update);
-    setAttribute(&text, "onfocus", &text_update);
-    appendChild(&encoding, &text);
-
-    let specification = create_specification(id);
-    appendChild(&encoding, &specification);
-
-    let error = createElement("output");
-    setAttribute(&error, "id", &format!("error_{}", id));
-    setAttribute(&error, "class", "error");
-    appendChild(&encoding, &error);
-
-    encoding
+    html!{
+        { div [ id = &format!("encoding_{}", id);
+                class = "i_encoding s_encoding" ]
+          { div [ class = "s_menu" ]
+            { button [ type = "button";
+                       class = "i_swap_left";
+                       onclick = &with_id("swap_left") ]
+              "move left" }
+            { button [ type = "button";
+                       onclick = &with_id("delete_encoding") ]
+              "delete" }
+            { button [ type = "button";
+                       class = "i_swap_right";
+                       onclick = &with_id("swap_right") ]
+              "move right" } }
+          (preset)
+          { textarea [ class = "i_text";
+                       rows = "5";
+                       cols = "50";
+                       placeholder = "enter your text here";
+                       oninput = &with_id("text_update");
+                       onfocus = &with_id("text_update") ] }
+          (create_specification())
+          { output [ class = "i_error" ] } }
+    }
 }
 
 fn get_encoding(id: i32) -> Result<Option<Encoding>, String> {
     let utf8_decode = |name| -> Result<_, String> {
-        let value = value(&getElementById(&format!("{}_{}", name, id)));
+        let value = value(&get_element(id, name));
         Ok(String::from_utf8_lossy(&utf8::decode(&value)?).into_owned())
     };
-    let symbols = utf8_decode("symbols")?;
+    let symbols = utf8_decode("i_symbols")?;
     if symbols.is_empty() {
         return Ok(None);
     }
     let mut spec = Specification::new();
     spec.symbols = range::decode(&symbols)?;
-    if is_checked(&getElementById(&format!("bit_order_lsb_{}", id))) {
+    if innerHTML(&get_element(id, "i_bit_order")) == "Least" {
         spec.bit_order = data_encoding::BitOrder::LeastSignificantFirst;
     }
-    if is_checked(&getElementById(&format!("trailing_bits_ignore_{}", id))) {
+    if innerHTML(&get_element(id, "i_trailing_bits")) == "Ignore" {
         spec.check_trailing_bits = false;
     }
-    let padding = utf8_decode("padding")?;
+    let padding = utf8_decode("i_padding")?;
     let mut padding_iter = padding.chars().fuse();
     spec.padding = padding_iter.next();
     if padding_iter.next().is_some() {
@@ -340,106 +367,131 @@ fn get_encoding(id: i32) -> Result<Option<Encoding>, String> {
         2 | 4 | 16 => spec.padding = None,
         _ => (),
     }
-    spec.ignore = range::decode(&utf8_decode("ignore")?)?;
-    let wrap_width = value(&getElementById(&format!("wrap_width_{}", id)));
+    spec.ignore = range::decode(&utf8_decode("i_ignore")?)?;
+    let wrap_width = value(&get_element(id, "i_wrap_width"));
     if !wrap_width.is_empty() {
         match wrap_width.parse() {
             Ok(wrap_width) => spec.wrap.width = wrap_width,
             Err(error) => return Err(format!("{}", error)),
         }
     }
-    spec.wrap.separator = utf8_decode("wrap_separator")?;
+    spec.wrap.separator = utf8_decode("i_wrap_separator")?;
     if (spec.wrap.width == 0) ^ spec.wrap.separator.is_empty() {
         return Err("incomplete wrapping".to_string());
     }
-    spec.translate.from = range::decode(&utf8_decode("translate_from")?)?;
-    spec.translate.to = range::decode(&utf8_decode("translate_to")?)?;
+    spec.translate.from = range::decode(&utf8_decode("i_translate_from")?)?;
+    spec.translate.to = range::decode(&utf8_decode("i_translate_to")?)?;
     spec.encoding()
         .map(Some)
         .map_err(|error| format!("{}", error))
 }
 
 fn set_invalid_input(name: &str, id: i32) {
-    let node = getElementById(&format!("{}_{}", name, id));
-    addClass(&node, "invalid_input");
+    addClass(&get_element(id, name), "s_invalid_input");
 }
 
 fn unset_invalid_input(name: &str, id: i32) {
-    let node = getElementById(&format!("{}_{}", name, id));
-    removeClass(&node, "invalid_input");
+    removeClass(&get_element(id, name), "s_invalid_input");
 }
 
 fn set_error(id: i32, message: &str) {
-    let error = getElementById(&format!("error_{}", id));
-    if message.is_empty() {
-        removeClass(&error, "error");
-    } else {
-        addClass(&error, "error");
-    }
-    set_value(&error, message);
+    set_value(&get_element(id, "i_error"), message);
 }
 
 fn reset_errors() {
     for id in 0 .. next_id() {
-        unset_invalid_input("text", id);
-        unset_invalid_input("encoding", id);
+        unset_invalid_input("i_text", id);
+        unset_invalid_input("i_encoding", id);
         set_error(id, "");
+    }
+}
+
+fn fix_swap_buttons() {
+    let last_id = next_id() - 1;
+    for id in 0 ..= last_id {
+        ensure_enabled_if(&get_element(id, "i_swap_left"), id != 0);
+        ensure_enabled_if(&get_element(id, "i_swap_right"), id != last_id);
     }
 }
 
 fn encoding_update(encoding: &Option<Encoding>, id: i32) {
     reset_errors();
-    set_value(&getElementById(&format!("canonical_{}", id)), "");
+    set_value(&get_element(id, "i_canonical"), "");
 
     let spec = encoding
         .as_ref()
         .map(|e| e.specification())
         .unwrap_or_else(|| Specification::new());
+    #[derive(PartialEq, Eq)]
+    enum Hide {
+        AllButSymbol,
+        TrailingBits,
+        Nothing,
+    };
+    let hide = match encoding {
+        None => Hide::AllButSymbol,
+        Some(encoding) => match encoding.bit_width() {
+            1 | 2 | 4 => Hide::TrailingBits,
+            _ => Hide::Nothing,
+        },
+    };
     let set = |name, value: &str| {
         set_value(
-            &getElementById(&format!("{}_{}", name, id)),
+            &get_element(id, name),
             &utf8::encode(value.as_bytes(), true),
         );
     };
     let set_range = |name, value| {
         set(name, &range::encode(value).unwrap());
     };
-
-    set_range("symbols", &spec.symbols);
-    let bit_order = match spec.bit_order {
-        data_encoding::BitOrder::LeastSignificantFirst => "lsb",
-        data_encoding::BitOrder::MostSignificantFirst => "msb",
+    let ensure = |class, name, condition| {
+        ensure_class_if(&get_element(id, name), class, condition);
     };
-    set_checked(&getElementById(&format!("bit_order_{}_{}", bit_order, id)));
-    if spec.check_trailing_bits {
-        set_checked(&getElementById(&format!("trailing_bits_check_{}", id)));
-    } else {
-        set_checked(&getElementById(&format!("trailing_bits_ignore_{}", id)));
-    }
+
+    set_range("i_symbols", &spec.symbols);
+    ensure("s_disabled", "e_symbols", spec.symbols.is_empty());
+    let bit_order = match spec.bit_order {
+        data_encoding::BitOrder::LeastSignificantFirst => "Least",
+        data_encoding::BitOrder::MostSignificantFirst => "Most",
+    };
+    set_innerHTML(&get_element(id, "i_bit_order"), bit_order);
+    ensure("s_hidden", "e_bit_order", hide == Hide::AllButSymbol);
+    let trailing_bits = match spec.check_trailing_bits {
+        true => "Check",
+        false => "Ignore",
+    };
+    set_innerHTML(&get_element(id, "i_trailing_bits"), trailing_bits);
+    ensure("s_hidden", "e_trailing_bits", hide != Hide::Nothing);
     let mut padding = String::new();
     if let Some(c) = spec.padding {
         padding.push(c);
     }
-    set("padding", &padding);
-    set_range("ignore", &spec.ignore);
+    set("i_padding", &padding);
+    ensure("s_disabled", "e_padding", padding.is_empty());
+    ensure("s_hidden", "e_padding", hide != Hide::Nothing);
+    set_range("i_ignore", &spec.ignore);
+    ensure("s_disabled", "e_ignore", spec.ignore.is_empty());
+    ensure("s_hidden", "e_ignore", hide == Hide::AllButSymbol);
     if spec.wrap.width == 0 {
-        set("wrap_width", "");
+        set("i_wrap_width", "");
     } else {
-        set("wrap_width", &format!("{}", spec.wrap.width));
+        set("i_wrap_width", &format!("{}", spec.wrap.width));
     }
-    set("wrap_separator", &spec.wrap.separator);
-    set_range("translate_from", &spec.translate.from);
-    set_range("translate_to", &spec.translate.to);
+    set("i_wrap_separator", &spec.wrap.separator);
+    ensure("s_disabled", "e_wrap", spec.wrap.width == 0);
+    ensure("s_hidden", "e_wrap", hide == Hide::AllButSymbol);
+    set_range("i_translate_from", &spec.translate.from);
+    set_range("i_translate_to", &spec.translate.to);
+    ensure("s_disabled", "e_translate", spec.translate.from.is_empty());
+    ensure("s_hidden", "e_translate", hide == Hide::AllButSymbol);
 
     if let Some(encoding) = encoding {
-        let mut not = String::new();
+        let mut canonical = "Encoding is".to_string();
         if !encoding.is_canonical() {
-            not.push_str(" not");
+            canonical.push_str(" not");
         }
-        set_value(
-            &getElementById(&format!("canonical_{}", id)),
-            if encoding.is_canonical() { "yes" } else { "no" },
-        );
+        canonical.push_str(" canonical");
+        set_value(&get_element(id, "i_canonical"), &canonical);
     }
 
     let input = value(&getElementById("input"));
@@ -456,48 +508,20 @@ fn encoding_update(encoding: &Option<Encoding>, id: i32) {
             utf8::encode(encoding.encode(&input).as_bytes(), false)
         }
     };
-    set_value(&getElementById(&format!("text_{}", id)), &output);
+    let text = get_element(id, "i_text");
+    setAttribute(&text, "spellcheck", &format!("{}", encoding.is_none()));
+    set_value(&text, &output);
 
     save_encoding(encoding, id);
 }
 
 fn swap_encoding(id: i32) {
     assert!(id > 0);
-    let swap_value = |name: &str| {
-        let left = getElementById(&format!("{}_{}", name, id - 1));
-        let right = getElementById(&format!("{}_{}", name, id));
-        let saved_value = value(&left);
-        set_value(&left, &value(&right));
-        set_value(&right, &saved_value);
-    };
-    let swap_checked = |name: &str, active: &str, default: &str| {
-        let left = |side| getElementById(&format!("{}_{}_{}", name, side, id - 1));
-        let right = |side| getElementById(&format!("{}_{}_{}", name, side, id));
-        let saved_checked = is_checked(&left(active));
-        if is_checked(&right(active)) {
-            set_checked(&left(active));
-        } else {
-            set_checked(&left(default));
-        }
-        if saved_checked {
-            set_checked(&right(active));
-        } else {
-            set_checked(&right(default));
-        }
-    };
-    swap_value("text");
-    swap_value("preset");
-    swap_value("symbols");
-    swap_checked("bit_order", "lsb", "msb");
-    swap_checked("trailing_bits", "ignore", "check");
-    swap_value("padding");
-    swap_value("ignore");
-    swap_value("wrap_width");
-    swap_value("wrap_separator");
-    swap_value("translate_from");
-    swap_value("translate_to");
-    swap_value("canonical");
-    swap_value("error");
+    let prev = get_element(id - 1, "i_encoding");
+    let next = get_element(id, "i_encoding");
+    insertBefore(&getElementById("encodings"), &next, &prev);
+    setAttribute(&prev, "id", &format!("encoding_{}", id));
+    setAttribute(&next, "id", &format!("encoding_{}", id - 1));
     spec_update(id - 1);
     spec_update(id);
 }
@@ -545,18 +569,13 @@ fn restore_input(state: &str) {
         .decode(state.as_bytes())
         .ok()
         .and_then(|x| String::from_utf8(x).ok());
-    set_value(
-        &getElementById("input"),
-        value.as_ref().map(String::as_str).unwrap_or(""),
-    );
-    save_input();
+    let input = value.as_ref().map(String::as_str).unwrap_or("");
+    set_value(&getElementById("input"), input);
+    save_input(input);
 }
 
-fn save_input() {
-    write_state(
-        "i",
-        &BASE64URL_NOPAD.encode(value(&getElementById("input")).as_bytes()),
-    );
+fn save_input(input: &str) {
+    write_state("i", &BASE64URL_NOPAD.encode(input.as_bytes()));
 }
 
 const LIMIT_ID: i32 = 16;
@@ -572,10 +591,33 @@ fn next_id() -> i32 {
 
 #[wasm_bindgen]
 pub fn init() {
-    let encodings = createElement("div");
-    setAttribute(&encodings, "id", "encodings");
-    setAttribute(&encodings, "class", "encodings");
-    appendChild(&body(), &encodings);
+    let top_buttons = html!{
+        { div [ class = "s_top_right" ]
+          { a [ href = BUG_LINK; target = "_blank" ]
+            { button [ type = "button" ] "report bug" } } }
+    };
+    for name in ["tutorial", "settings", "help"].iter() {
+        let button = html!{
+            { button [ type = "button";
+                       id = &format!("toggle_{}", name);
+                       onclick = &format!("wasm_bindgen.toggle_menu('{}')", name) ] }
+        };
+        appendChild(&button, &createTextNode(&format!("open {}", name)));
+        appendChild(&top_buttons, &button);
+    }
+
+    let top = html!{
+        { div [ id = "top"; class = "s_top" ]
+          { div [ class = "s_top_menu" ]
+            { div [ id = "title"; class = "s_title" ] }
+            (top_buttons) } }
+    };
+    appendChild(&getElementById("everything"), &top);
+
+    let encodings = html!{
+        { div [ id = "encodings"; class = "s_encodings" ] }
+    };
+    appendChild(&getElementById("everything"), &encodings);
 
     let input = createElement("textarea");
     setAttribute(&input, "id", "input");
@@ -585,13 +627,13 @@ pub fn init() {
         clearStorage();
         restore_input(&state);
     } else {
-        restore_input(
-            getStorage("i")
-                .as_string()
-                .as_ref()
-                .map(String::as_str)
-                .unwrap_or(""),
-        );
+        if let Some(state) = getStorage("i").as_string() {
+            restore_input(&state);
+        } else {
+            restore_input(&BASE64URL_NOPAD.encode(b"hello"));
+            save_encoding(&None, 0);
+            save_encoding(&Some(data_encoding::BASE64), 1);
+        }
     }
 
     for id in 0 .. LIMIT_ID {
@@ -603,20 +645,24 @@ pub fn init() {
         restore_encoding(id, state.as_bytes());
         spec_update(id);
     }
+    fix_swap_buttons();
 
-    let next = createElement("div");
-    setAttribute(&next, "id", "next");
-    setAttribute(&next, "class", "encoding");
-    let button = createElement("button");
-    setAttribute(&button, "type", "button");
-    setAttribute(&button, "onclick", "wasm_bindgen.add_encoding()");
-    appendChild(&button, &createTextNode("+"));
-    appendChild(&next, &button);
+    let next = html!{
+        { div [ id = "next"; class = "s_next s_encoding" ]
+          { button [ type = "button";
+                     onclick = "wasm_bindgen.add_encoding()" ]
+            "add" } }
+    };
     appendChild(&encodings, &next);
 
     if next_id() > 0 {
-        setAttribute(&getElementById("text_0"), "autofocus", "");
+        setAttribute(&get_element(0, "i_text"), "autofocus", "");
     }
+
+    let nothing = getElementById("nothing");
+    set_innerHTML(&nothing, "");
+    setAttribute(&nothing, "style", "display: none;");
+    removeAttribute(&getElementById("everything"), "style");
 }
 
 #[wasm_bindgen]
@@ -624,6 +670,7 @@ pub fn swap_left(id: i32) {
     if id > 0 {
         swap_encoding(id);
     }
+    fix_swap_buttons();
 }
 
 #[wasm_bindgen]
@@ -631,6 +678,7 @@ pub fn swap_right(id: i32) {
     if id < next_id() - 1 {
         swap_encoding(id + 1);
     }
+    fix_swap_buttons();
 }
 
 #[wasm_bindgen]
@@ -643,6 +691,7 @@ pub fn delete_encoding(id: i32) {
         &getElementById("encodings"),
         &getElementById(&format!("encoding_{}", next_id - 1)),
     );
+    fix_swap_buttons();
     delete_state(&format!("{}", next_id - 1));
 }
 
@@ -657,6 +706,29 @@ pub fn add_encoding() {
         &create_encoding(id),
         &getElementById("next"),
     );
+    fix_swap_buttons();
+    spec_update(id);
+}
+
+#[wasm_bindgen]
+pub fn toggle_bit_order(id: i32) {
+    let toggle = get_element(id, "i_bit_order");
+    if innerHTML(&toggle) != "Least" {
+        set_innerHTML(&toggle, "Least");
+    } else {
+        set_innerHTML(&toggle, "Most");
+    }
+    spec_update(id);
+}
+
+#[wasm_bindgen]
+pub fn toggle_trailing_bits(id: i32) {
+    let toggle = get_element(id, "i_trailing_bits");
+    if innerHTML(&toggle) != "Ignore" {
+        set_innerHTML(&toggle, "Ignore");
+    } else {
+        set_innerHTML(&toggle, "Check");
+    }
     spec_update(id);
 }
 
@@ -664,10 +736,10 @@ pub fn add_encoding() {
 pub fn text_update(id: i32) {
     reset_errors();
 
-    let mut input = match utf8::decode(&value(&getElementById(&format!("text_{}", id)))) {
+    let mut input = match utf8::decode(&value(&get_element(id, "i_text"))) {
         Ok(input) => input,
         Err(error) => {
-            set_invalid_input("text", id);
+            set_invalid_input("i_text", id);
             set_error(id, &error);
             return;
         }
@@ -678,34 +750,35 @@ pub fn text_update(id: i32) {
         Ok(Some(encoding)) => match encoding.decode(&input) {
             Ok(result) => input = result,
             Err(error) => {
-                set_invalid_input("text", id);
+                set_invalid_input("i_text", id);
                 set_error(id, &format!("{}", error));
                 return;
             }
         },
         Err(error) => {
-            set_invalid_input("encoding", id);
+            set_invalid_input("i_encoding", id);
             set_error(id, &error);
             return;
         }
     }
 
-    set_value(&getElementById("input"), &utf8::encode(&input, false));
-    save_input();
+    let encoded_input = utf8::encode(&input, false);
+    set_value(&getElementById("input"), &encoded_input);
+    save_input(&encoded_input);
 
     for i in 0 .. next_id() {
         if i == id {
             continue;
         }
-        let output = getElementById(&format!("text_{}", i));
+        let output = get_element(i, "i_text");
         match get_encoding(i) {
-            Ok(None) => set_value(&output, &utf8::encode(&input, false)),
+            Ok(None) => set_value(&output, &encoded_input),
             Ok(Some(encoding)) => set_value(
                 &output,
                 &utf8::encode(encoding.encode(&input).as_bytes(), false),
             ),
             Err(error) => {
-                set_invalid_input("encoding", i);
+                set_invalid_input("i_encoding", i);
                 set_error(i, &error);
             }
         }
@@ -715,20 +788,20 @@ pub fn text_update(id: i32) {
 #[wasm_bindgen]
 pub fn spec_update(id: i32) {
     reset_errors();
-    set_value(&getElementById(&format!("canonical_{}", id)), "");
-    set_value(&getElementById(&format!("preset_{}", id)), "");
+    set_value(&get_element(id, "i_preset"), "custom encoding");
+    set_value(&get_element(id, "i_canonical"), "");
 
     let encoding = match get_encoding(id) {
         Ok(encoding) => encoding,
         Err(error) => {
-            set_invalid_input("encoding", id);
+            set_invalid_input("i_encoding", id);
             set_error(id, &error);
             return;
         }
     };
     for (k, e) in PRESETS.iter() {
         if &encoding == e {
-            set_value(&getElementById(&format!("preset_{}", id)), k);
+            set_value(&get_element(id, "i_preset"), k);
         }
     }
     encoding_update(&encoding, id);
@@ -738,8 +811,34 @@ pub fn spec_update(id: i32) {
 pub fn load_preset(id: i32) {
     reset_errors();
 
-    let encoding = PRESETS
-        .get(&value(&getElementById(&format!("preset_{}", id))))
-        .unwrap();
+    let encoding = PRESETS.get(&value(&get_element(id, "i_preset"))).unwrap();
     encoding_update(encoding, id);
+}
+
+#[wasm_bindgen]
+pub fn toggle_menu(name: &str) {
+    let content = match TOP_BUTTONS.get(name) {
+        None => return,
+        Some(content) => content,
+    };
+    let top = getElementById("top");
+    let title = getElementById("title");
+    let old_title = innerHTML(&title);
+    if old_title != "" {
+        set_innerHTML(&title, "");
+        removeChild(&top, &getElementById("content"));
+        set_innerHTML(
+            &getElementById(&format!("toggle_{}", &old_title)),
+            &format!("open {}", old_title),
+        );
+        if old_title == name {
+            return;
+        }
+    }
+    set_innerHTML(&title, name);
+    appendChild(&top, &html!{{ div [id = "content"] (content()) }});
+    set_innerHTML(
+        &getElementById(&format!("toggle_{}", name)),
+        &format!("close {}", name),
+    );
 }

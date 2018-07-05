@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-fail() { echo "[1;31mError:[m $1"; exit 1; }
+fail() { echo "[1;31mError:[m $1"; exit 1; }
 
 ( cd www && make html )
 

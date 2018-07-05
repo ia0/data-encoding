@@ -1,7 +1,7 @@
-- Only show part of the specification that are relevant
-  - The whole specification but symbols if symbols is empty
-  - Trailing bits and padding for base8, base32, base64
+- Add settings to unlock features like bit order, trailing bits, ignore,
+  translate, and wrap
+- Add games/tutorials (backed up in local storage) unlocking settings
+  - Enter 3 different inputs that decode to "hello" with GD3BWuF6sDkrLw
 - Add support for file upload/download
-- Print a message if no javascript and a message while loading wasm
 - Advertise the binary (cargo install) and the library (code snippet to create
   the encoding)

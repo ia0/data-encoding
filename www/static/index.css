@@ -1,66 +1,117 @@
 body {
     font-family: sans-serif;
+    color: #000;
 }
 
-button {
-    font-size: large;
+button, select {
+    background-color: #f6f6ff;
+    border: 1px solid #88a;
+    border-radius: 2px;
+}
+
+input {
+    background-color: #fff;
+    border: 1px solid #aaa;
+    border-radius: 2px;
+    padding: 1px 2px;
+}
+
+::placeholder {
+    color: #aaa;
+}
+
+.s_disabled {
+    color: #aaa;
+}
+
+.s_hidden {
+    display: none;
+}
+
+.s_disabled input, input.s_disabled {
+    border-color: #ccc;
+}
+
+.s_disabled button, button.s_disabled {
+    background-color: #f6ffff;
+    border-color: #bcd;
+}
+
+.s_top {
     background-color: #eef;
-    border: 1px solid #004;
+    border: 1px solid #448;
+    border-radius: 5px;
+    padding: 5px;
+    margin-bottom: 5px;
 }
 
-.encodings {
+.s_top_menu {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+}
+
+.s_title {
+    font-weight: bold;
+}
+
+.s_top_right button {
+    margin: 0px 2px 0px 3px;
+}
+
+.s_encodings {
     display: flex;
     flex-flow: row wrap;
     align-items: flex-start;
+    margin: 0px -4px -4px 0px;
 }
 
-.encoding {
+.s_encoding {
     display: flex;
     flex-flow: column nowrap;
     background-color: #efe;
-    border: 1px solid #040;
-    margin: 2px;
+    border: 1px solid #484;
+    border-radius: 5px;
+    margin: 0px 5px 5px 0px;
     padding: 8px;
 }
 
-.menu {
+.s_next {
+    display: grid;
+    grid-template-columns: auto;
+    grid-gap: 5px;
+}
+
+.s_menu {
     display: flex;
     flex-flow: row nowrap;
     justify-content: space-between;
     margin-bottom: 8px;
 }
 
-.specification {
-    display: grid;
-    grid-template-columns: 30% auto;
-    grid-gap: 2px;
-    margin-top: 8px;
+.s_preset {
     margin-bottom: 5px;
 }
 
-.switch {
-    display: flex;
-    flex-flow: row nowrap;
+.s_specification {
+    margin-top: 8px;
 }
 
-.tooltip .tooltiptext {
-    visibility: hidden;
-    position: absolute;
-    z-index: 1;
-    background-color: #eee;
+.s_control>div {
+    padding: 1px 0px;
 }
 
-.tooltip:hover .tooltiptext,
-.tooltip:focus .tooltiptext {
-    visibility: visible;
+.s_control>div::before {
+    content: "• ";
 }
 
-.error {
+.s_error {
     font-weight: bold;
     color: #c00;
     margin-top: 2px;
 }
 
-.invalid_input {
+.s_invalid_input {
     background-color: #fee;
+    border-color: #a88;
 }
