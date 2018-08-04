@@ -7,7 +7,6 @@
 //!
 //! [data-encoding-macro]: https://crates.io/crates/data-encoding-macro
 
-#![cfg_attr(not(feature = "stable"), feature(proc_macro))]
 #![warn(unused_results)]
 
 extern crate proc_macro;
