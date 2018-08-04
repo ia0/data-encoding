@@ -8,6 +8,8 @@ extern crate data_encoding_macro;
 use std::ops::Deref;
 
 use data_encoding::{BASE64, HEXLOWER};
+#[cfg(not(feature = "stable"))]
+use data_encoding_macro::{decode_array, decode_slice};
 
 // Test the macro invocation from inside a module.
 mod test {
