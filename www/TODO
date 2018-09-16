@@ -1,7 +1,18 @@
-- Add settings to unlock features like bit order, trailing bits, ignore,
-  translate, and wrap
-- Add games/tutorials (backed up in local storage) unlocking settings
+- Help:
+  - Talk about escaping
+  - Maybe recap how everything works (duplicate with tutorial)
+  - Advertise binary (cargo install) and library
+- Settings:
+  - "Reset" button
+  - "Don't save/restore input" checkbox
+  - Show/Hide some stuff (like file encoding/decoding, or specification, etc.)
+- Tutorial:
   - Enter 3 different inputs that decode to "hello" with GD3BWuF6sDkrLw
+  - Advertise binary (cargo install) and library
+- Add support for saving custom encodings (another dropdown below presets)
 - Add support for file upload/download
-- Advertise the binary (cargo install) and the library (code snippet to create
-  the encoding)
+- Code snippet to create the encoding
+- Save URL every 100ms if it changed to allow back button
+- Review and cleanup all code:
+  - Go over all title (tooltip) and placeholder attributes
+  - Consider using https://github.com/koute/stdweb

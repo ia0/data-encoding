@@ -37,18 +37,21 @@ input {
     border-color: #bcd;
 }
 
-.s_top {
-    background-color: #eef;
-    border: 1px solid #448;
-    border-radius: 5px;
-    padding: 5px;
-    margin-bottom: 5px;
+.s_nofocus {
+    background-color: #fcfcfc;
+    border-color: #ccc;
+    color: #666;
 }
 
 .s_top_menu {
     display: flex;
     flex-flow: row nowrap;
     justify-content: space-between;
+    background-color: #eef;
+    border: 1px solid #448;
+    border-radius: 5px;
+    padding: 5px;
+    margin-bottom: 5px;
 }
 
 .s_title {
@@ -57,6 +60,14 @@ input {
 
 .s_top_right button {
     margin: 0px 2px 0px 3px;
+}
+
+.s_content {
+    background-color: #ffe;
+    border: 1px solid #884;
+    border-radius: 5px;
+    padding: 5px;
+    margin-bottom: 5px;
 }
 
 .s_encodings {

@@ -21,12 +21,13 @@ function value(node) { return node.value; }
 function set_value(node, value) { node.value = value; }
 function innerHTML(node) { return node.innerHTML; }
 function set_innerHTML(node, value) { node.innerHTML = value; }
+function focus(node) { node.focus(); }
 function addClass(node, name) { node.classList.add(name); }
 function removeClass(node, name) { node.classList.remove(name); }
+function hasClass(node, name) { return node.classList.contains(name); }
 function setStorage(name, value) { localStorage.setItem(name, value); }
 function getStorage(name) { return localStorage.getItem(name); }
 function deleteStorage(name) { localStorage.removeItem(name); }
-function clearStorage() { localStorage.clear(); }
 function setHistory(name, value) {
     var url = new URL(document.location);
     url.searchParams.set(name, value);
@@ -51,4 +52,12 @@ function reset() {
 function get_id(event) {
     var encoding = event.target.closest('.s_encoding');
     return Number(encoding.id.match('^encoding_([0-9]*)$')[1]);
+}
+function text_keydown(event) {
+    var encoding = event.target.closest('.s_encoding');
+    var id = Number(encoding.id.match('^encoding_([0-9]*)$')[1]);
+    if (event.which == 9) {
+        event.preventDefault();
+        wasm_bindgen.move_focus(event.shiftKey ? id - 1 : id + 1);
+    }
 }

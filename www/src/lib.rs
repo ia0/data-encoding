@@ -1,5 +1,3 @@
-#![feature(proc_macro, wasm_custom_section, wasm_import_module)]
-
 extern crate data_encoding;
 #[macro_use]
 extern crate lazy_static;
@@ -28,12 +26,13 @@ extern "C" {
     fn set_value(node: &JsValue, value: &str);
     fn innerHTML(node: &JsValue) -> String;
     fn set_innerHTML(node: &JsValue, value: &str);
+    fn focus(node: &JsValue);
     fn addClass(node: &JsValue, name: &str);
     fn removeClass(node: &JsValue, name: &str);
+    fn hasClass(node: &JsValue, name: &str) -> bool;
     fn setStorage(name: &str, value: &str);
     fn getStorage(name: &str) -> JsValue;
     fn deleteStorage(name: &str);
-    fn clearStorage();
     fn setHistory(name: &str, value: &str);
     fn getHistory(name: &str) -> JsValue;
     fn deleteHistory(name: &str);
@@ -127,7 +126,27 @@ fn ensure_enabled_if(node: &JsValue, enabled: bool) {
 }
 
 fn create_tutorial() -> JsValue {
-    html!("There are no tutorials yet.")
+    let index = getStorage("tutorial").as_string();
+    let index = match index {
+        None => {
+            return html!(
+                "Using the `close tutorial` button in the top right of the page, close and reopen \
+                 this tutorial page to advance to the next tutorial."
+            )
+        }
+        Some(index) => index,
+    };
+    match index.as_str() {
+        "init_done" => html!{
+            { div []
+              { p [] "Well done!" }
+              { button [ type = "button";
+                         onclick = "wasm_bindgen.goto_tutorial('intro')" ]
+                "next tutorial" } }
+        },
+        "intro" => html!("TODO"),
+        _ => panic!(),
+    }
 }
 
 fn create_settings() -> JsValue {
@@ -329,12 +348,13 @@ fn create_encoding(id: i32) -> JsValue {
                        onclick = &with_id("swap_right") ]
               "move right" } }
           (preset)
-          { textarea [ class = "i_text";
+          { textarea [ class = "i_text s_nofocus";
                        rows = "5";
                        cols = "50";
                        placeholder = "enter your text here";
                        oninput = &with_id("text_update");
-                       onfocus = &with_id("text_update") ] }
+                       onfocus = &with_id("text_update");
+                       onkeydown = "text_keydown(event)" ] }
           (create_specification())
           { output [ class = "i_error" ] } }
     }
@@ -494,23 +514,27 @@ fn encoding_update(encoding: &Option<Encoding>, id: i32) {
         set_value(&get_element(id, "i_canonical"), &canonical);
     }
 
-    let input = value(&getElementById("input"));
-    let output = match encoding {
-        None => input,
-        Some(encoding) => {
-            let input = match utf8::decode(&input) {
-                Ok(input) => input,
-                Err(error) => {
-                    set_error(id, &error);
-                    return;
-                }
-            };
-            utf8::encode(encoding.encode(&input).as_bytes(), false)
-        }
-    };
     let text = get_element(id, "i_text");
-    setAttribute(&text, "spellcheck", &format!("{}", encoding.is_none()));
-    set_value(&text, &output);
+    if hasClass(&text, "s_nofocus") {
+        let input = value(&getElementById("input"));
+        let output = match encoding {
+            None => input,
+            Some(encoding) => {
+                let input = match utf8::decode(&input) {
+                    Ok(input) => input,
+                    Err(error) => {
+                        set_error(id, &error);
+                        return;
+                    }
+                };
+                utf8::encode(encoding.encode(&input).as_bytes(), false)
+            }
+        };
+        setAttribute(&text, "spellcheck", &format!("{}", encoding.is_none()));
+        set_value(&text, &output);
+    } else {
+        text_update(id);
+    }
 
     save_encoding(encoding, id);
 }
@@ -614,6 +638,10 @@ pub fn init() {
     };
     appendChild(&getElementById("everything"), &top);
 
+    if getStorage("tutorial").is_null() {
+        toggle_menu("tutorial");
+    }
+
     let encodings = html!{
         { div [ id = "encodings"; class = "s_encodings" ] }
     };
@@ -624,7 +652,13 @@ pub fn init() {
     setAttribute(&input, "style", "display: none;");
     appendChild(&encodings, &input);
     if let Some(state) = getHistory("i").as_string() {
-        clearStorage();
+        for id in 0 .. LIMIT_ID {
+            let name = format!("{}", id);
+            if getStorage(&name).is_null() {
+                break;
+            }
+            deleteStorage(&name);
+        }
         restore_input(&state);
     } else {
         if let Some(state) = getStorage("i").as_string() {
@@ -656,7 +690,9 @@ pub fn init() {
     appendChild(&encodings, &next);
 
     if next_id() > 0 {
-        setAttribute(&get_element(0, "i_text"), "autofocus", "");
+        let text = get_element(0, "i_text");
+        setAttribute(&text, "autofocus", "");
+        removeClass(&text, "s_nofocus");
     }
 
     let nothing = getElementById("nothing");
@@ -735,6 +771,10 @@ pub fn toggle_trailing_bits(id: i32) {
 #[wasm_bindgen]
 pub fn text_update(id: i32) {
     reset_errors();
+    for i in 0 .. next_id() {
+        ensure_class_if(&get_element(i, "i_text"), "s_nofocus", i != id);
+    }
+    removeClass(&get_element(id, "i_text"), "s_nofocus");
 
     let mut input = match utf8::decode(&value(&get_element(id, "i_text"))) {
         Ok(input) => input,
@@ -809,8 +849,6 @@ pub fn spec_update(id: i32) {
 
 #[wasm_bindgen]
 pub fn load_preset(id: i32) {
-    reset_errors();
-
     let encoding = PRESETS.get(&value(&get_element(id, "i_preset"))).unwrap();
     encoding_update(encoding, id);
 }
@@ -832,13 +870,37 @@ pub fn toggle_menu(name: &str) {
             &format!("open {}", old_title),
         );
         if old_title == name {
+            if name == "tutorial" && getStorage("tutorial").is_null() {
+                setStorage("tutorial", "init_done");
+            }
             return;
         }
     }
     set_innerHTML(&title, name);
-    appendChild(&top, &html!{{ div [id = "content"] (content()) }});
+    let new_content = html!{
+        { div [ id = "content"; class = "s_content" ] (content()) }
+    };
+    appendChild(&top, &new_content);
     set_innerHTML(
         &getElementById(&format!("toggle_{}", name)),
         &format!("close {}", name),
     );
+}
+
+#[wasm_bindgen]
+pub fn goto_tutorial(name: &str) {
+    setStorage("tutorial", name);
+    // TODO: Make this better.
+    toggle_menu("tutorial");
+    toggle_menu("tutorial");
+}
+
+#[wasm_bindgen]
+pub fn move_focus(id: i32) {
+    let id = if id < 0 {
+        next_id() - 1
+    } else {
+        id % next_id()
+    };
+    focus(&get_element(id, "i_text"));
 }

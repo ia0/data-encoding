@@ -37,6 +37,10 @@ pub fn encode(input: &str) -> Result<String, String> {
         }
         match end {
             None => output.push(ensure_ascii(start)?),
+            Some(end) if end == start + 1 => {
+                output.push(ensure_ascii(start)?);
+                output.push(ensure_ascii(end)?);
+            }
             Some(end) => {
                 output.push(ensure_ascii(start)?);
                 output.push('-');
@@ -58,8 +62,9 @@ fn test_encode() {
     test("é", Err("non-ASCII byte"));
     test("-", Ok("--"));
     test(",-.", Ok(",--."));
-    test("+,-./", Ok("+-,--.-/"));
-    test("AB", Ok("A-B"));
+    test("+,-./", Ok("+,--./"));
+    test("AB", Ok("AB"));
+    test("ABC", Ok("A-C"));
     test("ABCDEF", Ok("A-F"));
     test("ABCDEFabcdef", Ok("A-Fa-f"));
     test("ABCDEFabcdef-", Ok("A-Fa-f--"));
