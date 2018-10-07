@@ -19,8 +19,7 @@
 //! You can define a compile-time byte slice from an encoded string literal:
 //!
 //! ```rust
-//! # #![cfg_attr(not(feature = "stable"), feature(use_extern_macros))]
-//! # #![cfg_attr(not(feature = "stable"), feature(proc_macro_non_items))]
+//! # #![cfg_attr(not(feature = "stable"), feature(proc_macro_hygiene))]
 //! #[macro_use]
 //! extern crate data_encoding_macro;
 //!
@@ -33,7 +32,6 @@
 //! also define a compile-time byte array from an encoded string literal:
 //!
 //! ```rust
-//! # #![cfg_attr(not(feature = "stable"), feature(use_extern_macros))]
 //! # #[macro_use] extern crate data_encoding_macro;
 //! # #[cfg(not(feature = "stable"))]
 //! hexlower_array!("const HELLO" = "68656c6c6f");
@@ -45,8 +43,7 @@
 //! You can define a compile-time custom encoding from its specification:
 //!
 //! ```rust
-//! # #![cfg_attr(not(feature = "stable"), feature(use_extern_macros))]
-//! # #![cfg_attr(not(feature = "stable"), feature(proc_macro_non_items))]
+//! # #![cfg_attr(not(feature = "stable"), feature(proc_macro_hygiene))]
 //! extern crate data_encoding;
 //! #[macro_use]
 //! extern crate data_encoding_macro;
@@ -71,8 +68,8 @@
 //! [data-encoding]: https://crates.io/crates/data-encoding
 //! [hexadecimal]: macro.hexlower_permissive.html
 
-#![cfg_attr(not(feature = "stable"), feature(use_extern_macros))]
-#![cfg_attr(not(feature = "stable"), feature(proc_macro_non_items))]
+#![cfg_attr(not(feature = "stable"), feature(proc_macro_hygiene))]
+
 #![warn(unused_results)]
 
 #[cfg(feature = "stable")]
@@ -109,7 +106,6 @@ proc_macro_expr_decl! {
 /// # Examples
 ///
 /// ```rust
-/// #![feature(use_extern_macros)]
 /// #[macro_use]
 /// extern crate data_encoding_macro;
 ///
@@ -141,7 +137,7 @@ macro_rules! decode_array {
 /// # Examples
 ///
 /// ```rust
-/// #![feature(use_extern_macros, proc_macro_non_items)]
+/// # #![feature(proc_macro_hygiene)]
 /// #[macro_use]
 /// extern crate data_encoding_macro;
 ///
@@ -215,7 +211,7 @@ macro_rules! decode_slice {
 /// # Examples
 ///
 /// ```rust
-/// #![feature(use_extern_macros, proc_macro_non_items)]
+/// # #![feature(proc_macro_hygiene)]
 /// extern crate data_encoding;
 /// #[macro_use] extern crate data_encoding_macro;
 ///
