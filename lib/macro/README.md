@@ -9,7 +9,7 @@ If you were familiar with the [binary_macros] crate, this library is actually
 If you use a nightly compiler, you may disable the "stable" feature:
 
 ```
-data-encoding-macro = { version = "0.1.4", default-features = false }
+data-encoding-macro = { version = "0.1.5", default-features = false }
 ```
 
 ### Examples
