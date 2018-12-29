@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.2
+
+### Patch
+
+- Switch to edition 2018
+
 ## 2.1.1
 
 ### Patch
