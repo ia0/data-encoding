@@ -1,12 +1,12 @@
 extern crate base64;
-extern crate data_encoding;
 extern crate cmp;
+extern crate data_encoding;
 #[macro_use]
 extern crate lazy_static;
 extern crate rustc_serialize;
 
-use data_encoding::{BASE64, Encoding, Specification, DecodeError};
 use data_encoding::DecodeKind::*;
+use data_encoding::{DecodeError, Encoding, Specification, BASE64};
 use rustc_serialize::base64::{FromBase64, ToBase64, STANDARD};
 
 #[test]
@@ -14,7 +14,8 @@ fn encode_exact() {
     let tests = &[
         (b"" as &[u8], b"" as &[u8]),
         (b"foo" as &[u8], b"Zm9v" as &[u8]),
-        (b"foobar" as &[u8], b"Zm9vYmFy" as &[u8])];
+        (b"foobar" as &[u8], b"Zm9vYmFy" as &[u8]),
+    ];
     for &(ref i, ref o) in tests {
         let mut r = vec![0u8; o.len()];
         cmp::base64_encode_seq_gcc(i, &mut r);
@@ -38,43 +39,33 @@ fn encode_exact() {
 #[test]
 fn difference() {
     let x = b"AAB=";
-    assert_eq!(BASE64.decode(x).err().unwrap(),
-               DecodeError { position: 2, kind: Trailing });
+    assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 2, kind: Trailing });
     assert_eq!(x.from_base64().unwrap(), vec![0, 0]);
     assert_eq!(base64::decode(x).unwrap(), vec![0, 0]);
     let x = b"AA\nB=";
-    assert_eq!(BASE64.decode(x).err().unwrap(),
-               DecodeError { position: 4, kind: Length });
+    assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 4, kind: Length });
     assert_eq!(x.from_base64().unwrap(), vec![0, 0]);
-    assert_eq!(base64::decode(x).err().unwrap(),
-               base64::DecodeError::InvalidLength);
+    assert_eq!(base64::decode(x).err().unwrap(), base64::DecodeError::InvalidLength);
     let x = b"AAB";
-    assert_eq!(BASE64.decode(x).err().unwrap(),
-               DecodeError { position: 0, kind: Length });
+    assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Length });
     assert_eq!(x.from_base64().unwrap(), vec![0, 0]);
     assert_eq!(base64::decode(x).unwrap(), vec![0, 0]);
     let x = b"AAA";
-    assert_eq!(BASE64.decode(x).err().unwrap(),
-               DecodeError { position: 0, kind: Length });
+    assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Length });
     assert_eq!(x.from_base64().unwrap(), vec![0, 0]);
     assert_eq!(base64::decode(x).unwrap(), vec![0, 0]);
     let x = b"A\rA\nB=";
-    assert_eq!(BASE64.decode(x).err().unwrap(),
-               DecodeError { position: 4, kind: Length });
+    assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 4, kind: Length });
     assert_eq!(x.from_base64().unwrap(), vec![0, 0]);
-    assert_eq!(base64::decode(x).err().unwrap(),
-               base64::DecodeError::InvalidByte(1, b'\r'));
+    assert_eq!(base64::decode(x).err().unwrap(), base64::DecodeError::InvalidByte(1, b'\r'));
     let x = b"-_\r\n";
-    assert_eq!(BASE64.decode(x).err().unwrap(),
-               DecodeError { position: 0, kind: Symbol });
+    assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Symbol });
     assert_eq!(x.from_base64().unwrap(), vec![251]);
-    assert_eq!(base64::decode(x).err().unwrap(),
-               base64::DecodeError::InvalidByte(0, b'-'));
+    assert_eq!(base64::decode(x).err().unwrap(), base64::DecodeError::InvalidByte(0, b'-'));
     let x = b"AA==AA==";
     assert_eq!(BASE64.decode(x).unwrap(), vec![0, 0]);
     assert!(x.from_base64().is_err());
-    assert_eq!(base64::decode(x).err().unwrap(),
-               base64::DecodeError::InvalidByte(2, b'='));
+    assert_eq!(base64::decode(x).err().unwrap(), base64::DecodeError::InvalidByte(2, b'='));
 }
 
 lazy_static! {

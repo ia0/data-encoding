@@ -1,10 +1,9 @@
 #![feature(test)]
 
-extern crate test;
 extern crate data_encoding;
+extern crate test;
 
-use data_encoding::{BASE32, BASE32_DNSCURVE, BASE64, BASE64_NOPAD, HEXLOWER,
-                    Specification};
+use data_encoding::{Specification, BASE32, BASE32_DNSCURVE, BASE64, BASE64_NOPAD, HEXLOWER};
 use test::Bencher;
 
 #[bench]

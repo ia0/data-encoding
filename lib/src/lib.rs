@@ -170,14 +170,27 @@
 
 #![warn(unused_results, missing_docs)]
 
-macro_rules! check { ($e: expr, $c: expr) => { if !$c { return Err($e); } }; }
+macro_rules! check {
+    ($e: expr, $c: expr) => {
+        if !$c {
+            return Err($e);
+        }
+    };
+}
 
-trait Static<T: Copy>: Copy { fn val(self) -> T; }
+trait Static<T: Copy>: Copy {
+    fn val(self) -> T;
+}
 
 macro_rules! define {
     ($name: ident: $type: ty = $val: expr) => {
-        #[derive(Copy, Clone)] struct $name;
-        impl Static<$type> for $name { fn val(self) -> $type { $val } }
+        #[derive(Copy, Clone)]
+        struct $name;
+        impl Static<$type> for $name {
+            fn val(self) -> $type {
+                $val
+            }
+        }
     };
 }
 
@@ -190,12 +203,20 @@ define!(N4: usize = 4);
 define!(N5: usize = 5);
 define!(N6: usize = 6);
 
-#[derive(Copy, Clone)] struct On;
-impl<T: Copy> Static<Option<T>> for On { fn val(self) -> Option<T> { None } }
+#[derive(Copy, Clone)]
+struct On;
+impl<T: Copy> Static<Option<T>> for On {
+    fn val(self) -> Option<T> {
+        None
+    }
+}
 
-#[derive(Copy, Clone)] struct Os<T>(T);
+#[derive(Copy, Clone)]
+struct Os<T>(T);
 impl<T: Copy> Static<Option<T>> for Os<T> {
-    fn val(self) -> Option<T> { Some(self.0) }
+    fn val(self) -> Option<T> {
+        Some(self.0)
+    }
 }
 
 macro_rules! dispatch {
@@ -239,8 +260,12 @@ unsafe fn as_array(x: &[u8]) -> &[u8; 256] {
     debug_assert_eq!(x.len(), 256);
     &*(x.as_ptr() as *const [u8; 256])
 }
-fn div_ceil(x: usize, m: usize) -> usize { (x + m - 1) / m }
-fn floor(x: usize, m: usize) -> usize { x / m * m }
+fn div_ceil(x: usize, m: usize) -> usize {
+    (x + m - 1) / m
+}
+fn floor(x: usize, m: usize) -> usize {
+    x / m * m
+}
 
 fn vectorize<F: FnMut(usize)>(n: usize, bs: usize, mut f: F) {
     for k in 0 .. n / bs {
@@ -318,7 +343,11 @@ const IGNORE: u8 = 129;
 const PADDING: u8 = 130;
 
 fn order(msb: bool, n: usize, i: usize) -> usize {
-    if msb { n - 1 - i } else { i }
+    if msb {
+        n - 1 - i
+    } else {
+        i
+    }
 }
 fn enc(bit: usize) -> usize {
     debug_assert!(1 <= bit && bit <= 6);
@@ -329,13 +358,16 @@ fn enc(bit: usize) -> usize {
         _ => unreachable!(),
     }
 }
-fn dec(bit: usize) -> usize { enc(bit) * 8 / bit }
+fn dec(bit: usize) -> usize {
+    enc(bit) * 8 / bit
+}
 
 fn encode_len<B: Static<usize>>(bit: B, len: usize) -> usize {
     div_ceil(8 * len, bit.val())
 }
 fn encode_block<B: Static<usize>, M: Static<bool>>(
-    bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8]) {
+    bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8],
+) {
     debug_assert!(input.len() <= enc(bit.val()));
     debug_assert_eq!(output.len(), encode_len(bit, input.len()));
     let bit = bit.val();
@@ -350,7 +382,8 @@ fn encode_block<B: Static<usize>, M: Static<bool>>(
     }
 }
 fn encode_mut<B: Static<usize>, M: Static<bool>>(
-    bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8]) {
+    bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8],
+) {
     debug_assert_eq!(output.len(), encode_len(bit, input.len()));
     let enc = enc(bit.val());
     let dec = dec(bit.val());
@@ -365,15 +398,14 @@ fn encode_mut<B: Static<usize>, M: Static<bool>>(
         let output = unsafe { chunk_mut_unchecked(output, dec, i) };
         encode_block(bit, msb, symbols, input, output);
     });
-    encode_block(bit, msb, symbols, &input[enc * n ..],
-                 &mut output[dec * n ..]);
+    encode_block(bit, msb, symbols, &input[enc * n ..], &mut output[dec * n ..]);
 }
 
 // Fails if an input character does not translate to a symbol. The error is the
 // lowest index of such character. The output is not written to.
 fn decode_block<B: Static<usize>, M: Static<bool>>(
-    bit: B, msb: M, values: &[u8; 256], input: &[u8], output: &mut [u8])
-    -> Result<(), usize> {
+    bit: B, msb: M, values: &[u8; 256], input: &[u8], output: &mut [u8],
+) -> Result<(), usize> {
     debug_assert!(output.len() <= enc(bit.val()));
     debug_assert_eq!(input.len(), encode_len(bit, output.len()));
     let bit = bit.val();
@@ -393,8 +425,8 @@ fn decode_block<B: Static<usize>, M: Static<bool>>(
 // is the lowest index of such character. The output is valid up to `pos / dec *
 // enc` excluded.
 fn decode_mut<B: Static<usize>, M: Static<bool>>(
-    bit: B, msb: M, values: &[u8; 256], input: &[u8], output: &mut [u8])
-    -> Result<(), usize> {
+    bit: B, msb: M, values: &[u8; 256], input: &[u8], output: &mut [u8],
+) -> Result<(), usize> {
     debug_assert_eq!(input.len(), encode_len(bit, output.len()));
     let enc = enc(bit.val());
     let dec = dec(bit.val());
@@ -409,20 +441,25 @@ fn decode_mut<B: Static<usize>, M: Static<bool>>(
 }
 // Fails if there are non-zero trailing bits.
 fn check_trail<B: Static<usize>, M: Static<bool>>(
-    bit: B, msb: M, ctb: bool, values: &[u8; 256], input: &[u8])
-    -> Result<(), ()> {
-    if 8 % bit.val() == 0 || !ctb { return Ok(()); }
+    bit: B, msb: M, ctb: bool, values: &[u8; 256], input: &[u8],
+) -> Result<(), ()> {
+    if 8 % bit.val() == 0 || !ctb {
+        return Ok(());
+    }
     let trail = bit.val() * input.len() % 8;
-    if trail == 0 { return Ok(()); }
+    if trail == 0 {
+        return Ok(());
+    }
     let mut mask = (1 << trail) - 1;
-    if !msb.val() { mask <<= bit.val() - trail; }
+    if !msb.val() {
+        mask <<= bit.val() - trail;
+    }
     check!((), values[input[input.len() - 1] as usize] & mask == 0);
     Ok(())
 }
 // Fails if the padding length is invalid. The error is the index of the first
 // padding character.
-fn check_pad<B: Static<usize>>(bit: B, values: &[u8; 256], input: &[u8])
-                               -> Result<usize, usize> {
+fn check_pad<B: Static<usize>>(bit: B, values: &[u8; 256], input: &[u8]) -> Result<usize, usize> {
     let bit = bit.val();
     debug_assert_eq!(input.len(), dec(bit));
     let is_pad = |x: &&u8| values[**x as usize] == PADDING;
@@ -436,21 +473,21 @@ fn encode_base_len<B: Static<usize>>(bit: B, len: usize) -> usize {
     encode_len(bit, len)
 }
 fn encode_base<B: Static<usize>, M: Static<bool>>(
-    bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8]) {
+    bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8],
+) {
     debug_assert_eq!(output.len(), encode_base_len(bit, input.len()));
     encode_mut(bit, msb, symbols, input, output);
 }
 
-fn encode_pad_len<B: Static<usize>, P: Static<Option<u8>>>(
-    bit: B, pad: P, len: usize) -> usize {
+fn encode_pad_len<B: Static<usize>, P: Static<Option<u8>>>(bit: B, pad: P, len: usize) -> usize {
     match pad.val() {
         None => encode_base_len(bit, len),
         Some(_) => div_ceil(len, enc(bit.val())) * dec(bit.val()),
     }
 }
 fn encode_pad<B: Static<usize>, M: Static<bool>, P: Static<Option<u8>>>(
-    bit: B, msb: M, symbols: &[u8; 256], spad: P, input: &[u8],
-    output: &mut [u8]) {
+    bit: B, msb: M, symbols: &[u8; 256], spad: P, input: &[u8], output: &mut [u8],
+) {
     let pad = match spad.val() {
         None => return encode_base(bit, msb, symbols, input, output),
         Some(pad) => pad,
@@ -458,28 +495,39 @@ fn encode_pad<B: Static<usize>, M: Static<bool>, P: Static<Option<u8>>>(
     debug_assert_eq!(output.len(), encode_pad_len(bit, spad, input.len()));
     let olen = encode_base_len(bit, input.len());
     encode_base(bit, msb, symbols, input, &mut output[.. olen]);
-    for i in olen .. output.len() { output[i] = pad; }
+    for i in olen .. output.len() {
+        output[i] = pad;
+    }
 }
 
-fn encode_wrap_len<'a, B: Static<usize>, P: Static<Option<u8>>,
-                       W: Static<Option<(usize, &'a [u8])>>>(
-    bit: B, pad: P, wrap: W, ilen: usize) -> usize {
+fn encode_wrap_len<
+    'a,
+    B: Static<usize>,
+    P: Static<Option<u8>>,
+    W: Static<Option<(usize, &'a [u8])>>,
+>(
+    bit: B, pad: P, wrap: W, ilen: usize,
+) -> usize {
     let olen = encode_pad_len(bit, pad, ilen);
     match wrap.val() {
         None => olen,
         Some((col, end)) => olen + end.len() * div_ceil(olen, col),
     }
 }
-fn encode_wrap_mut<'a, B: Static<usize>, M: Static<bool>, P: Static<Option<u8>>,
-                   W: Static<Option<(usize, &'a [u8])>>>(
-    bit: B, msb: M, symbols: &[u8; 256], pad: P, wrap: W, input: &[u8],
-    output: &mut [u8]) {
+fn encode_wrap_mut<
+    'a,
+    B: Static<usize>,
+    M: Static<bool>,
+    P: Static<Option<u8>>,
+    W: Static<Option<(usize, &'a [u8])>>,
+>(
+    bit: B, msb: M, symbols: &[u8; 256], pad: P, wrap: W, input: &[u8], output: &mut [u8],
+) {
     let (col, end) = match wrap.val() {
         None => return encode_pad(bit, msb, symbols, pad, input, output),
         Some((col, end)) => (col, end),
     };
-    debug_assert_eq!(output.len(),
-                     encode_wrap_len(bit, pad, wrap, input.len()));
+    debug_assert_eq!(output.len(), encode_wrap_len(bit, pad, wrap, input.len()));
     debug_assert_eq!(col % dec(bit.val()), 0);
     let col = col / dec(bit.val());
     let enc = col * enc(bit.val());
@@ -494,15 +542,15 @@ fn encode_wrap_mut<'a, B: Static<usize>, M: Static<bool>, P: Static<Option<u8>>,
     }
     if input.len() > enc * n {
         let olen = dec * n + encode_pad_len(bit, pad, input.len() - enc * n);
-        encode_pad(bit, msb, symbols, pad, &input[enc * n ..],
-                   &mut output[dec * n .. olen]);
+        encode_pad(bit, msb, symbols, pad, &input[enc * n ..], &mut output[dec * n .. olen]);
         output[olen ..].copy_from_slice(end);
     }
 }
 
 // Returns the longest valid input length and associated output length.
 fn decode_wrap_len<B: Static<usize>, P: Static<bool>>(
-    bit: B, pad: P, len: usize) -> (usize, usize) {
+    bit: B, pad: P, len: usize,
+) -> (usize, usize) {
     let bit = bit.val();
     if pad.val() {
         (floor(len, dec(bit)), len / dec(bit) * enc(bit))
@@ -515,35 +563,31 @@ fn decode_wrap_len<B: Static<usize>, P: Static<bool>>(
 // Fails with Length if length is invalid. The error is the largest valid
 // length.
 fn decode_pad_len<B: Static<usize>, P: Static<bool>>(
-    bit: B, pad: P, len: usize) -> Result<usize, DecodeError> {
+    bit: B, pad: P, len: usize,
+) -> Result<usize, DecodeError> {
     let (ilen, olen) = decode_wrap_len(bit, pad, len);
-    check!(DecodeError { position: ilen, kind: DecodeKind::Length },
-           ilen == len);
+    check!(DecodeError { position: ilen, kind: DecodeKind::Length }, ilen == len);
     Ok(olen)
 }
 
 // Fails with Length if length is invalid. The error is the largest valid
 // length.
-fn decode_base_len<B: Static<usize>>(bit: B, len: usize)
-                                     -> Result<usize, DecodeError> {
+fn decode_base_len<B: Static<usize>>(bit: B, len: usize) -> Result<usize, DecodeError> {
     decode_pad_len(bit, Bf, len)
 }
 // Fails with Symbol if an input character does not translate to a symbol. The
 // error is the lowest index of such character.
 // Fails with Trailing if there are non-zero trailing bits.
 fn decode_base_mut<B: Static<usize>, M: Static<bool>>(
-    bit: B, msb: M, ctb: bool, values: &[u8; 256], input: &[u8],
-    output: &mut [u8]) -> Result<usize, DecodePartial> {
+    bit: B, msb: M, ctb: bool, values: &[u8; 256], input: &[u8], output: &mut [u8],
+) -> Result<usize, DecodePartial> {
     debug_assert_eq!(Ok(output.len()), decode_base_len(bit, input.len()));
-    let fail = |pos, kind| {
-        DecodePartial {
-            read: pos / dec(bit.val()) * dec(bit.val()),
-            written: pos / dec(bit.val()) * enc(bit.val()),
-            error: DecodeError { position: pos, kind },
-        }
+    let fail = |pos, kind| DecodePartial {
+        read: pos / dec(bit.val()) * dec(bit.val()),
+        written: pos / dec(bit.val()) * enc(bit.val()),
+        error: DecodeError { position: pos, kind },
     };
-    decode_mut(bit, msb, values, input, output)
-        .map_err(|pos| fail(pos, DecodeKind::Symbol))?;
+    decode_mut(bit, msb, values, input, output).map_err(|pos| fail(pos, DecodeKind::Symbol))?;
     check_trail(bit, msb, ctb, values, input)
         .map_err(|()| fail(input.len() - 1, DecodeKind::Trailing))?;
     Ok(output.len())
@@ -555,54 +599,65 @@ fn decode_base_mut<B: Static<usize>, M: Static<bool>>(
 // of the first padding character of the invalid padding.
 // Fails with Trailing if there are non-zero trailing bits.
 fn decode_pad_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
-    bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, input: &[u8],
-    output: &mut [u8]) -> Result<usize, DecodePartial> {
+    bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, input: &[u8], output: &mut [u8],
+) -> Result<usize, DecodePartial> {
     if !pad.val() {
         return decode_base_mut(bit, msb, ctb, values, input, output);
     }
-    debug_assert_eq!(Ok(output.len()),
-                     decode_pad_len(bit, pad, input.len()));
+    debug_assert_eq!(Ok(output.len()), decode_pad_len(bit, pad, input.len()));
     let enc = enc(bit.val());
     let dec = dec(bit.val());
     let mut inpos = 0;
     let mut outpos = 0;
     let mut outend = output.len();
     while inpos < input.len() {
-        match decode_base_mut(bit, msb, ctb, values, &input[inpos ..],
-                              &mut output[outpos .. outend]) {
+        match decode_base_mut(
+            bit,
+            msb,
+            ctb,
+            values,
+            &input[inpos ..],
+            &mut output[outpos .. outend],
+        ) {
             Ok(written) => {
-                if cfg!(debug_assertions) { inpos = input.len(); }
+                if cfg!(debug_assertions) {
+                    inpos = input.len();
+                }
                 outpos += written;
                 break;
-            },
+            }
             Err(partial) => {
                 inpos += partial.read;
                 outpos += partial.written;
-            },
+            }
         }
-        let inlen = check_pad(bit, values, &input[inpos .. inpos + dec])
-            .map_err(|pos| DecodePartial {
+        let inlen =
+            check_pad(bit, values, &input[inpos .. inpos + dec]).map_err(|pos| DecodePartial {
                 read: inpos,
                 written: outpos,
-                error: DecodeError { position: inpos + pos,
-                                     kind: DecodeKind::Padding },
+                error: DecodeError { position: inpos + pos, kind: DecodeKind::Padding },
             })?;
         let outlen = decode_base_len(bit, inlen).unwrap();
-        let written = decode_base_mut(bit, msb, ctb, values,
-                                      &input[inpos .. inpos + inlen],
-                                      &mut output[outpos .. outpos + outlen])
-            .map_err(|partial| {
-                debug_assert_eq!(partial.read, 0);
-                debug_assert_eq!(partial.written, 0);
-                DecodePartial {
-                    read: inpos,
-                    written: outpos,
-                    error: DecodeError {
-                        position: inpos + partial.error.position,
-                        kind: partial.error.kind,
-                    },
-                }
-            })?;
+        let written = decode_base_mut(
+            bit,
+            msb,
+            ctb,
+            values,
+            &input[inpos .. inpos + inlen],
+            &mut output[outpos .. outpos + outlen],
+        )
+        .map_err(|partial| {
+            debug_assert_eq!(partial.read, 0);
+            debug_assert_eq!(partial.written, 0);
+            DecodePartial {
+                read: inpos,
+                written: outpos,
+                error: DecodeError {
+                    position: inpos + partial.error.position,
+                    kind: partial.error.kind,
+                },
+            }
+        })?;
         debug_assert_eq!(written, outlen);
         inpos += dec;
         outpos += outlen;
@@ -626,8 +681,8 @@ fn skip_ignore(values: &[u8; 256], input: &[u8], mut inpos: usize) -> usize {
 // of the first padding character of the invalid padding.
 // Fails with Trailing if there are non-zero trailing bits.
 fn decode_wrap_block<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
-    bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, input: &[u8],
-    output: &mut [u8]) -> Result<(usize, usize), DecodeError> {
+    bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, input: &[u8], output: &mut [u8],
+) -> Result<(usize, usize), DecodeError> {
     let dec = dec(bit.val());
     let mut buf = [0u8; 8];
     let mut shift = [0usize; 8];
@@ -635,21 +690,23 @@ fn decode_wrap_block<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
     let mut inpos = 0;
     while bufpos < dec {
         inpos = skip_ignore(values, input, inpos);
-        if inpos == input.len() { break; }
+        if inpos == input.len() {
+            break;
+        }
         shift[bufpos] = inpos;
         buf[bufpos] = input[inpos];
         bufpos += 1;
         inpos += 1;
     }
-    let olen = decode_pad_len(bit, pad, bufpos)
-        .map_err(|mut e| { e.position = shift[e.position]; e })?;
-    let written = decode_pad_mut(bit, msb, ctb, values, pad, &buf[.. bufpos],
-                                 &mut output[.. olen])
+    let olen = decode_pad_len(bit, pad, bufpos).map_err(|mut e| {
+        e.position = shift[e.position];
+        e
+    })?;
+    let written = decode_pad_mut(bit, msb, ctb, values, pad, &buf[.. bufpos], &mut output[.. olen])
         .map_err(|partial| {
             debug_assert_eq!(partial.read, 0);
             debug_assert_eq!(partial.written, 0);
-            DecodeError { position: shift[partial.error.position],
-                          kind: partial.error.kind }
+            DecodeError { position: shift[partial.error.position], kind: partial.error.kind }
         })?;
     Ok((inpos, written))
 }
@@ -659,10 +716,10 @@ fn decode_wrap_block<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
 // of the first padding character of the invalid padding.
 // Fails with Trailing if there are non-zero trailing bits.
 // Fails with Length if input length (without ignored characters) is invalid.
-fn decode_wrap_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>,
-                   I: Static<bool>>(
-    bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, has_ignore: I,
-    input: &[u8], output: &mut [u8]) -> Result<usize, DecodePartial> {
+fn decode_wrap_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>, I: Static<bool>>(
+    bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, has_ignore: I, input: &[u8],
+    output: &mut [u8],
+) -> Result<usize, DecodePartial> {
     if !has_ignore.val() {
         return decode_pad_mut(bit, msb, ctb, values, pad, input, output);
     }
@@ -671,26 +728,31 @@ fn decode_wrap_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>,
     let mut outpos = 0;
     while inpos < input.len() {
         let (inlen, outlen) = decode_wrap_len(bit, pad, input.len() - inpos);
-        match decode_pad_mut(bit, msb, ctb, values, pad,
-                             &input[inpos .. inpos + inlen],
-                             &mut output[outpos .. outpos + outlen]) {
+        match decode_pad_mut(
+            bit,
+            msb,
+            ctb,
+            values,
+            pad,
+            &input[inpos .. inpos + inlen],
+            &mut output[outpos .. outpos + outlen],
+        ) {
             Ok(written) => {
                 inpos += inlen;
                 outpos += written;
                 break;
-            },
+            }
             Err(partial) => {
                 inpos += partial.read;
                 outpos += partial.written;
-            },
+            }
         }
-        let (ipos, opos) = decode_wrap_block(bit, msb, ctb, values, pad,
-                                             &input[inpos ..],
-                                             &mut output[outpos ..])
-            .map_err(|mut error| {
-                error.position += inpos;
-                DecodePartial { read: inpos, written: outpos, error }
-            })?;
+        let (ipos, opos) =
+            decode_wrap_block(bit, msb, ctb, values, pad, &input[inpos ..], &mut output[outpos ..])
+                .map_err(|mut error| {
+                    error.position += inpos;
+                    DecodePartial { read: inpos, written: outpos, error }
+                })?;
         inpos += ipos;
         outpos += opos;
     }
@@ -724,7 +786,7 @@ fn decode_wrap_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>,
 /// reverse order.
 ///
 /// ```rust
-/// use data_encoding::{Specification, BitOrder};
+/// use data_encoding::{BitOrder, Specification};
 /// let mut spec = Specification::new();
 /// spec.symbols.push_str("01");
 /// // spec.bit_order = BitOrder::MostSignificantFirst;  // default
@@ -971,7 +1033,7 @@ pub struct Wrap {
 /// have trailing bits in similar circumstances:
 ///
 /// ```rust
-/// use data_encoding::{BASE64_NOPAD, Specification};
+/// use data_encoding::{Specification, BASE64_NOPAD};
 /// let octal = {
 ///     let mut spec = Specification::new();
 ///     spec.symbols.push_str("01234567");
@@ -1000,7 +1062,7 @@ pub struct Wrap {
 /// base32, lcm(8, 5) is 40 bits or 5 bytes. Let's consider octal and base64:
 ///
 /// ```rust
-/// use data_encoding::{BASE64, Specification};
+/// use data_encoding::{Specification, BASE64};
 /// let octal = {
 ///     let mut spec = Specification::new();
 ///     spec.symbols.push_str("01234567");
@@ -1070,7 +1132,7 @@ pub struct Wrap {
 /// ```rust
 /// let mut spec = data_encoding::HEXLOWER.specification();
 /// spec.translate.from.push_str("ABCDEFOIl");
-/// spec.translate.to  .push_str("abcdef011");
+/// spec.translate.to.push_str("abcdef011");
 /// let base = spec.encoding().unwrap();
 /// assert_eq!(base.decode(b"BOIl"), base.decode(b"b011"));
 /// ```
@@ -1143,19 +1205,37 @@ impl Specification {
 }
 
 impl Encoding {
-    fn sym(&self) -> &[u8; 256] { unsafe { as_array(&self.0[0 .. 256]) } }
-    fn val(&self) -> &[u8; 256] { unsafe { as_array(&self.0[256 .. 512]) } }
-    fn pad(&self) -> Option<u8> {
-        if self.0[512] < 128 { Some(self.0[512]) } else { None }
+    fn sym(&self) -> &[u8; 256] {
+        unsafe { as_array(&self.0[0 .. 256]) }
     }
-    fn ctb(&self) -> bool { self.0[513] & 0x10 != 0 }
-    fn msb(&self) -> bool { self.0[513] & 0x8 != 0 }
-    fn bit(&self) -> usize { (self.0[513] & 0x7) as usize }
+    fn val(&self) -> &[u8; 256] {
+        unsafe { as_array(&self.0[256 .. 512]) }
+    }
+    fn pad(&self) -> Option<u8> {
+        if self.0[512] < 128 {
+            Some(self.0[512])
+        } else {
+            None
+        }
+    }
+    fn ctb(&self) -> bool {
+        self.0[513] & 0x10 != 0
+    }
+    fn msb(&self) -> bool {
+        self.0[513] & 0x8 != 0
+    }
+    fn bit(&self) -> usize {
+        (self.0[513] & 0x7) as usize
+    }
     fn wrap(&self) -> Option<(usize, &[u8])> {
-        if self.0.len() <= 515 { return None; }
+        if self.0.len() <= 515 {
+            return None;
+        }
         Some((self.0[514] as usize, &self.0[515 ..]))
     }
-    fn has_ignore(&self) -> bool { self.0.len() >= 515 }
+    fn has_ignore(&self) -> bool {
+        self.0.len() >= 515
+    }
 
     /// Returns the encoded length of an input of length `len`
     ///
@@ -1163,7 +1243,7 @@ impl Encoding {
     ///
     /// [`encode_mut`]: struct.Encoding.html#method.encode_mut
     pub fn encode_len(&self, len: usize) -> usize {
-        dispatch!{
+        dispatch! {
             let bit: usize = self.bit();
             let pad: Option<u8> = self.pad();
             let wrap: Option<(usize, &[u8])> = self.wrap();
@@ -1192,7 +1272,7 @@ impl Encoding {
     /// [`encode_len`]: struct.Encoding.html#method.encode_len
     pub fn encode_mut(&self, input: &[u8], output: &mut [u8]) {
         assert_eq!(output.len(), self.encode_len(input.len()));
-        dispatch!{
+        dispatch! {
             let bit: usize = self.bit();
             let msb: bool = self.msb();
             let pad: Option<u8> = self.pad();
@@ -1228,13 +1308,15 @@ impl Encoding {
     /// [`Length`]: enum.DecodeKind.html#variant.Length
     /// [position]: struct.DecodeError.html#structfield.position
     pub fn decode_len(&self, len: usize) -> Result<usize, DecodeError> {
-        let (ilen, olen) = dispatch!{
+        let (ilen, olen) = dispatch! {
             let bit: usize = self.bit();
             let pad: bool = self.pad().is_some();
             decode_wrap_len(bit, pad, len)
         };
-        check!(DecodeError { position: ilen, kind: DecodeKind::Length },
-               self.has_ignore() || len == ilen);
+        check!(
+            DecodeError { position: ilen, kind: DecodeKind::Length },
+            self.has_ignore() || len == ilen
+        );
         Ok(olen)
     }
 
@@ -1277,10 +1359,9 @@ impl Encoding {
     /// [`Length`]: enum.DecodeKind.html#variant.Length
     /// [`read`]: struct.DecodePartial.html#structfield.read
     /// [`written`]: struct.DecodePartial.html#structfield.written
-    pub fn decode_mut(&self, input: &[u8], output: &mut [u8])
-                      -> Result<usize, DecodePartial> {
+    pub fn decode_mut(&self, input: &[u8], output: &mut [u8]) -> Result<usize, DecodePartial> {
         assert_eq!(Ok(output.len()), self.decode_len(input.len()));
-        dispatch!{
+        dispatch! {
             let bit: usize = self.bit();
             let msb: bool = self.msb();
             let pad: bool = self.pad().is_some();
@@ -1311,8 +1392,7 @@ impl Encoding {
     ///
     /// ```rust
     /// use data_encoding::BASE64;
-    /// assert_eq!(BASE64.decode(b"SGVsbA==byB3b3JsZA==").unwrap(),
-    ///            b"Hello world");
+    /// assert_eq!(BASE64.decode(b"SGVsbA==byB3b3JsZA==").unwrap(), b"Hello world");
     /// ```
     ///
     /// [`Length`]: enum.DecodeKind.html#variant.Length
@@ -1322,14 +1402,15 @@ impl Encoding {
     /// [position]: struct.DecodeError.html#structfield.position
     pub fn decode(&self, input: &[u8]) -> Result<Vec<u8>, DecodeError> {
         let mut output = vec![0u8; self.decode_len(input.len())?];
-        let len = self.decode_mut(input, &mut output)
-            .map_err(|partial| partial.error)?;
+        let len = self.decode_mut(input, &mut output).map_err(|partial| partial.error)?;
         output.truncate(len);
         Ok(output)
     }
 
     /// Returns the bit-width
-    pub fn bit_width(&self) -> usize { self.bit() }
+    pub fn bit_width(&self) -> usize {
+        self.bit()
+    }
 
     /// Returns whether the encoding is canonical
     ///
@@ -1340,14 +1421,22 @@ impl Encoding {
     /// - characters are ignored
     /// - characters are translated
     pub fn is_canonical(&self) -> bool {
-        if !self.ctb() { return false; }
+        if !self.ctb() {
+            return false;
+        }
         let bit = self.bit();
         let sym = self.sym();
         let val = self.val();
-        for i in 0..256 {
-            if val[i] == INVALID { continue; }
-            if val[i] >= 1 << bit { return false; }
-            if sym[val[i] as usize] != i as u8 { return false; }
+        for i in 0 .. 256 {
+            if val[i] == INVALID {
+                continue;
+            }
+            if val[i] >= 1 << bit {
+                return false;
+            }
+            if sym[val[i] as usize] != i as u8 {
+                return false;
+            }
         }
         true
     }
@@ -1355,36 +1444,36 @@ impl Encoding {
     /// Returns the encoding specification
     pub fn specification(&self) -> Specification {
         let mut specification = Specification::new();
-        specification.symbols.push_str(std::str::from_utf8(
-            &self.sym()[0 .. 1 << self.bit()]).unwrap());
-        specification.bit_order = if self.msb() {
-            MostSignificantFirst
-        } else {
-            LeastSignificantFirst
-        };
+        specification
+            .symbols
+            .push_str(std::str::from_utf8(&self.sym()[0 .. 1 << self.bit()]).unwrap());
+        specification.bit_order =
+            if self.msb() { MostSignificantFirst } else { LeastSignificantFirst };
         specification.check_trailing_bits = self.ctb();
         if let Some(pad) = self.pad() {
             specification.padding = Some(pad as char);
         }
         for i in 0 .. 128u8 {
-            if self.val()[i as usize] != IGNORE { continue; }
+            if self.val()[i as usize] != IGNORE {
+                continue;
+            }
             specification.ignore.push(i as char);
         }
         if let Some((col, end)) = self.wrap() {
             specification.wrap.width = col;
-            specification.wrap.separator =
-                std::str::from_utf8(end).unwrap().to_owned();
+            specification.wrap.separator = std::str::from_utf8(end).unwrap().to_owned();
         }
         for i in 0 .. 128u8 {
-            let canonical =
-                if self.val()[i as usize] < 1 << self.bit() {
-                    self.sym()[self.val()[i as usize] as usize]
-                } else if self.val()[i as usize] == PADDING {
-                    self.pad().unwrap()
-                } else {
-                    continue;
-                };
-            if i == canonical { continue; }
+            let canonical = if self.val()[i as usize] < 1 << self.bit() {
+                self.sym()[self.val()[i as usize] as usize]
+            } else if self.val()[i as usize] == PADDING {
+                self.pad().unwrap()
+            } else {
+                continue;
+            };
+            if i == canonical {
+                continue;
+            }
             specification.translate.from.push(i as char);
             specification.translate.to.push(canonical as char);
         }
@@ -1424,8 +1513,7 @@ impl std::fmt::Display for SpecificationError {
         match self.0 {
             BadSize => write!(f, "invalid number of symbols"),
             NotAscii => write!(f, "non-ascii character"),
-            Duplicate(c) => write!(f, "{:?} has conflicting definitions",
-                                   c as char),
+            Duplicate(c) => write!(f, "{:?} has conflicting definitions", c as char),
             ExtraPadding => write!(f, "unnecessary padding"),
             WrapLength => write!(f, "invalid wrap width or separator length"),
             WrapWidth(x) => write!(f, "wrap width not a multiple of {}", x),
@@ -1470,7 +1558,9 @@ impl Specification {
         let mut values = [INVALID; 128];
         let set = |v: &mut [u8; 128], i: u8, x: u8| {
             check!(SpecificationError(NotAscii), i < 128);
-            if v[i as usize] == x { return Ok(()); }
+            if v[i as usize] == x {
+                return Ok(());
+            }
             check!(SpecificationError(Duplicate(i)), v[i as usize] == INVALID);
             Ok(v[i as usize] = x)
         };
@@ -1486,7 +1576,7 @@ impl Specification {
                 check!(SpecificationError(NotAscii), pad.len_utf8() == 1);
                 set(&mut values, pad as u8, PADDING)?;
                 Some(pad as u8)
-            },
+            }
         };
         for i in self.ignore.bytes() {
             set(&mut values, i, IGNORE)?;
@@ -1497,11 +1587,11 @@ impl Specification {
             Some((self.wrap.width, self.wrap.separator.as_bytes()))
         };
         if let Some((col, end)) = wrap {
-            check!(SpecificationError(WrapLength),
-                   col < 256 && end.len() < 256);
-            check!(SpecificationError(WrapWidth(dec(bit) as u8)),
-                   col % dec(bit) == 0);
-            for i in end.iter() { set(&mut values, *i, IGNORE)?; }
+            check!(SpecificationError(WrapLength), col < 256 && end.len() < 256);
+            check!(SpecificationError(WrapWidth(dec(bit) as u8)), col % dec(bit) == 0);
+            for i in end.iter() {
+                set(&mut values, *i, IGNORE)?;
+            }
         }
         let from = self.translate.from.as_bytes();
         let to = self.translate.to.as_bytes();
@@ -1523,8 +1613,12 @@ impl Specification {
             Some(pad) => encoding.push(pad),
         }
         encoding.push(bit as u8);
-        if msb { encoding[513] |= 0x08; }
-        if ctb { encoding[513] |= 0x10; }
+        if msb {
+            encoding[513] |= 0x08;
+        }
+        if ctb {
+            encoding[513] |= 0x10;
+        }
         if let Some((col, end)) = wrap {
             encoding.push(col as u8);
             encoding.extend_from_slice(end);
@@ -1556,38 +1650,32 @@ impl Specification {
 /// ```
 pub const HEXLOWER: Encoding = HEXLOWER_IMPL;
 const HEXLOWER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49,
-    50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
-    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53,
-    54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
-    56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-    97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98,
-    99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
-    101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102,
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49,
-    50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
-    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53,
-    54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
-    56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-    97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98,
-    99, 100, 101, 102, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 28]));
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54,
+    55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
+    101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97,
+    98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48,
+    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
+    101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97,
+    98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48,
+    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 97, 98, 99, 100, 101, 102, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2,
+    3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 28,
+]));
 
 /// Lowercase hexadecimal encoding with case-insensitive decoding
 ///
@@ -1618,40 +1706,33 @@ const HEXLOWER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// const HEX: Encoding = HEXLOWER_PERMISSIVE;
 /// ```
 pub const HEXLOWER_PERMISSIVE: Encoding = HEXLOWER_PERMISSIVE_IMPL;
-const HEXLOWER_PERMISSIVE_IMPL: Encoding =
-    Encoding(std::borrow::Cow::Borrowed(&[
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49,
-    50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
-    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53,
-    54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
-    56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-    97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98,
-    99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
-    101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102,
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49,
-    50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
-    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53,
-    54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
-    56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-    97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98,
-    99, 100, 101, 102, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128,
-    128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    28]));
+const HEXLOWER_PERMISSIVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54,
+    55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
+    101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97,
+    98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48,
+    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
+    101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
+    52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97,
+    98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48,
+    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 97, 98, 99, 100, 101, 102, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2,
+    3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 28,
+]));
 
 /// Uppercase hexadecimal encoding
 ///
@@ -1678,37 +1759,31 @@ const HEXLOWER_PERMISSIVE_IMPL: Encoding =
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-8
 pub const HEXUPPER: Encoding = HEXUPPER_IMPL;
 const HEXUPPER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50,
-    51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53,
-    54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56,
-    57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66,
-    67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69,
-    70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49,
-    50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52,
-    53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
-    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65,
-    66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68,
-    69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51,
-    52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54,
-    55, 56, 57, 65, 66, 67, 68, 69, 70, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8,
-    9, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 28]));
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128, 128, 128, 128, 10, 11,
+    12, 13, 14, 15, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 28,
+]));
 
 /// Uppercase hexadecimal encoding with case-insensitive decoding
 ///
@@ -1732,39 +1807,32 @@ const HEXUPPER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// assert_eq!(HEXUPPER_PERMISSIVE.encode(&deadbeef), "DEADBEEF");
 /// ```
 pub const HEXUPPER_PERMISSIVE: Encoding = HEXUPPER_PERMISSIVE_IMPL;
-const HEXUPPER_PERMISSIVE_IMPL: Encoding =
-    Encoding(std::borrow::Cow::Borrowed(&[
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50,
-    51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53,
-    54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56,
-    57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66,
-    67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69,
-    70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49,
-    50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52,
-    53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
-    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65,
-    66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68,
-    69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51,
-    52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54,
-    55, 56, 57, 65, 66, 67, 68, 69, 70, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8,
-    9, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 28]));
+const HEXUPPER_PERMISSIVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128, 128, 128, 128, 10, 11,
+    12, 13, 14, 15, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 28,
+]));
 
 /// Padded base32 encoding
 ///
@@ -1783,36 +1851,30 @@ const HEXUPPER_PERMISSIVE_IMPL: Encoding =
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-6
 pub const BASE32: Encoding = BASE32_IMPL;
 const BASE32_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
-    84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70,
-    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
-    90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
-    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54,
-    55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82,
-    83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69,
-    70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
-    89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
-    76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53,
-    54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
-    82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68,
-    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
-    88, 89, 90, 50, 51, 52, 53, 54, 55, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29,
-    30, 31, 128, 128, 128, 128, 128, 130, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7,
-    8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 29
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+    81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72,
+    73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55,
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+    81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72,
+    73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55,
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+    81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128, 130, 128, 128,
+    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+    25, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 29,
 ]));
 
 /// Unpadded base32 encoding
@@ -1827,37 +1889,31 @@ const BASE32_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// ```
 pub const BASE32_NOPAD: Encoding = BASE32_NOPAD_IMPL;
 const BASE32_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
-    84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70,
-    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
-    90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
-    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54,
-    55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82,
-    83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69,
-    70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
-    89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
-    76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53,
-    54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
-    82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68,
-    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
-    88, 89, 90, 50, 51, 52, 53, 54, 55, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29,
-    30, 31, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7,
-    8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    29]));
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+    81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72,
+    73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55,
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+    81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72,
+    73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55,
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+    81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+    25, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 29,
+]));
 
 /// Padded base32hex encoding
 ///
@@ -1876,36 +1932,30 @@ const BASE32_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-7
 pub const BASE32HEX: Encoding = BASE32HEX_IMPL;
 const BASE32HEX_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73,
-    74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53,
-    54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-    80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66,
-    67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-    86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72,
-    73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52,
-    53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
-    79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65,
-    66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
-    85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71,
-    72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51,
-    52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
-    78, 79, 80, 81, 82, 83, 84, 85, 86, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8,
-    9, 128, 128, 128, 130, 128, 128, 128, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-    19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 29
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+    79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+    79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+    79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 130, 128, 128, 128, 10, 11,
+    12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 29,
 ]));
 
 /// Unpadded base32hex encoding
@@ -1920,37 +1970,31 @@ const BASE32HEX_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// ```
 pub const BASE32HEX_NOPAD: Encoding = BASE32HEX_NOPAD_IMPL;
 const BASE32HEX_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73,
-    74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53,
-    54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-    80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66,
-    67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
-    86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72,
-    73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52,
-    53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
-    79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65,
-    66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
-    85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71,
-    72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51,
-    52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
-    78, 79, 80, 81, 82, 83, 84, 85, 86, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8,
-    9, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-    19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    29]));
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+    79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+    79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55,
+    56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+    79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128, 128, 128, 128, 10, 11,
+    12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 29,
+]));
 
 /// DNSSEC base32 encoding
 ///
@@ -1974,39 +2018,33 @@ const BASE32HEX_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// [RFC5155]: https://tools.ietf.org/html/rfc5155
 pub const BASE32_DNSSEC: Encoding = BASE32_DNSSEC_IMPL;
 const BASE32_DNSSEC_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128, 128, 128, 128,
-    10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
-    29, 30, 31, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12,
-    13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 29]));
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
+    108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    116, 117, 118, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104,
+    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48, 49, 50, 51, 52, 53,
+    54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112,
+    113, 114, 115, 116, 117, 118, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101,
+    102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48, 49,
+    50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+    110, 111, 112, 113, 114, 115, 116, 117, 118, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98,
+    99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+    118, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 13,
+    14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+    26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 29,
+]));
 
 /// DNSCurve base32 encoding
 ///
@@ -2027,39 +2065,33 @@ const BASE32_DNSSEC_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// [DNSCurve]: https://dnscurve.org/in-implement.html
 pub const BASE32_DNSCURVE: Encoding = BASE32_DNSCURVE_IMPL;
 const BASE32_DNSCURVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
-    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
-    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
-    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
-    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
-    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
-    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
-    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106,
-    107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128, 128, 128,
-    128, 128, 10, 11, 12, 128, 13, 14, 15, 128, 16, 17, 18, 19, 20, 128, 21, 22,
-    23, 24, 25, 26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128, 128, 128, 10,
-    11, 12, 128, 13, 14, 15, 128, 16, 17, 18, 19, 20, 128, 21, 22, 23, 24, 25,
-    26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 21]));
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106, 107, 108, 109, 110,
+    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    98, 99, 100, 102, 103, 104, 106, 107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119,
+    120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106, 107,
+    108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53,
+    54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106, 107, 108, 109, 110, 112, 113, 114, 115, 116,
+    117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103,
+    104, 106, 107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49,
+    50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106, 107, 108, 109, 110, 112, 113,
+    114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99,
+    100, 102, 103, 104, 106, 107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
+    122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106, 107, 108, 109,
+    110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 128, 128, 128, 128, 128, 128, 128, 10, 11,
+    12, 128, 13, 14, 15, 128, 16, 17, 18, 19, 20, 128, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+    128, 128, 128, 128, 128, 128, 128, 10, 11, 12, 128, 13, 14, 15, 128, 16, 17, 18, 19, 20, 128,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 21,
+]));
 
 /// Padded base64 encoding
 ///
@@ -2068,8 +2100,7 @@ const BASE32_DNSCURVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// ```rust
 /// # use data_encoding::{Specification, BASE64};
 /// let mut spec = Specification::new();
-/// spec.symbols.push_str(
-///     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+/// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 /// spec.padding = Some('=');
 /// assert_eq!(BASE64, spec.encoding().unwrap());
 /// ```
@@ -2079,38 +2110,32 @@ const BASE32_DNSCURVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-4
 pub const BASE64: Encoding = BASE64_IMPL;
 const BASE64_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
-    84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
-    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
-    122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70,
-    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
-    90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
-    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52,
-    53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
-    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100,
-    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
-    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-    43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
-    82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-    120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128, 128, 128,
-    63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 130, 128, 128,
-    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-    20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30,
-    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-    50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    61, 30]));
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
+    115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66,
+    67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
+    97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67,
+    68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97,
+    98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+    117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68,
+    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98,
+    99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+    118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 62, 128, 128, 128, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 130, 128,
+    128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+    24, 25, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+    40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 30,
+]));
 
 /// Unpadded base64 encoding
 ///
@@ -2119,44 +2144,37 @@ const BASE64_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// ```rust
 /// # use data_encoding::{Specification, BASE64_NOPAD};
 /// let mut spec = Specification::new();
-/// spec.symbols.push_str(
-///     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+/// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 /// assert_eq!(BASE64_NOPAD, spec.encoding().unwrap());
 /// ```
 pub const BASE64_NOPAD: Encoding = BASE64_NOPAD_IMPL;
 const BASE64_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
-    84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
-    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
-    122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70,
-    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
-    90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
-    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52,
-    53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
-    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100,
-    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
-    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-    43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
-    82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-    120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128, 128, 128,
-    63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 128, 128, 128,
-    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-    20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30,
-    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-    50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 30]));
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
+    115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66,
+    67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
+    97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67,
+    68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97,
+    98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+    117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68,
+    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98,
+    99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+    118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 62, 128, 128, 128, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 128, 128,
+    128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+    24, 25, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+    40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 30,
+]));
 
 /// MIME base64 encoding
 ///
@@ -2165,8 +2183,7 @@ const BASE64_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// ```rust
 /// # use data_encoding::{Specification, Wrap, BASE64_MIME};
 /// let mut spec = Specification::new();
-/// spec.symbols.push_str(
-///     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+/// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 /// spec.padding = Some('=');
 /// spec.wrap.width = 76;
 /// spec.wrap.separator.push_str("\r\n");
@@ -2179,38 +2196,32 @@ const BASE64_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// [RFC2045]: https://tools.ietf.org/html/rfc2045
 pub const BASE64_MIME: Encoding = BASE64_MIME_IMPL;
 const BASE64_MIME_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
-    84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
-    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
-    122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70,
-    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
-    90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
-    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52,
-    53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
-    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100,
-    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
-    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-    43, 47, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
-    82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-    120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 129, 128, 128, 129, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128, 128, 128,
-    63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 130, 128, 128,
-    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-    20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30,
-    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-    50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    61, 30, 76, 13, 10]));
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
+    115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66,
+    67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
+    97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67,
+    68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97,
+    98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+    117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66, 67, 68,
+    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98,
+    99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+    118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 129, 128, 128, 129, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 62, 128, 128, 128, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 130, 128,
+    128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+    24, 25, 128, 128, 128, 128, 128, 128, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+    40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 30, 76, 13, 10,
+]));
 
 /// Padded base64url encoding
 ///
@@ -2219,8 +2230,7 @@ const BASE64_MIME_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// ```rust
 /// # use data_encoding::{Specification, BASE64URL};
 /// let mut spec = Specification::new();
-/// spec.symbols.push_str(
-///     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
+/// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
 /// spec.padding = Some('=');
 /// assert_eq!(BASE64URL, spec.encoding().unwrap());
 /// ```
@@ -2230,37 +2240,31 @@ const BASE64_MIME_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-5
 pub const BASE64URL: Encoding = BASE64URL_IMPL;
 const BASE64URL_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
-    84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
-    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
-    122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66, 67, 68, 69, 70,
-    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
-    90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
-    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52,
-    53, 54, 55, 56, 57, 45, 95, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
-    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100,
-    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
-    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-    45, 95, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
-    82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-    120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128,
-    128, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 130, 128, 128,
-    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-    20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 63, 128, 26, 27, 28, 29, 30, 31,
-    32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
-    51, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 30
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
+    115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66,
+    67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
+    97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66, 67,
+    68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97,
+    98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+    117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66, 67, 68,
+    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98,
+    99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+    118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 62, 128, 128, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 130, 128,
+    128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+    24, 25, 128, 128, 128, 128, 63, 128, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+    40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 30,
 ]));
 
 /// Unpadded base64url encoding
@@ -2270,41 +2274,34 @@ const BASE64URL_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// ```rust
 /// # use data_encoding::{Specification, BASE64URL_NOPAD};
 /// let mut spec = Specification::new();
-/// spec.symbols.push_str(
-///     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
+/// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
 /// assert_eq!(BASE64URL_NOPAD, spec.encoding().unwrap());
 /// ```
 pub const BASE64URL_NOPAD: Encoding = BASE64URL_NOPAD_IMPL;
 const BASE64URL_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
-    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
-    84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
-    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
-    122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66, 67, 68, 69, 70,
-    71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
-    90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
-    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52,
-    53, 54, 55, 56, 57, 45, 95, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
-    77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100,
-    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
-    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-    45, 95, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
-    82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104,
-    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-    120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128,
-    128, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 128, 128, 128,
-    128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-    20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 63, 128, 26, 27, 28, 29, 30, 31,
-    32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
-    51, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    30]));
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+    89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
+    115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66,
+    67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
+    97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66, 67,
+    68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97,
+    98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+    117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66, 67, 68,
+    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98,
+    99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+    118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 62, 128, 128, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 128, 128,
+    128, 128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+    24, 25, 128, 128, 128, 128, 63, 128, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+    40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 30,
+]));

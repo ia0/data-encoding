@@ -3,12 +3,18 @@
 extern crate data_encoding;
 extern crate getopts;
 
-use data_encoding::{Encoding, DecodeKind};
+use data_encoding::{DecodeKind, Encoding};
 use getopts::Options;
 use std::fs::File;
 use std::io::{Read, Write};
 
-macro_rules! check { ($e: expr, $c: expr) => { if !$c { return Err($e); } }; }
+macro_rules! check {
+    ($e: expr, $c: expr) => {
+        if !$c {
+            return Err($e);
+        }
+    };
+}
 
 #[derive(Debug)]
 pub enum Error {
@@ -56,8 +62,12 @@ impl ::std::error::Error for Error {
 
 type Result<T> = std::result::Result<T, Error>;
 
-fn floor(x: usize, d: usize) -> usize { x / d * d }
-fn ceil(x: usize, d: usize) -> usize { floor(x + d - 1, d) }
+fn floor(x: usize, d: usize) -> usize {
+    x / d * d
+}
+fn ceil(x: usize, d: usize) -> usize {
+    floor(x + d - 1, d)
+}
 
 #[test]
 fn floor_ceil() {
@@ -82,9 +92,11 @@ fn decode_block(base: &Encoding) -> usize {
 }
 
 pub fn encode<R: Read, W: Write>(
-    base: &Encoding, wrap: usize, mut reader: R, mut writer: W, size: usize)
-    -> Result<()> {
-    let block = if wrap == 0 { encode_block(&base) } else {
+    base: &Encoding, wrap: usize, mut reader: R, mut writer: W, size: usize,
+) -> Result<()> {
+    let block = if wrap == 0 {
+        encode_block(&base)
+    } else {
         assert_eq!(wrap * base.bit_width() % 8, 0);
         wrap * base.bit_width() / 8
     };
@@ -99,7 +111,9 @@ pub fn encode<R: Read, W: Write>(
         let olen = base.encode_len(next);
         base.encode_mut(&input[0 .. next], &mut output[0 .. olen]);
         writer.write_all(&output[0 .. olen]).map_err(Error::Write)?;
-        if ilen == 0 { return Ok(()); }
+        if ilen == 0 {
+            return Ok(());
+        }
         rest = rest + ilen - next;
         for i in 0 .. rest {
             input[i] = input[next + i];
@@ -107,8 +121,11 @@ pub fn encode<R: Read, W: Write>(
     }
 }
 
-pub fn decode<R, W>(base: &Encoding, mut reader: R, mut writer: W, size: usize)
-                    -> Result<()> where R: Read, W: Write {
+pub fn decode<R, W>(base: &Encoding, mut reader: R, mut writer: W, size: usize) -> Result<()>
+where
+    R: Read,
+    W: Write,
+{
     let block = decode_block(base);
     assert!(size >= block);
     let mut input = vec![0u8; size];
@@ -122,8 +139,7 @@ pub fn decode<R, W>(base: &Encoding, mut reader: R, mut writer: W, size: usize)
             error.position += pos;
             Error::Decode(error)
         })?;
-        let (next, olen) = match base.decode_mut(
-            &input[0 .. next], &mut output[0 .. mlen]) {
+        let (next, olen) = match base.decode_mut(&input[0 .. next], &mut output[0 .. mlen]) {
             Ok(olen) => (next, olen),
             Err(mut partial) => {
                 if partial.error.kind != DecodeKind::Length {
@@ -132,11 +148,13 @@ pub fn decode<R, W>(base: &Encoding, mut reader: R, mut writer: W, size: usize)
                 }
                 assert_ne!(ilen, 0);
                 (partial.read, partial.written)
-            },
+            }
         };
         writer.write_all(&output[0 .. olen]).map_err(Error::Write)?;
         rest = rest + ilen - next;
-        if ilen == 0 { return Ok(()); }
+        if ilen == 0 {
+            return Ok(());
+        }
         for i in 0 .. rest {
             input[i] = input[next + i];
         }
@@ -165,33 +183,26 @@ fn wrapped_main(program: &str, args: Vec<String>) -> Result<()> {
     let _ = opts
         .reqopt("m", "mode", "{encode|decode|describe}", "<mode>")
         .optopt("b", "base", "{16|hex|32|32hex|64|64url}", "<base>")
-        .optopt("i", "input", "read from <file> instead of standard input",
-                "<file>")
-        .optopt("o", "output", "write to <file> instead of standard output",
-                "<file>")
+        .optopt("i", "input", "read from <file> instead of standard input", "<file>")
+        .optopt("o", "output", "write to <file> instead of standard output", "<file>")
         .optopt("", "block", "read blocks of about <size> bytes", "<size>")
         .optopt("p", "padding", "pad with <padding>", "<padding>")
-        .optopt("g", "ignore", "when decoding, ignore characters in <ignore>",
-                "<ignore>")
-        .optopt("w", "width", "when encoding, wrap every <cols> characters",
-                "<cols>")
-        .optopt("s", "separator", "when encoding, wrap with <separator>",
-                "<separator>")
-        .optopt("", "symbols", "define a custom base using <symbols>",
-                "<symbols>")
-        .optopt("", "translate", "when decoding, translate <new> as <old>",
-                "<new><old>")
-        .optflag("", "ignore_trailing_bits",
-                 "when decoding, ignore non-zero trailing bits")
-        .optflag("", "least_significant_bit_first",
-                 "use least significant bit first bit-order");
+        .optopt("g", "ignore", "when decoding, ignore characters in <ignore>", "<ignore>")
+        .optopt("w", "width", "when encoding, wrap every <cols> characters", "<cols>")
+        .optopt("s", "separator", "when encoding, wrap with <separator>", "<separator>")
+        .optopt("", "symbols", "define a custom base using <symbols>", "<symbols>")
+        .optopt("", "translate", "when decoding, translate <new> as <old>", "<new><old>")
+        .optflag("", "ignore_trailing_bits", "when decoding, ignore non-zero trailing bits")
+        .optflag("", "least_significant_bit_first", "use least significant bit first bit-order");
 
     if args.len() == 1 && (args[0] == "--help" || args[0] == "-h") {
-        let brief = format!("\
-Usage: {program} --mode=<mode> --base=<base> [<options>]\n\
+        let brief = format!(
+            r"Usage: {program} --mode=<mode> --base=<base> [<options>]
 Usage: {program} --mode=<mode> --symbols=<symbols> [<options>]",
-                            program=program);
-        print!("{0}
+            program = program
+        );
+        print!(
+            "{0}
 Examples:
     # Encode using the RFC4648 base64 encoding
     {1} -mencode -b64     # without padding
@@ -208,7 +219,10 @@ Examples:
         --symbols=0123456789bcdfghjklmnpqrstuvwxyz \\
         --translate=BCDFGHJKLMNPQRSTUVWXYZbcdfghjklmnpqrstuvwxyz \\
         --least_significant_bit_first
-", opts.usage(&brief), program);
+",
+            opts.usage(&brief),
+            program
+        );
         return Ok(());
     }
 
@@ -218,13 +232,16 @@ Examples:
     let mut spec = match matches.opt_str("base") {
         None => {
             let mut spec = ::data_encoding::Specification::new();
-            spec.symbols = matches.opt_str("symbols") .ok_or(Error::Cmdline(
-                "Base or symbols must be provided".into()))?;
+            spec.symbols = matches
+                .opt_str("symbols")
+                .ok_or(Error::Cmdline("Base or symbols must be provided".into()))?;
             spec
-        },
+        }
         Some(base) => {
-            check!(Error::Cmdline("Base and symbols are incompatible".into()),
-                   !matches.opt_present("symbols"));
+            check!(
+                Error::Cmdline("Base and symbols are incompatible".into()),
+                !matches.opt_present("symbols")
+            );
             match base.as_str() {
                 "16" => ::data_encoding::HEXUPPER.specification(),
                 "hex" => ::data_encoding::HEXLOWER_PERMISSIVE.specification(),
@@ -234,14 +251,13 @@ Examples:
                 "64url" => ::data_encoding::BASE64URL.specification(),
                 _ => return Err(Error::Cmdline("Invalid base".into())),
             }
-        },
+        }
     };
     if let Some(padding) = matches.opt_str("padding") {
         let mut chars = padding.chars();
         spec.padding = chars.next();
         check!(Error::Cmdline("Empty padding".into()), spec.padding.is_some());
-        check!(Error::Cmdline("Padding must be a character".into()),
-               chars.next().is_none());
+        check!(Error::Cmdline("Padding must be a character".into()), chars.next().is_none());
     } else {
         spec.padding = None;
     }
@@ -257,15 +273,14 @@ Examples:
         spec.check_trailing_bits = false;
     }
     if matches.opt_present("least_significant_bit_first") {
-        spec.bit_order =
-            ::data_encoding::BitOrder::LeastSignificantFirst;
+        spec.bit_order = ::data_encoding::BitOrder::LeastSignificantFirst;
     }
     if let Some(ignore) = matches.opt_str("ignore") {
         spec.ignore.push_str(ignore.as_str());
     }
     if let Some(width) = matches.opt_str("width") {
-        spec.wrap.width = width.parse()
-            .map_err(|_| Error::Cmdline("Invalid width value".into()))?;
+        spec.wrap.width =
+            width.parse().map_err(|_| Error::Cmdline("Invalid width value".into()))?;
     }
     if let Some(separator) = matches.opt_str("separator") {
         spec.wrap.separator.push_str(separator.as_str());
@@ -277,8 +292,8 @@ Examples:
         "decode" => false,
         "describe" => {
             println!("{:#?}", base.specification());
-            return Ok(())
-        },
+            return Ok(());
+        }
         _ => return Err(Error::Cmdline("Invalid mode".into())),
     };
 
@@ -291,17 +306,18 @@ Examples:
 
     let mut output: Box<Write>;
     if let Some(file) = matches.opt_str("output") {
-        output = Box::new(File::create(&file)
-                          .map_err(|e| Error::IO(file, e))?);
+        output = Box::new(File::create(&file).map_err(|e| Error::IO(file, e))?);
     } else {
         output = stdout();
     }
     output = Box::new(std::io::BufWriter::new(output));
 
-    let size = matches.opt_str("block").unwrap_or("15360".to_owned())
-        .parse().map_err(|_| Error::Cmdline("Invalid block value".into()))?;
-    check!(Error::Cmdline("Block value must be greater or equal than 8".into()),
-           size >= 8);
+    let size = matches
+        .opt_str("block")
+        .unwrap_or("15360".to_owned())
+        .parse()
+        .map_err(|_| Error::Cmdline("Invalid block value".into()))?;
+    check!(Error::Cmdline("Block value must be greater or equal than 8".into()), size >= 8);
 
     if mode {
         encode(&base, spec.wrap.width, input, output, size)
@@ -317,4 +333,6 @@ fn stdout() -> Box<Write> {
     Box::new(unsafe { <File as std::os::unix::io::FromRawFd>::from_raw_fd(1) })
 }
 #[cfg(not(target_os = "linux"))]
-fn stdout() -> Box<Write> { Box::new(std::io::stdout()) }
+fn stdout() -> Box<Write> {
+    Box::new(std::io::stdout())
+}

@@ -1,14 +1,14 @@
 #![feature(test)]
 
 extern crate base64;
-extern crate data_encoding;
 extern crate cmp;
+extern crate data_encoding;
 extern crate rustc_serialize;
 extern crate test;
 
 use data_encoding::BASE64;
-use test::Bencher;
 use rustc_serialize::base64::{FromBase64, ToBase64, STANDARD};
+use test::Bencher;
 
 fn encode_mut<F: Fn(&[u8], &mut [u8])>(b: &mut Bencher, f: F) {
     let input = &[0u8; 1024 * 3];
@@ -21,9 +21,7 @@ fn encode<F: Fn(&[u8]) -> String>(b: &mut Bencher, f: F) {
     b.iter(|| f(input));
 }
 
-fn decode_mut<E, T, F: Fn(&[u8], &mut [u8]) -> Result<T, E>>
-    (b: &mut Bencher, f: F)
-{
+fn decode_mut<E, T, F: Fn(&[u8], &mut [u8]) -> Result<T, E>>(b: &mut Bencher, f: F) {
     let input = &[b'A'; 1024 * 4];
     let output = &mut [0u8; 1024 * 3];
     b.iter(|| f(input, output));
@@ -56,8 +54,7 @@ fn b03_encode_mut_par_gcc(b: &mut Bencher) {
 
 #[bench]
 fn b04_encode_mut_crate(b: &mut Bencher) {
-    let base64_encode =
-        |input: &[u8], output: &mut [u8]| BASE64.encode_mut(input, output);
+    let base64_encode = |input: &[u8], output: &mut [u8]| BASE64.encode_mut(input, output);
     encode_mut(b, base64_encode);
 }
 
@@ -99,8 +96,7 @@ fn b11_decode_mut_par_gcc(b: &mut Bencher) {
 
 #[bench]
 fn b12_decode_mut_crate(b: &mut Bencher) {
-    let base64_decode =
-        |input: &[u8], output: &mut [u8]| BASE64.decode_mut(input, output);
+    let base64_decode = |input: &[u8], output: &mut [u8]| BASE64.decode_mut(input, output);
     decode_mut(b, base64_decode);
 }
 

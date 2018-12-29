@@ -12,7 +12,7 @@ use data_encoding_macro::{decode_array, decode_slice};
 
 // Test the macro invocation from inside a module.
 mod test {
-    const BASE32_DNSCURVE: ::data_encoding::Encoding = new_encoding!{
+    const BASE32_DNSCURVE: ::data_encoding::Encoding = new_encoding! {
         symbols: "0123456789bcdfghjklmnpqrstuvwxyz",
         bit_order: LeastSignificantFirst,
         translate_from: "BCDFGHJKLMNPQRSTUVWXYZ",
@@ -38,7 +38,7 @@ fn decode_array() {
             }
         };
     }
-    base!{decode_array;
+    base! {decode_array;
         name: "const OUTPUT",
         input: "deadbeef",
     }
@@ -58,7 +58,7 @@ fn decode_slice() {
             }
         };
     }
-    const OUTPUT: &'static [u8] = &base!{
+    const OUTPUT: &'static [u8] = &base! {
         decode_slice;
         input: "deadbeef",
     };

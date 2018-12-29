@@ -273,9 +273,7 @@ pub fn internal_new_encoding(input: TokenStream) -> TokenStream {
     let mut hash_map = parse_map(input.into_iter());
     let encoding = get_encoding(&mut hash_map);
     check_empty(hash_map);
-    format!("{:?}", encoding.internal_implementation())
-        .parse()
-        .unwrap()
+    format!("{:?}", encoding.internal_implementation()).parse().unwrap()
 }
 #[cfg(feature = "stable")]
 proc_macro_expr_impl! {
@@ -300,9 +298,7 @@ pub fn internal_decode_array(input: TokenStream) -> TokenStream {
     let input = get_string(&mut hash_map, "input");
     check_empty(hash_map);
     let output = encoding.decode(input.as_bytes()).unwrap();
-    format!("{}: [u8; {}] = {:?};", name, output.len(), output)
-        .parse()
-        .unwrap()
+    format!("{}: [u8; {}] = {:?};", name, output.len(), output).parse().unwrap()
 }
 #[cfg(not(feature = "stable"))]
 #[proc_macro]
@@ -313,9 +309,7 @@ pub fn internal_decode_slice(input: TokenStream) -> TokenStream {
     check_present(&mut hash_map, "input");
     let input = get_string(&mut hash_map, "input");
     check_empty(hash_map);
-    format!("{:?}", encoding.decode(input.as_bytes()).unwrap())
-        .parse()
-        .unwrap()
+    format!("{:?}", encoding.decode(input.as_bytes()).unwrap()).parse().unwrap()
 }
 #[cfg(feature = "stable")]
 proc_macro_expr_impl! {

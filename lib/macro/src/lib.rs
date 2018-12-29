@@ -49,12 +49,12 @@
 //! extern crate data_encoding_macro;
 //! use data_encoding::Encoding;
 //!
-//! const HEX: Encoding = new_encoding!{
+//! const HEX: Encoding = new_encoding! {
 //!     symbols: "0123456789abcdef",
 //!     translate_from: "ABCDEF",
 //!     translate_to: "abcdef",
 //! };
-//! const BASE64: Encoding = new_encoding!{
+//! const BASE64: Encoding = new_encoding! {
 //!     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
 //!     padding: '=',
 //! };
@@ -69,7 +69,6 @@
 //! [hexadecimal]: macro.hexlower_permissive.html
 
 #![cfg_attr(not(feature = "stable"), feature(proc_macro_hygiene))]
-
 #![warn(unused_results)]
 
 #[cfg(feature = "stable")]
@@ -109,7 +108,7 @@ proc_macro_expr_decl! {
 /// #[macro_use]
 /// extern crate data_encoding_macro;
 ///
-/// decode_array!{
+/// decode_array! {
 ///     name: "const OCTAL",
 ///     symbols: "01234567",
 ///     padding: '=',
@@ -141,7 +140,7 @@ macro_rules! decode_array {
 /// #[macro_use]
 /// extern crate data_encoding_macro;
 ///
-/// const OCTAL: &'static [u8] = &decode_slice!{
+/// const OCTAL: &'static [u8] = &decode_slice! {
 ///     symbols: "01234567",
 ///     padding: '=',
 ///     input: "237610==",
@@ -171,7 +170,7 @@ macro_rules! decode_slice {
 /// #[macro_use]
 /// extern crate data_encoding_macro;
 ///
-/// const OCTAL: &'static [u8] = &decode_slice!{
+/// const OCTAL: &'static [u8] = &decode_slice! {
 ///     symbols: "01234567",
 ///     padding: '=',
 ///     input: "237610==",
@@ -213,9 +212,10 @@ macro_rules! decode_slice {
 /// ```rust
 /// # #![feature(proc_macro_hygiene)]
 /// extern crate data_encoding;
-/// #[macro_use] extern crate data_encoding_macro;
+/// #[macro_use]
+/// extern crate data_encoding_macro;
 ///
-/// const HEX: data_encoding::Encoding = new_encoding!{
+/// const HEX: data_encoding::Encoding = new_encoding! {
 ///     symbols: "0123456789abcdef",
 ///     ignore: " \r\t\n",
 ///     wrap_width: 32,
@@ -261,7 +261,7 @@ macro_rules! new_encoding {
 /// #[macro_use]
 /// extern crate data_encoding_macro;
 ///
-/// const HEX: data_encoding::Encoding = new_encoding!{
+/// const HEX: data_encoding::Encoding = new_encoding! {
 ///     symbols: "0123456789abcdef",
 ///     ignore: " \r\t\n",
 ///     wrap_width: 32,
@@ -302,79 +302,79 @@ macro_rules! make {
     };
 }
 
-make!{
+make! {
     hexlower hexlower_array = HEXLOWER;
     symbols: "0123456789abcdef",
 }
-make!{
+make! {
     hexlower_permissive hexlower_permissive_array = HEXLOWER_PERMISSIVE;
     symbols: "0123456789abcdef",
     translate_from: "ABCDEF",
     translate_to: "abcdef",
 }
-make!{
+make! {
     hexupper hexupper_array = HEXUPPER;
     symbols: "0123456789ABCDEF",
 }
-make!{
+make! {
     hexupper_permissive hexupper_permissive_array = HEXUPPER_PERMISSIVE;
     symbols: "0123456789ABCDEF",
     translate_from: "abcdef",
     translate_to: "ABCDEF",
 }
-make!{
+make! {
     base32 base32_array = BASE32;
     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
     padding: '=',
 }
-make!{
+make! {
     base32_nopad base32_nopad_array = BASE32_NOPAD;
     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
 }
-make!{
+make! {
     base32hex base32hex_array = BASE32HEX;
     symbols: "0123456789ABCDEFGHIJKLMNOPQRSTUV",
     padding: '=',
 }
-make!{
+make! {
     base32hex_nopad base32hex_nopad_array = BASE32HEX_NOPAD;
     symbols: "0123456789ABCDEFGHIJKLMNOPQRSTUV",
 }
-make!{
+make! {
     base32_dnssec base32_dnssec_array = BASE32_DNSSEC;
     symbols: "0123456789abcdefghijklmnopqrstuv",
     translate_from: "ABCDEFGHIJKLMNOPQRSTUV",
     translate_to: "abcdefghijklmnopqrstuv",
 }
-make!{
+make! {
     base32_dnscurve base32_dnscurve_array = BASE32_DNSCURVE;
     symbols: "0123456789bcdfghjklmnpqrstuvwxyz",
     bit_order: LeastSignificantFirst,
     translate_from: "BCDFGHJKLMNPQRSTUVWXYZ",
     translate_to: "bcdfghjklmnpqrstuvwxyz",
 }
-make!{
+make! {
     base64 base64_array = BASE64;
     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
     padding: '=',
 }
-make!{
+make! {
     base64_nopad base64_nopad_array = BASE64_NOPAD;
     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
 }
-make!{
+make! {
     base64_mime base64_mime_array = BASE64_MIME;
     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
     padding: '=',
     wrap_width: 76,
     wrap_separator: "\r\n",
 }
-make!{
+make! {
     base64url base64url_array = BASE64URL;
     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
     padding: '=',
 }
-make!{
+make! {
     base64url_nopad base64url_nopad_array = BASE64URL_NOPAD;
     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
 }

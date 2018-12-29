@@ -1,7 +1,7 @@
 extern crate data_encoding;
 
-use data_encoding::{DecodeError, Encoding, Specification};
 use data_encoding::DecodeKind::*;
+use data_encoding::{DecodeError, Encoding, Specification};
 
 macro_rules! test {
     (fn $t: ident; $($s: stmt);*;) => {
@@ -20,7 +20,7 @@ fn errmsg<T, E: std::error::Error>(x: Result<T, E>) -> String {
     format!("{}", x.err().unwrap())
 }
 
-test!{
+test! {
     fn base2;
     let mut s = Specification::new();
     s.symbols.push_str("01");
@@ -31,7 +31,7 @@ test!{
     test(&b, b"foo", b"011001100110111101101111");
 }
 
-test!{
+test! {
     fn base4;
     let mut s = Specification::new();
     s.symbols.push_str("0123");
@@ -45,7 +45,7 @@ test!{
     test(&b, b"foobar", b"121212331233120212011302");
 }
 
-test!{
+test! {
     fn base8;
     let mut s = Specification::new();
     s.symbols.push_str("01234567");
@@ -60,7 +60,7 @@ test!{
     test(&b, b"foobar", b"3146755730460562");
 }
 
-test!{
+test! {
     fn hexlower;
     let b = &data_encoding::HEXLOWER;
     test(b, b"", b"");
@@ -75,7 +75,7 @@ test!{
     assert_eq!(data_encoding::HEXLOWER_PERMISSIVE.decode(b"6F").unwrap(), b"o");
 }
 
-test!{
+test! {
     fn hexupper;
     let b = &data_encoding::HEXUPPER;
     test(b, b"", b"");
@@ -90,7 +90,7 @@ test!{
     assert_eq!(data_encoding::HEXUPPER_PERMISSIVE.decode(b"6f").unwrap(), b"o");
 }
 
-test!{
+test! {
     fn base32;
     let b = &data_encoding::BASE32;
     test(b, b"", b"");
@@ -102,7 +102,7 @@ test!{
     test(b, b"foobar", b"MZXW6YTBOI======");
 }
 
-test!{
+test! {
     fn base32hex;
     let b = &data_encoding::BASE32HEX;
     test(b, b"", b"");
@@ -114,7 +114,7 @@ test!{
     test(b, b"foobar", b"CPNMUOJ1E8======");
 }
 
-test!{
+test! {
     fn base32_dnscurve;
     let b = &data_encoding::BASE32_DNSCURVE;
     test(b, &[0x64, 0x88], b"4321");
@@ -134,7 +134,7 @@ test!{
     assert!(b.decode(b"0000004").is_err());
 }
 
-test!{
+test! {
     fn base64;
     let b = &data_encoding::BASE64;
     test(b, b"", b"");
@@ -147,7 +147,7 @@ test!{
     test(b, &[251u8, 240], b"+/A=");
 }
 
-test!{
+test! {
     fn base64url;
     let b = &data_encoding::BASE64URL;
     test(b, b"", b"");
@@ -160,7 +160,7 @@ test!{
     test(b, &[251u8, 240], b"-_A=");
 }
 
-test!{
+test! {
     fn base64_no_pad;
     let b = &data_encoding::BASE64_NOPAD;
     test(&b, b"", b"");
@@ -175,53 +175,45 @@ test!{
 #[test]
 fn base32_error() {
     let b = &data_encoding::BASE32;
-    assert_eq!(b.decode(b"ABC").err().unwrap(),
-               DecodeError { position: 0, kind: Length });
-    assert_eq!(b.decode(b"========").err().unwrap(),
-               DecodeError { position: 0, kind: Padding });
-    assert_eq!(b.decode(b"MB======").err().unwrap(),
-               DecodeError { position: 1, kind: Trailing });
-    assert_eq!(b.decode(b"MA===AAA").err().unwrap(),
-               DecodeError { position: 2, kind: Symbol });
-    assert_eq!(b.decode(b"MAA=====").err().unwrap(),
-               DecodeError { position: 3, kind: Padding });
-    assert_eq!(b.decode(b"MAABBB==").err().unwrap(),
-               DecodeError { position: 6, kind: Padding });
+    assert_eq!(b.decode(b"ABC").err().unwrap(), DecodeError { position: 0, kind: Length });
+    assert_eq!(b.decode(b"========").err().unwrap(), DecodeError { position: 0, kind: Padding });
+    assert_eq!(b.decode(b"MB======").err().unwrap(), DecodeError { position: 1, kind: Trailing });
+    assert_eq!(b.decode(b"MA===AAA").err().unwrap(), DecodeError { position: 2, kind: Symbol });
+    assert_eq!(b.decode(b"MAA=====").err().unwrap(), DecodeError { position: 3, kind: Padding });
+    assert_eq!(b.decode(b"MAABBB==").err().unwrap(), DecodeError { position: 6, kind: Padding });
 }
 
 #[test]
 fn base64_error() {
     let b = &data_encoding::BASE64;
-    assert_eq!(b.decode(b"====").err().unwrap(),
-               DecodeError { position: 0, kind: Padding });
-    assert_eq!(b.decode(b"====").err().unwrap(),
-               DecodeError { position: 0, kind: Padding });
-    assert_eq!(b.decode(b"Zm9vYmFy====").err().unwrap(),
-               DecodeError { position: 8, kind: Padding });
-    assert_eq!(b.decode(b"Zm9vYmFy====").err().unwrap(),
-               DecodeError { position: 8, kind: Padding });
+    assert_eq!(b.decode(b"====").err().unwrap(), DecodeError { position: 0, kind: Padding });
+    assert_eq!(b.decode(b"====").err().unwrap(), DecodeError { position: 0, kind: Padding });
+    assert_eq!(
+        b.decode(b"Zm9vYmFy====").err().unwrap(),
+        DecodeError { position: 8, kind: Padding }
+    );
+    assert_eq!(
+        b.decode(b"Zm9vYmFy====").err().unwrap(),
+        DecodeError { position: 8, kind: Padding }
+    );
     assert_eq!(b.decode(b"YmE=Zg==Zg==").unwrap(), b"baff");
-    assert_eq!(b.decode(b"Zm9vYmFy----").err().unwrap(),
-               DecodeError { position: 8, kind: Symbol });
-    assert_eq!(b.decode(b"YmE=-mFyZg==").err().unwrap(),
-               DecodeError { position: 4, kind: Symbol });
-    assert_eq!(b.decode(b"YmE=-g==Zg==").err().unwrap(),
-               DecodeError { position: 4, kind: Symbol });
-    assert_eq!(b.decode(b"YmE=Z-==Zg==").err().unwrap(),
-               DecodeError { position: 5, kind: Symbol });
-    assert_eq!(b.decode(b"YmE=Y-FyZg==").err().unwrap(),
-               DecodeError { position: 5, kind: Symbol });
-    assert_eq!(b.decode(b"YmE=Z===Zg==").err().unwrap(),
-               DecodeError { position: 5, kind: Padding });
-    assert_eq!(b.decode(b"YmE=Zh==Zg==").err().unwrap(),
-               DecodeError { position: 5, kind: Trailing });
+    assert_eq!(b.decode(b"Zm9vYmFy----").err().unwrap(), DecodeError { position: 8, kind: Symbol });
+    assert_eq!(b.decode(b"YmE=-mFyZg==").err().unwrap(), DecodeError { position: 4, kind: Symbol });
+    assert_eq!(b.decode(b"YmE=-g==Zg==").err().unwrap(), DecodeError { position: 4, kind: Symbol });
+    assert_eq!(b.decode(b"YmE=Z-==Zg==").err().unwrap(), DecodeError { position: 5, kind: Symbol });
+    assert_eq!(b.decode(b"YmE=Y-FyZg==").err().unwrap(), DecodeError { position: 5, kind: Symbol });
+    assert_eq!(
+        b.decode(b"YmE=Z===Zg==").err().unwrap(),
+        DecodeError { position: 5, kind: Padding }
+    );
+    assert_eq!(
+        b.decode(b"YmE=Zh==Zg==").err().unwrap(),
+        DecodeError { position: 5, kind: Trailing }
+    );
     assert_eq!(b.decode_len(4).unwrap(), 3);
-    assert_eq!(b.decode_len(5).err().unwrap(),
-               DecodeError { position: 4, kind: Length });
-    assert_eq!(b.decode_len(6).err().unwrap(),
-               DecodeError { position: 4, kind: Length });
-    assert_eq!(b.decode_len(7).err().unwrap(),
-               DecodeError { position: 4, kind: Length });
+    assert_eq!(b.decode_len(5).err().unwrap(), DecodeError { position: 4, kind: Length });
+    assert_eq!(b.decode_len(6).err().unwrap(), DecodeError { position: 4, kind: Length });
+    assert_eq!(b.decode_len(7).err().unwrap(), DecodeError { position: 4, kind: Length });
 }
 
 #[test]
@@ -229,15 +221,11 @@ fn base64_nopad_error() {
     let mut s = data_encoding::BASE64.specification();
     s.padding = None;
     let b = s.encoding().unwrap();
-    assert_eq!(b.decode(b"Z").err().unwrap(),
-               DecodeError { position: 0, kind: Length });
-    assert_eq!(b.decode(b"Zh").err().unwrap(),
-               DecodeError { position: 1, kind: Trailing });
-    assert_eq!(b.decode(b"Zg==").err().unwrap(),
-               DecodeError { position: 2, kind: Symbol });
+    assert_eq!(b.decode(b"Z").err().unwrap(), DecodeError { position: 0, kind: Length });
+    assert_eq!(b.decode(b"Zh").err().unwrap(), DecodeError { position: 1, kind: Trailing });
+    assert_eq!(b.decode(b"Zg==").err().unwrap(), DecodeError { position: 2, kind: Symbol });
     assert_eq!(b.decode_len(4).unwrap(), 3);
-    assert_eq!(b.decode_len(5).err().unwrap(),
-               DecodeError { position: 4, kind: Length });
+    assert_eq!(b.decode_len(5).err().unwrap(), DecodeError { position: 4, kind: Length });
     assert_eq!(b.decode_len(6).unwrap(), 4);
     assert_eq!(b.decode_len(7).unwrap(), 5);
 }
@@ -269,7 +257,9 @@ fn ignore() {
     fn skip(buf: &[u8], cmp: &mut [u8], shift: &mut [usize]) -> usize {
         let mut j = 0;
         for i in 0 .. buf.len() {
-            if buf[i] == b' ' { continue; }
+            if buf[i] == b' ' {
+                continue;
+            }
             cmp[j] = buf[i];
             shift[j] = i;
             j += 1;
@@ -283,15 +273,19 @@ fn ignore() {
             Err(mut x) => {
                 x.position = shift[x.position];
                 assert_eq!(Err(x), res);
-            },
+            }
         }
     }
     fn incr(chars: &[u8], idx: &mut [usize], buf: &mut [u8]) -> bool {
         for i in 0 .. idx.len() {
             idx[i] += 1;
-            if idx[i] == chars.len() { idx[i] = 0; }
+            if idx[i] == chars.len() {
+                idx[i] = 0;
+            }
             buf[i] = chars[idx[i]];
-            if idx[i] > 0 { return true; }
+            if idx[i] > 0 {
+                return true;
+            }
         }
         false
     }
@@ -304,7 +298,9 @@ fn ignore() {
             loop {
                 let len = skip(&buf[.. size], &mut cmp, &mut shift);
                 check(base, &buf[.. size], &cmp[.. len], &shift[.. len]);
-                if !incr(chars, &mut idx[.. size], &mut buf[.. size]) { break; }
+                if !incr(chars, &mut idx[.. size], &mut buf[.. size]) {
+                    break;
+                }
             }
         }
     }
@@ -328,8 +324,10 @@ fn ignore() {
     assert_eq!(padded.decode(b"000=====").unwrap(), [0]);
     assert_eq!(padded.decode(b"000   =====").unwrap(), [0]);
     assert_eq!(padded.decode(b"000000==").unwrap(), [0, 0]);
-    assert_eq!(padded.decode(b"000   ==").err().unwrap(),
-               DecodeError { position: 0, kind: Length });
+    assert_eq!(
+        padded.decode(b"000   ==").err().unwrap(),
+        DecodeError { position: 0, kind: Length }
+    );
 }
 
 #[test]
@@ -348,8 +346,7 @@ fn translate() {
 
 #[test]
 fn specification() {
-    assert_eq!(errmsg(Specification::new().encoding()),
-               "invalid number of symbols");
+    assert_eq!(errmsg(Specification::new().encoding()), "invalid number of symbols");
     let build = |sym, pad| {
         let mut spec = Specification::new();
         spec.symbols.push_str(sym);
@@ -359,11 +356,11 @@ fn specification() {
     assert_eq!(errmsg(build("é", None)), "non-ascii character");
     assert_eq!(errmsg(build("01", Some(' '))), "unnecessary padding");
     assert_eq!(errmsg(build("01234567", Some('é'))), "non-ascii character");
-    assert_eq!(errmsg(build("01234567", Some('0'))),
-               "'0' has conflicting definitions");
-    assert_eq!(errmsg(build(
-        "0000000000000000000000000000000000000000000000000000000000000000",
-        None)), "'0' has conflicting definitions");
+    assert_eq!(errmsg(build("01234567", Some('0'))), "'0' has conflicting definitions");
+    assert_eq!(
+        errmsg(build("0000000000000000000000000000000000000000000000000000000000000000", None)),
+        "'0' has conflicting definitions"
+    );
     let mut spec = Specification::new();
     spec.symbols.push_str("01");
     spec.translate.from.push_str("1");
@@ -395,8 +392,7 @@ fn specification() {
     spec.wrap.separator.push_str("\n");
     assert_eq!(spec.encoding().unwrap(), previous_encoding);
     spec.wrap.width = 256;
-    assert_eq!(errmsg(spec.encoding()),
-               "invalid wrap width or separator length");
+    assert_eq!(errmsg(spec.encoding()), "invalid wrap width or separator length");
 }
 
 #[test]
@@ -429,10 +425,16 @@ fn is_canonical() {
         update(&mut spec);
         assert_eq!(expect, spec.encoding().unwrap().is_canonical());
     }
-    test(true, &|_| { });
-    test(false, &|spec| { spec.check_trailing_bits = false; });
-    test(false, &|spec| { spec.padding = Some('='); });
-    test(false, &|spec| { spec.ignore.push(' '); });
+    test(true, &|_| {});
+    test(false, &|spec| {
+        spec.check_trailing_bits = false;
+    });
+    test(false, &|spec| {
+        spec.padding = Some('=');
+    });
+    test(false, &|spec| {
+        spec.ignore.push(' ');
+    });
     test(false, &|spec| {
         spec.translate.from.push('O');
         spec.translate.to.push('0');
