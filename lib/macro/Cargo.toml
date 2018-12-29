@@ -3,6 +3,7 @@ name = "data-encoding-macro"
 version = "0.1.5"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "MIT"
+edition = "2018"
 keywords = ["data-encoding", "macro", "static", "const", "compile-time"]
 categories = ["encoding"]
 readme = "README.md"

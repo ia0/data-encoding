@@ -3,6 +3,7 @@ name = "cmp"
 version = "0.1.0"
 authors = ["ia0 <git@ia0.eu>"]
 license = "MIT"
+edition = "2018"
 build = "build.rs"
 publish = false
 
@@ -14,4 +15,4 @@ rustc-serialize = "0.3.23"
 lazy_static = "0.2.8"
 
 [build-dependencies]
-gcc = "0.3.45"
+cc = "1.0"

@@ -1,8 +1,8 @@
-extern crate gcc;
+extern crate cc;
 
 fn main() {
     for compiler in ["clang", "gcc"].iter() {
-        gcc::Build::new()
+        cc::Build::new()
             .compiler(compiler)
             .define("COMPILER", Some(*compiler))
             .file("src/ref.c")

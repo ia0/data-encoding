@@ -3,6 +3,7 @@ name = "data-encoding-macro-internal"
 version = "0.1.5"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "MIT"
+edition = "2018"
 description = "Internal library for data-encoding-macro"
 readme = "README.md"
 repository = "https://github.com/ia0/data-encoding"

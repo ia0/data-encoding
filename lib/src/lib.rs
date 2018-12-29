@@ -761,7 +761,7 @@ pub enum BitOrder {
     /// [base32]: constant.BASE32_DNSCURVE.html
     LeastSignificantFirst,
 }
-use BitOrder::*;
+use crate::BitOrder::*;
 
 #[doc(hidden)]
 pub type InternalEncoding = std::borrow::Cow<'static, [u8]>;
@@ -1413,7 +1413,7 @@ enum SpecificationErrorImpl {
     FromTo,
     Undefined(u8),
 }
-use SpecificationErrorImpl::*;
+use crate::SpecificationErrorImpl::*;
 
 /// Specification error
 #[derive(Debug, Copy, Clone)]
