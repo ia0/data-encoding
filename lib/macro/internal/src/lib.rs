@@ -65,14 +65,8 @@ fn parse_map(mut tokens: IntoIter) -> HashMap<String, TokenTree> {
 #[cfg(feature = "stable")]
 fn parse_map(mut input: &str) -> HashMap<String, Token> {
     let mut map = HashMap::new();
-    loop {
-        let key = match syn::parse::tt(input) {
-            IResult::Done(rest, key) => {
-                input = rest;
-                key
-            }
-            IResult::Error => break,
-        };
+    while let IResult::Done(rest, key) = syn::parse::tt(input) {
+        input = rest;
         let key = match key {
             TokenTree::Token(Token::Ident(key)) => key,
             _ => panic!("expected key got {:?}", key),
@@ -109,7 +103,7 @@ fn get_string(map: &mut HashMap<String, TokenTree>, key: &str) -> String {
 #[cfg(feature = "stable")]
 fn get_string(map: &mut HashMap<String, Token>, key: &str) -> String {
     match map.remove(key) {
-        None => return String::new(),
+        None => String::new(),
         Some(Token::Literal(Lit::Str(value, _))) => value,
         Some(_) => panic!("expected string literal for {}", key),
     }
@@ -133,7 +127,7 @@ fn get_usize(map: &mut HashMap<String, TokenTree>, key: &str) -> usize {
 #[cfg(feature = "stable")]
 fn get_usize(map: &mut HashMap<String, Token>, key: &str) -> usize {
     match map.remove(key) {
-        None => return 0,
+        None => 0,
         Some(Token::Literal(Lit::Int(value, _))) => value as usize,
         Some(_) => panic!("expected usize for {}", key),
     }
@@ -155,7 +149,7 @@ fn get_padding(map: &mut HashMap<String, TokenTree>) -> Option<char> {
 #[cfg(feature = "stable")]
 fn get_padding(map: &mut HashMap<String, Token>) -> Option<char> {
     match map.remove("padding") {
-        None => return None,
+        None => None,
         Some(Token::Ident(ref ident)) if ident.as_ref() == "None" => None,
         Some(Token::Literal(Lit::Char(value))) => Some(value),
         Some(_) => panic!("expected char for padding"),
@@ -177,7 +171,7 @@ fn get_bool(map: &mut HashMap<String, TokenTree>, key: &str) -> Option<bool> {
 #[cfg(feature = "stable")]
 fn get_bool(map: &mut HashMap<String, Token>, key: &str) -> Option<bool> {
     match map.remove(key) {
-        None => return None,
+        None => None,
         Some(Token::Literal(Lit::Bool(value))) => Some(value),
         Some(_) => panic!("expected bool for {}", key),
     }
@@ -206,7 +200,7 @@ fn get_bit_order(map: &mut HashMap<String, Token>) -> BitOrder {
     let msb = "MostSignificantFirst";
     let lsb = "LeastSignificantFirst";
     match map.remove("bit_order") {
-        None => return BitOrder::MostSignificantFirst,
+        None => BitOrder::MostSignificantFirst,
         Some(Token::Ident(ref ident)) if ident.as_ref() == msb => BitOrder::MostSignificantFirst,
         Some(Token::Ident(ref ident)) if ident.as_ref() == lsb => BitOrder::LeastSignificantFirst,
         Some(_) => panic!("expected {} or {} for bit_order", msb, lsb),
@@ -292,9 +286,9 @@ proc_macro_expr_impl! {
 pub fn internal_decode_array(input: TokenStream) -> TokenStream {
     let mut hash_map = parse_map(input.into_iter());
     let encoding = get_encoding(&mut hash_map);
-    check_present(&mut hash_map, "name");
+    check_present(&hash_map, "name");
     let name = get_string(&mut hash_map, "name");
-    check_present(&mut hash_map, "input");
+    check_present(&hash_map, "input");
     let input = get_string(&mut hash_map, "input");
     check_empty(hash_map);
     let output = encoding.decode(input.as_bytes()).unwrap();
@@ -306,7 +300,7 @@ pub fn internal_decode_array(input: TokenStream) -> TokenStream {
 pub fn internal_decode_slice(input: TokenStream) -> TokenStream {
     let mut hash_map = parse_map(input.into_iter());
     let encoding = get_encoding(&mut hash_map);
-    check_present(&mut hash_map, "input");
+    check_present(&hash_map, "input");
     let input = get_string(&mut hash_map, "input");
     check_empty(hash_map);
     format!("{:?}", encoding.decode(input.as_bytes()).unwrap()).parse().unwrap()
@@ -317,7 +311,7 @@ proc_macro_expr_impl! {
     pub fn internal_decode_slice_impl(input: &str) -> String {
         let mut hash_map = parse_map(input);
         let encoding = get_encoding(&mut hash_map);
-        check_present(&mut hash_map, "input");
+        check_present(&hash_map, "input");
         let input = get_string(&mut hash_map, "input");
         check_empty(hash_map);
         format!("{:?}", encoding.decode(input.as_bytes()).unwrap())
