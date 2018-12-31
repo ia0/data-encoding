@@ -221,9 +221,10 @@ impl<T: Copy> Static<Option<T>> for Os<T> {
 
 macro_rules! dispatch {
     (let $var: ident: bool = $val: expr; $($body: tt)*) => {
-        match $val {
-            false => { let $var = Bf; dispatch!($($body)*) },
-            true => { let $var = Bt; dispatch!($($body)*) },
+        if $val {
+            let $var = Bt; dispatch!($($body)*)
+        } else {
+            let $var = Bf; dispatch!($($body)*)
         }
     };
     (let $var: ident: usize = $val: expr; $($body: tt)*) => {
@@ -248,12 +249,12 @@ macro_rules! dispatch {
 
 unsafe fn chunk_unchecked(x: &[u8], n: usize, i: usize) -> &[u8] {
     debug_assert!((i + 1) * n <= x.len());
-    let ptr = x.as_ptr().offset((n * i) as isize);
+    let ptr = x.as_ptr().add(n * i);
     std::slice::from_raw_parts(ptr, n)
 }
 unsafe fn chunk_mut_unchecked(x: &mut [u8], n: usize, i: usize) -> &mut [u8] {
     debug_assert!((i + 1) * n <= x.len());
-    let ptr = x.as_mut_ptr().offset((n * i) as isize);
+    let ptr = x.as_mut_ptr().add(n * i);
     std::slice::from_raw_parts_mut(ptr, n)
 }
 unsafe fn as_array(x: &[u8]) -> &[u8; 256] {
@@ -373,12 +374,12 @@ fn encode_block<B: Static<usize>, M: Static<bool>>(
     let bit = bit.val();
     let msb = msb.val();
     let mut x = 0u64;
-    for i in 0 .. input.len() {
-        x |= (input[i] as u64) << 8 * order(msb, enc(bit), i);
+    for (i, input) in input.iter().enumerate() {
+        x |= u64::from(*input) << (8 * order(msb, enc(bit), i));
     }
-    for i in 0 .. output.len() {
-        let y = x >> bit * order(msb, dec(bit), i);
-        output[i] = symbols[y as usize % 256];
+    for (i, output) in output.iter_mut().enumerate() {
+        let y = x >> (bit * order(msb, dec(bit), i));
+        *output = symbols[y as usize % 256];
     }
 }
 fn encode_mut<B: Static<usize>, M: Static<bool>>(
@@ -414,10 +415,10 @@ fn decode_block<B: Static<usize>, M: Static<bool>>(
     for j in 0 .. input.len() {
         let y = values[input[j] as usize];
         check!(j, y < 1 << bit);
-        x |= (y as u64) << bit * order(msb, dec(bit), j);
+        x |= u64::from(y) << (bit * order(msb, dec(bit), j));
     }
-    for j in 0 .. output.len() {
-        output[j] = (x >> 8 * order(msb, enc(bit), j)) as u8;
+    for (j, output) in output.iter_mut().enumerate() {
+        *output = (x >> (8 * order(msb, enc(bit), j))) as u8;
     }
     Ok(())
 }
@@ -495,8 +496,8 @@ fn encode_pad<B: Static<usize>, M: Static<bool>, P: Static<Option<u8>>>(
     debug_assert_eq!(output.len(), encode_pad_len(bit, spad, input.len()));
     let olen = encode_base_len(bit, input.len());
     encode_base(bit, msb, symbols, input, &mut output[.. olen]);
-    for i in olen .. output.len() {
-        output[i] = pad;
+    for output in output.iter_mut().skip(olen) {
+        *output = pad;
     }
 }
 
@@ -716,6 +717,7 @@ fn decode_wrap_block<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
 // of the first padding character of the invalid padding.
 // Fails with Trailing if there are non-zero trailing bits.
 // Fails with Length if input length (without ignored characters) is invalid.
+#[allow(clippy::too_many_arguments)]
 fn decode_wrap_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>, I: Static<bool>>(
     bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, has_ignore: I, input: &[u8],
     output: &mut [u8],
@@ -1204,6 +1206,12 @@ impl Specification {
     }
 }
 
+impl Default for Specification {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Encoding {
     fn sym(&self) -> &[u8; 256] {
         unsafe { as_array(&self.0[0 .. 256]) }
@@ -1270,6 +1278,7 @@ impl Encoding {
     /// ```
     ///
     /// [`encode_len`]: struct.Encoding.html#method.encode_len
+    #[allow(clippy::cyclomatic_complexity)]
     pub fn encode_mut(&self, input: &[u8], output: &mut [u8]) {
         assert_eq!(output.len(), self.encode_len(input.len()));
         dispatch! {
@@ -1359,6 +1368,7 @@ impl Encoding {
     /// [`Length`]: enum.DecodeKind.html#variant.Length
     /// [`read`]: struct.DecodePartial.html#structfield.read
     /// [`written`]: struct.DecodePartial.html#structfield.written
+    #[allow(clippy::cyclomatic_complexity)]
     pub fn decode_mut(&self, input: &[u8], output: &mut [u8]) -> Result<usize, DecodePartial> {
         assert_eq!(Ok(output.len()), self.decode_len(input.len()));
         dispatch! {
@@ -1562,10 +1572,11 @@ impl Specification {
                 return Ok(());
             }
             check!(SpecificationError(Duplicate(i)), v[i as usize] == INVALID);
-            Ok(v[i as usize] = x)
+            v[i as usize] = x;
+            Ok(())
         };
-        for v in 0 .. symbols.len() {
-            set(&mut values, symbols[v], v as u8)?;
+        for (v, symbols) in symbols.iter().enumerate() {
+            set(&mut values, *symbols, v as u8)?;
         }
         let msb = self.bit_order == MostSignificantFirst;
         let ctb = self.check_trailing_bits || 8 % bit == 0;

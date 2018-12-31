@@ -32,14 +32,14 @@ impl ::std::fmt::Display for Error {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         use self::Error::*;
         match self {
-            &ParseOpts(ref e) => e.fmt(f),
-            &ExtraArgs(ref a) => write!(f, "Unexpected arguments {:?}", a),
-            &Cmdline(ref m) => write!(f, "{}", m),
-            &Decode(ref e) => e.fmt(f),
-            &Builder(ref e) => e.fmt(f),
-            &IO(ref p, ref e) => write!(f, "{}: {}", p, e),
-            &Read(ref e) => write!(f, "Read error: {}", e),
-            &Write(ref e) => write!(f, "Write error: {}", e),
+            ParseOpts(ref e) => e.fmt(f),
+            ExtraArgs(ref a) => write!(f, "Unexpected arguments {:?}", a),
+            Cmdline(ref m) => write!(f, "{}", m),
+            Decode(ref e) => e.fmt(f),
+            Builder(ref e) => e.fmt(f),
+            IO(ref p, ref e) => write!(f, "{}: {}", p, e),
+            Read(ref e) => write!(f, "Read error: {}", e),
+            Write(ref e) => write!(f, "Write error: {}", e),
         }
     }
 }
@@ -48,14 +48,14 @@ impl ::std::error::Error for Error {
     fn description(&self) -> &str {
         use self::Error::*;
         match self {
-            &ParseOpts(ref e) => e.description(),
-            &ExtraArgs(_) => "unexpected argument",
-            &Cmdline(_) => "invalid command-line",
-            &Decode(ref e) => e.description(),
-            &Builder(ref e) => e.description(),
-            &IO(_, ref e) => e.description(),
-            &Read(ref e) => e.description(),
-            &Write(ref e) => e.description(),
+            ParseOpts(ref e) => e.description(),
+            ExtraArgs(_) => "unexpected argument",
+            Cmdline(_) => "invalid command-line",
+            Decode(ref e) => e.description(),
+            Builder(ref e) => e.description(),
+            IO(_, ref e) => e.description(),
+            Read(ref e) => e.description(),
+            Write(ref e) => e.description(),
         }
     }
 }
@@ -234,7 +234,7 @@ Examples:
             let mut spec = ::data_encoding::Specification::new();
             spec.symbols = matches
                 .opt_str("symbols")
-                .ok_or(Error::Cmdline("Base or symbols must be provided".into()))?;
+                .ok_or_else(|| Error::Cmdline("Base or symbols must be provided".into()))?;
             spec
         }
         Some(base) => {
@@ -314,7 +314,7 @@ Examples:
 
     let size = matches
         .opt_str("block")
-        .unwrap_or("15360".to_owned())
+        .unwrap_or_else(|| "15360".to_owned())
         .parse()
         .map_err(|_| Error::Cmdline("Invalid block value".into()))?;
     check!(Error::Cmdline("Block value must be greater or equal than 8".into()), size >= 8);
