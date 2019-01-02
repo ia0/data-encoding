@@ -22,7 +22,7 @@ fn decode_slice<'a>(input: &mut &'a [u8]) -> Option<&'a [u8]> {
 
 fn encode_range(input: &[u8]) -> Vec<u8> {
     let mut output = Vec::new();
-    for (start, end) in ::range::encode_range(input) {
+    for (start, end) in crate::range::encode_range(input) {
         match end {
             None => output.push(start),
             Some(end) => {
