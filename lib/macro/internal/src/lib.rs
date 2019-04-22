@@ -54,12 +54,8 @@ fn get_string(map: &mut HashMap<String, TokenTree>, key: &str) -> String {
         None => return String::new(),
         Some(node) => node,
     };
-    let literal = match node {
-        TokenTree::Literal(literal) => literal,
-        _ => panic!("expected literal for {}", key),
-    };
-    match syn::parse::string(&literal.to_string()) {
-        syn::parse::IResult::Done(_, result) => result.value,
+    match syn::parse::<syn::LitStr>(node.into()) {
+        Ok(result) => result.value(),
         _ => panic!("expected string for {}", key),
     }
 }
@@ -84,12 +80,13 @@ fn get_padding(map: &mut HashMap<String, TokenTree>) -> Option<char> {
         None => return None,
         Some(node) => node,
     };
-    let literal = match node {
-        TokenTree::Ident(ref ident) if format!("{}", ident) == "None" => return None,
-        TokenTree::Literal(literal) => literal,
-        _ => panic!("expected literal for padding"),
-    };
-    Some(syn::parse::character(&literal.to_string()).expect("expected char for padding"))
+    if let Ok(result) = syn::parse::<syn::LitChar>(node.clone().into()) {
+        return Some(result.value());
+    }
+    match syn::parse::<syn::Ident>(node.into()) {
+        Ok(ref result) if result.to_string() == "None" => None,
+        _ => panic!("expected None or char for padding"),
+    }
 }
 
 fn get_bool(map: &mut HashMap<String, TokenTree>, key: &str) -> Option<bool> {
@@ -97,11 +94,10 @@ fn get_bool(map: &mut HashMap<String, TokenTree>, key: &str) -> Option<bool> {
         None => return None,
         Some(node) => node,
     };
-    let ident = match node {
-        TokenTree::Ident(ident) => format!("{}", ident),
-        _ => panic!("expected literal for padding"),
-    };
-    Some(syn::parse::boolean(&ident).expect("expected bool for padding"))
+    match syn::parse::<syn::LitBool>(node.into()) {
+        Ok(result) => Some(result.value),
+        _ => panic!("expected bool for padding"),
+    }
 }
 
 fn get_bit_order(map: &mut HashMap<String, TokenTree>) -> BitOrder {
