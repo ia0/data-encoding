@@ -44,6 +44,12 @@ git clean -fxd
   info "Benchmark binary"
   ./bench.sh
 )
+( info "Ensure cargo-outdated is installed"
+  which cargo-outdated >/dev/null || cargo install cargo-outdated
+
+  info "Test dependencies"
+  cargo outdated -w -R --exit-code=1
+)
 
 ( git clean -fxd
 
