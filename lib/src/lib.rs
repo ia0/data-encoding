@@ -115,9 +115,9 @@
 //!
 //! | Input      | `data-encoding` | `rustc`  | `base64` | GNU `base64`  |
 //! | ---------- | --------------- | -------- | -------- | ------------- |
-//! | `AAB=`     | `Trailing(2)`   | `[0, 0]` | `[0, 0]` | `\x00\x00`    |
+//! | `AAB=`     | `Trailing(2)`   | `[0, 0]` | `Err(2)` | `\x00\x00`    |
 //! | `AA\nB=`   | `Length(4)`     | `[0, 0]` | `Length` | `\x00\x00`    |
-//! | `AAB`      | `Length(0)`     | `[0, 0]` | `[0, 0]` | Invalid input |
+//! | `AAB`      | `Length(0)`     | `[0, 0]` | `Err(2)` | Invalid input |
 //! | `A\rA\nB=` | `Length(4)`     | `[0, 0]` | `Err(1)` | Invalid input |
 //! | `-_\r\n`   | `Symbol(0)`     | `[251]`  | `Err(0)` | Invalid input |
 //! | `AA==AA==` | `[0, 0]`        | `Err`    | `Err(2)` | `\x00\x00`    |

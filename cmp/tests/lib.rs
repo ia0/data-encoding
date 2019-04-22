@@ -41,7 +41,7 @@ fn difference() {
     let x = b"AAB=";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 2, kind: Trailing });
     assert_eq!(x.from_base64().unwrap(), vec![0, 0]);
-    assert_eq!(base64::decode(x).unwrap(), vec![0, 0]);
+    assert!(base64::decode(x).is_err());
     let x = b"AA\nB=";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 4, kind: Length });
     assert_eq!(x.from_base64().unwrap(), vec![0, 0]);
@@ -49,7 +49,7 @@ fn difference() {
     let x = b"AAB";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Length });
     assert_eq!(x.from_base64().unwrap(), vec![0, 0]);
-    assert_eq!(base64::decode(x).unwrap(), vec![0, 0]);
+    assert!(base64::decode(x).is_err());
     let x = b"AAA";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Length });
     assert_eq!(x.from_base64().unwrap(), vec![0, 0]);
