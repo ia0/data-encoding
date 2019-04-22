@@ -72,27 +72,27 @@
 #![warn(unused_results)]
 
 #[cfg(feature = "stable")]
-#[macro_use]
 extern crate proc_macro_hack;
 
 extern crate data_encoding;
-#[cfg_attr(feature = "stable", allow(unused_imports))]
-#[cfg_attr(feature = "stable", macro_use)]
 extern crate data_encoding_macro_internal;
 
+#[cfg(feature = "stable")]
+use proc_macro_hack::proc_macro_hack;
+
+#[cfg(not(feature = "stable"))]
 #[doc(hidden)]
 pub use data_encoding_macro_internal::*;
 
 #[cfg(feature = "stable")]
-proc_macro_expr_decl! {
-    #[doc(hidden)]
-    internal_new_encoding! => internal_new_encoding_impl
-}
+#[proc_macro_hack]
+#[doc(hidden)]
+pub use data_encoding_macro_internal::internal_new_encoding;
+
 #[cfg(feature = "stable")]
-proc_macro_expr_decl! {
-    #[doc(hidden)]
-    internal_decode_slice! => internal_decode_slice_impl
-}
+#[proc_macro_hack]
+#[doc(hidden)]
+pub use data_encoding_macro_internal::internal_decode_slice;
 
 /// Defines a compile-time byte array by decoding a string literal
 ///
