@@ -7,7 +7,7 @@ mod range;
 mod state;
 mod utf8;
 
-use data_encoding::{BASE64URL_NOPAD, Encoding, Specification};
+use data_encoding::{Encoding, Specification, BASE64URL_NOPAD};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
@@ -137,7 +137,7 @@ fn create_tutorial() -> JsValue {
         Some(index) => index,
     };
     match index.as_str() {
-        "init_done" => html!{
+        "init_done" => html! {
             { div []
               { p [] "Well done!" }
               { button [ type = "button";
@@ -150,7 +150,7 @@ fn create_tutorial() -> JsValue {
 }
 
 fn create_settings() -> JsValue {
-    html!{
+    html! {
         { button [ type = "button"; onclick = "reset()" ] "reset" }
     }
 }
@@ -171,7 +171,7 @@ fn create_specification() -> JsValue {
 
     let symbols_tooltip = "The number of symbols must be 2, 4, 8, 16, 32, or 64. Symbols must be \
                            ASCII characters (smaller than 128) and they must be unique.";
-    let symbols = html!{
+    let symbols = html! {
         { span []
           "Encode with "
           { input [ type = "text";
@@ -186,7 +186,7 @@ fn create_specification() -> JsValue {
 
     let bit_order_tooltip =
         "The default is to use most significant bit first since it is the most common.";
-    let bit_order = html!{
+    let bit_order = html! {
         { span []
           { button [ type = "button";
                      class = "i_bit_order";
@@ -200,7 +200,7 @@ fn create_specification() -> JsValue {
 
     let trailing_bits_tooltip = "The default is to check trailing bits. This is ignored when \
                                  unnecessary (i.e. for base2, base4, and base16).";
-    let trailing_bits = html!{
+    let trailing_bits = html! {
         { span []
           { button [ type = "button";
                      class = "i_trailing_bits";
@@ -213,7 +213,7 @@ fn create_specification() -> JsValue {
     };
 
     let padding_tooltip = "The padding character must be ASCII and must not be a symbol.";
-    let padding = html!{
+    let padding = html! {
         { span []
           "Pad with "
           { input [ type = "text";
@@ -228,7 +228,7 @@ fn create_specification() -> JsValue {
 
     let ignore_tooltip =
         "The characters to ignore must be ASCII and must not be symbols or the padding character.";
-    let ignore = html!{
+    let ignore = html! {
         { span []
           "Ignore "
           { input [ type = "text";
@@ -245,7 +245,7 @@ fn create_specification() -> JsValue {
                               and base64; 2 for base16.";
     let wrap_separator_tooltip =
         "The wrapping characters must be ASCII and must not be symbols or the padding character.";
-    let wrap = html!{
+    let wrap = html! {
         { span []
           "Wrap every "
           { input [ type = "text";
@@ -271,7 +271,7 @@ fn create_specification() -> JsValue {
     let translate_to_tooltip = "The characters to translate to must be ASCII and must have been \
                                 assigned a semantics (symbol, padding character, or ignored \
                                 character).";
-    let translate = html!{
+    let translate = html! {
         { span []
           "Translate "
           { input [ type = "text";
@@ -295,14 +295,14 @@ fn create_specification() -> JsValue {
     let canonical_tooltip = "The encoding is not canonical if trailing bits are not checked, \
                              padding is used, characters are ignored, or characters are \
                              translated.";
-    let canonical = html!{
+    let canonical = html! {
         { span []
           { output [ class = "i_canonical";
                      title = canonical_tooltip ] }
         }
     };
 
-    html!{
+    html! {
         { div [ class = "s_specification" ]
           { div [ class = "s_control" ]
             { div [ class = "e_symbols" ] (symbols) }
@@ -332,7 +332,7 @@ fn create_encoding(id: i32) -> JsValue {
         appendChild(&preset, &option);
     }
 
-    html!{
+    html! {
         { div [ id = &format!("encoding_{}", id);
                 class = "i_encoding s_encoding" ]
           { div [ class = "s_menu" ]
@@ -401,9 +401,7 @@ fn get_encoding(id: i32) -> Result<Option<Encoding>, String> {
     }
     spec.translate.from = range::decode(&utf8_decode("i_translate_from")?)?;
     spec.translate.to = range::decode(&utf8_decode("i_translate_to")?)?;
-    spec.encoding()
-        .map(Some)
-        .map_err(|error| format!("{}", error))
+    spec.encoding().map(Some).map_err(|error| format!("{}", error))
 }
 
 fn set_invalid_input(name: &str, id: i32) {
@@ -438,10 +436,7 @@ fn encoding_update(encoding: &Option<Encoding>, id: i32) {
     reset_errors();
     set_value(&get_element(id, "i_canonical"), "");
 
-    let spec = encoding
-        .as_ref()
-        .map(|e| e.specification())
-        .unwrap_or_else(|| Specification::new());
+    let spec = encoding.as_ref().map(|e| e.specification()).unwrap_or_else(|| Specification::new());
     #[derive(PartialEq, Eq)]
     enum Hide {
         AllButSymbol,
@@ -456,10 +451,7 @@ fn encoding_update(encoding: &Option<Encoding>, id: i32) {
         },
     };
     let set = |name, value: &str| {
-        set_value(
-            &get_element(id, name),
-            &utf8::encode(value.as_bytes(), true),
-        );
+        set_value(&get_element(id, name), &utf8::encode(value.as_bytes(), true));
     };
     let set_range = |name, value| {
         set(name, &range::encode(value).unwrap());
@@ -570,10 +562,8 @@ fn delete_state(name: &str) {
 }
 
 fn restore_encoding(id: i32, state: &[u8]) {
-    let encoding = BASE64URL_NOPAD
-        .decode(state)
-        .ok()
-        .and_then(|value| state::decode_encoding(&value));
+    let encoding =
+        BASE64URL_NOPAD.decode(state).ok().and_then(|value| state::decode_encoding(&value));
     encoding_update(&encoding, id);
 }
 
@@ -589,10 +579,8 @@ fn save_encoding(encoding: &Option<Encoding>, id: i32) {
 }
 
 fn restore_input(state: &str) {
-    let value = BASE64URL_NOPAD
-        .decode(state.as_bytes())
-        .ok()
-        .and_then(|x| String::from_utf8(x).ok());
+    let value =
+        BASE64URL_NOPAD.decode(state.as_bytes()).ok().and_then(|x| String::from_utf8(x).ok());
     let input = value.as_ref().map(String::as_str).unwrap_or("");
     set_value(&getElementById("input"), input);
     save_input(input);
@@ -615,13 +603,13 @@ fn next_id() -> i32 {
 
 #[wasm_bindgen]
 pub fn init() {
-    let top_buttons = html!{
+    let top_buttons = html! {
         { div [ class = "s_top_right" ]
           { a [ href = BUG_LINK; target = "_blank" ]
             { button [ type = "button" ] "report bug" } } }
     };
     for name in ["tutorial", "settings", "help"].iter() {
-        let button = html!{
+        let button = html! {
             { button [ type = "button";
                        id = &format!("toggle_{}", name);
                        onclick = &format!("wasm_bindgen.toggle_menu('{}')", name) ] }
@@ -630,7 +618,7 @@ pub fn init() {
         appendChild(&top_buttons, &button);
     }
 
-    let top = html!{
+    let top = html! {
         { div [ id = "top"; class = "s_top" ]
           { div [ class = "s_top_menu" ]
             { div [ id = "title"; class = "s_title" ] }
@@ -642,7 +630,7 @@ pub fn init() {
         toggle_menu("tutorial");
     }
 
-    let encodings = html!{
+    let encodings = html! {
         { div [ id = "encodings"; class = "s_encodings" ] }
     };
     appendChild(&getElementById("everything"), &encodings);
@@ -681,7 +669,7 @@ pub fn init() {
     }
     fix_swap_buttons();
 
-    let next = html!{
+    let next = html! {
         { div [ id = "next"; class = "s_next s_encoding" ]
           { button [ type = "button";
                      onclick = "wasm_bindgen.add_encoding()" ]
@@ -737,11 +725,7 @@ pub fn add_encoding() {
     if id == LIMIT_ID {
         return;
     }
-    insertBefore(
-        &getElementById("encodings"),
-        &create_encoding(id),
-        &getElementById("next"),
-    );
+    insertBefore(&getElementById("encodings"), &create_encoding(id), &getElementById("next"));
     fix_swap_buttons();
     spec_update(id);
 }
@@ -813,10 +797,9 @@ pub fn text_update(id: i32) {
         let output = get_element(i, "i_text");
         match get_encoding(i) {
             Ok(None) => set_value(&output, &encoded_input),
-            Ok(Some(encoding)) => set_value(
-                &output,
-                &utf8::encode(encoding.encode(&input).as_bytes(), false),
-            ),
+            Ok(Some(encoding)) => {
+                set_value(&output, &utf8::encode(encoding.encode(&input).as_bytes(), false))
+            }
             Err(error) => {
                 set_invalid_input("i_encoding", i);
                 set_error(i, &error);
@@ -877,14 +860,11 @@ pub fn toggle_menu(name: &str) {
         }
     }
     set_innerHTML(&title, name);
-    let new_content = html!{
+    let new_content = html! {
         { div [ id = "content"; class = "s_content" ] (content()) }
     };
     appendChild(&top, &new_content);
-    set_innerHTML(
-        &getElementById(&format!("toggle_{}", name)),
-        &format!("close {}", name),
-    );
+    set_innerHTML(&getElementById(&format!("toggle_{}", name)), &format!("close {}", name));
 }
 
 #[wasm_bindgen]
@@ -897,10 +877,6 @@ pub fn goto_tutorial(name: &str) {
 
 #[wasm_bindgen]
 pub fn move_focus(id: i32) {
-    let id = if id < 0 {
-        next_id() - 1
-    } else {
-        id % next_id()
-    };
+    let id = if id < 0 { next_id() - 1 } else { id % next_id() };
     focus(&get_element(id, "i_text"));
 }

@@ -121,9 +121,7 @@ pub fn decode_specification(mut input: &[u8]) -> Option<Specification> {
     }
     if desc & 1 << 1 != 0 {
         spec.wrap.width = advance(&mut input, 1)?[0] as usize;
-        spec.wrap.separator = ::std::str::from_utf8(decode_slice(&mut input)?)
-            .ok()?
-            .to_string();
+        spec.wrap.separator = ::std::str::from_utf8(decode_slice(&mut input)?).ok()?.to_string();
     }
     if desc & 1 << 0 != 0 {
         spec.translate.from = decode_range(decode_slice(&mut input)?)?;

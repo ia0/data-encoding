@@ -66,9 +66,7 @@ pub fn decode(input: &str) -> Result<Vec<u8>, String> {
     let mut result = Vec::new();
     let mut input = input.bytes();
     let next = |input: &mut ::std::str::Bytes| {
-        input
-            .next()
-            .ok_or_else(|| format!("unexpected end of string"))
+        input.next().ok_or_else(|| format!("unexpected end of string"))
     };
     while let Some(x) = input.next() {
         if x != b'\\' {
@@ -97,10 +95,7 @@ fn test_encode() {
     assert_eq!(encode(b"\\", false), r"\\");
     assert_eq!(encode(b"\x80", false), r"\x80");
     assert_eq!(encode(b"\xc3\xa9", false), "é");
-    assert_eq!(
-        encode(b"\xc3\xa9\x80\xc3\xa9A\x80A\x80", false),
-        r"é\x80éA\x80A\x80"
-    );
+    assert_eq!(encode(b"\xc3\xa9\x80\xc3\xa9A\x80A\x80", false), r"é\x80éA\x80A\x80");
     assert_eq!(encode(b"\n", false), "\n");
     assert_eq!(encode(b"\n", true), r"\n");
 }
@@ -111,10 +106,7 @@ fn test_decode() {
     assert_eq!(decode(r"\\").unwrap(), b"\\");
     assert_eq!(decode(r"\x80").unwrap(), b"\x80");
     assert_eq!(decode(r"é").unwrap(), b"\xc3\xa9");
-    assert_eq!(
-        decode(r"é\x80éA\x80A\x80").unwrap(),
-        b"\xc3\xa9\x80\xc3\xa9A\x80A\x80"
-    );
+    assert_eq!(decode(r"é\x80éA\x80A\x80").unwrap(), b"\xc3\xa9\x80\xc3\xa9A\x80A\x80");
     assert_eq!(decode("\n").unwrap(), b"\n");
     assert_eq!(decode("\x41").unwrap(), b"A");
     assert_eq!(decode("\x4A").unwrap(), b"J");
