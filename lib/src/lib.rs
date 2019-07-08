@@ -1278,7 +1278,7 @@ impl Encoding {
     /// ```
     ///
     /// [`encode_len`]: struct.Encoding.html#method.encode_len
-    #[allow(clippy::cyclomatic_complexity)]
+    #[allow(clippy::cognitive_complexity)]
     pub fn encode_mut(&self, input: &[u8], output: &mut [u8]) {
         assert_eq!(output.len(), self.encode_len(input.len()));
         dispatch! {
@@ -1368,7 +1368,7 @@ impl Encoding {
     /// [`Length`]: enum.DecodeKind.html#variant.Length
     /// [`read`]: struct.DecodePartial.html#structfield.read
     /// [`written`]: struct.DecodePartial.html#structfield.written
-    #[allow(clippy::cyclomatic_complexity)]
+    #[allow(clippy::cognitive_complexity)]
     pub fn decode_mut(&self, input: &[u8], output: &mut [u8]) -> Result<usize, DecodePartial> {
         assert_eq!(Ok(output.len()), self.decode_len(input.len()));
         dispatch! {
