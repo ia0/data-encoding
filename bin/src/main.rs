@@ -297,14 +297,14 @@ Examples:
         _ => return Err(Error::Cmdline("Invalid mode".into())),
     };
 
-    let input: Box<Read>;
+    let input: Box<dyn Read>;
     if let Some(file) = matches.opt_str("input") {
         input = Box::new(File::open(&file).map_err(|e| Error::IO(file, e))?);
     } else {
         input = Box::new(std::io::stdin());
     };
 
-    let mut output: Box<Write>;
+    let mut output: Box<dyn Write>;
     if let Some(file) = matches.opt_str("output") {
         output = Box::new(File::create(&file).map_err(|e| Error::IO(file, e))?);
     } else {
@@ -329,10 +329,10 @@ Examples:
 // TODO: Change (and inline) the following lines when Stdout does not
 // go through a LineWriter anymore.
 #[cfg(target_os = "linux")]
-fn stdout() -> Box<Write> {
+fn stdout() -> Box<dyn Write> {
     Box::new(unsafe { <File as std::os::unix::io::FromRawFd>::from_raw_fd(1) })
 }
 #[cfg(not(target_os = "linux"))]
-fn stdout() -> Box<Write> {
+fn stdout() -> Box<dyn Write> {
     Box::new(std::io::stdout())
 }
