@@ -419,7 +419,7 @@ fn round_trip() {
 
 #[test]
 fn is_canonical() {
-    fn test(expect: bool, update: &Fn(&mut Specification)) {
+    fn test(expect: bool, update: &dyn Fn(&mut Specification)) {
         let mut spec = Specification::new();
         spec.symbols.push_str("01234567");
         update(&mut spec);
