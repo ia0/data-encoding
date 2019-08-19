@@ -51,7 +51,8 @@ git clean -fxd
   cargo outdated -w -R --exit-code=1
 )
 
-( git clean -fxd
+( [ -n "$TRAVIS_JOB_ID" ] || exit
+  git clean -fxd
 
   info "Download kcov"
   wget -q https://github.com/SimonKagstrom/kcov/archive/master.tar.gz

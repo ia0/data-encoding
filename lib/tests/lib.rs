@@ -11,7 +11,7 @@ macro_rules! test {
                 assert_eq!(&b.encode(x).into_bytes() as &[u8], y);
                 assert_eq!(&b.decode(y).unwrap() as &[u8], x);
             }
-            $($s);*
+            $($s)*
         }
     };
 }
