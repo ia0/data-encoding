@@ -51,7 +51,35 @@ git clean -fxd
   cargo outdated -w -R --exit-code=1
 )
 
+( [ -n "$FUZZIT_API_KEY" ] || exit 0
+  [ "$TRAVIS_RUST_VERSION" = nightly ] || exit 0
+  cd lib
+
+  info "Ensure cargo-fuzz is installed"
+  which cargo-fuzz >/dev/null || cargo install cargo-fuzz
+
+  info "Download fuzzit"
+  wget -q -O fuzzit https://github.com/fuzzitdev/fuzzit/releases/latest\
+/download/fuzzit_Linux_x86_64
+  chmod +x fuzzit
+
+  info "Build fuzzer"
+  cargo fuzz run round_trip -- -runs=0
+
+  info "Run regression tests"
+  ./fuzzit create job --type local-regression ia0-gh/data-encoding \
+           ./fuzz/target/x86_64-unknown-linux-gnu/debug/round_trip
+
+  [ "$TRAVIS_BRANCH" = master ] || exit 0
+  [ "$TRAVIS_EVENT_TYPE" = push ] || exit 0
+
+  info "Update continuous test"
+  ./fuzzit create job ia0-gh/data-encoding \
+           ./fuzz/target/x86_64-unknown-linux-gnu/debug/round_trip
+)
+
 ( [ -n "$TRAVIS_JOB_ID" ] || exit
+  [ "$TRAVIS_RUST_VERSION" = nightly ] || exit
   git clean -fxd
 
   info "Download kcov"

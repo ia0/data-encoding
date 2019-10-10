@@ -6,6 +6,7 @@ help:
 	@echo '    make install   # installs the binary'
 	@echo '    make bench     # runs all benchmarks'
 	@echo '    make test      # runs all tests'
+	@echo '    make fuzz      # starts the fuzzer'
 	@echo '    make help      # shows this help'
 
 .PHONY: install
@@ -24,6 +25,10 @@ test:
 	rustc -V | grep -v nightly >/dev/null || { \
 	  cd lib/macro && cargo test --no-default-features; }
 	cd bin && ./test.sh
+
+.PHONY: fuzz
+fuzz:
+	cd lib && cargo fuzz run round_trip
 
 .PHONY: clean
 clean:
