@@ -26,9 +26,10 @@ test:
 	  cd lib/macro && cargo test --no-default-features; }
 	cd bin && ./test.sh
 
+FUZZ_J = 1
 .PHONY: fuzz
 fuzz:
-	cd lib && cargo fuzz run round_trip
+	cd lib && cargo fuzz run -j ${FUZZ_J} round_trip
 
 .PHONY: clean
 clean:
