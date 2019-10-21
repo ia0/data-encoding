@@ -55,8 +55,8 @@ git clean -fxd
   [ "$TRAVIS_RUST_VERSION" = nightly ] || exit 0
   cd lib
 
-  info "Ensure cargo-fuzz is installed"
-  which cargo-fuzz >/dev/null || cargo install cargo-fuzz
+  info "Ensure the latest version of cargo-fuzz is installed"
+  cargo install -f cargo-fuzz
 
   info "Download fuzzit"
   wget -q -O fuzzit https://github.com/fuzzitdev/fuzzit/releases/latest\
