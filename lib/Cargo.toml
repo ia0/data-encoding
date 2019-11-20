@@ -4,13 +4,18 @@ version = "2.1.2"
 authors = ["Julien Cretin <git@ia0.eu>"]
 license = "MIT"
 edition = "2018"
-keywords = ["base-conversion", "encoding", "base64", "base32", "hex"]
+keywords = ["no_std", "base64", "base32", "hex"]
 categories = ["encoding"]
 readme = "README.md"
 repository = "https://github.com/ia0/data-encoding"
 documentation = "https://docs.rs/data-encoding"
 description = "Efficient and customizable data-encoding functions"
 include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
+
+[features]
+default = ["std"]
+alloc = []
+std = ["alloc"]
 
 [badges]
 appveyor = { repository = "ia0/data-encoding" }

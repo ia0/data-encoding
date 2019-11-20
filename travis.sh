@@ -12,6 +12,12 @@ git clean -fxd
   info "Test library"
   cargo test --verbose
 
+  info "Build noalloc library"
+  cargo build --verbose --no-default-features
+
+  info "Build nostd library"
+  cargo build --verbose --no-default-features --features=alloc
+
   ( cd macro
     info "Build macro library"
     cargo build --verbose
@@ -26,12 +32,20 @@ git clean -fxd
 
     ( cd macro
       info "Build macro library (no stable feature)"
-      cargo build --no-default-features --verbose
+      cargo build --verbose --no-default-features
 
       info "Test macro library (no stable feature)"
-      cargo test --no-default-features --verbose
+      cargo test --verbose --no-default-features
     )
   fi
+)
+( [ "$TRAVIS_RUST_VERSION" = nightly ] || exit 0
+  cd nostd
+  info "Test noalloc binary"
+  cargo run --verbose --release
+
+  info "Test nostd binary"
+  cargo run --verbose --release --features=alloc
 )
 ( cd bin
   info "Build binary"
