@@ -14,6 +14,10 @@
 //! data-encoding-macro = { version = "0.1", default-features = false }
 //! ```
 //!
+//! This library does not support no-std yet because it depends on a proc-macro library that depends
+//! on data-encoding with std and cargo propagates that feature although it's a build dependency.
+//! See https://github.com/rust-lang/cargo/issues/5730 for more information.
+//!
 //! # Examples
 //!
 //! You can define a compile-time byte slice from an encoded string literal:
@@ -229,8 +233,7 @@ macro_rules! decode_slice {
 #[macro_export]
 macro_rules! new_encoding {
     ($($arg: tt)*) => {
-        ::data_encoding::Encoding(::std::borrow::Cow::Borrowed(
-            &$crate::internal_new_encoding!{ $($arg)* }))
+        ::data_encoding::Encoding::internal_new(&$crate::internal_new_encoding!{ $($arg)* })
     };
 }
 
@@ -275,8 +278,7 @@ macro_rules! new_encoding {
 #[macro_export]
 macro_rules! new_encoding {
     ($($arg: tt)*) => {
-        ::data_encoding::Encoding(::std::borrow::Cow::Borrowed(
-            &internal_new_encoding!{ $($arg)* }))
+        ::data_encoding::Encoding::internal_new(&internal_new_encoding!{ $($arg)* })
     };
 }
 

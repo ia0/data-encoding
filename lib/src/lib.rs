@@ -11,6 +11,7 @@
 //! - most and least significant bit-order
 //! - ignoring characters when decoding (e.g. for skipping newlines)
 //! - wrapping the output when encoding
+//! - no-std with `std` and `alloc` features
 //!
 //! The performance of the encoding and decoding functions are similar to
 //! existing implementations (see how to run the benchmarks on [github]).
@@ -168,7 +169,29 @@
 //! [github]: https://github.com/ia0/data-encoding
 //! [macro]: https://crates.io/crates/data-encoding-macro
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(unused_results, missing_docs)]
+
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+extern crate alloc;
+
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+mod prelude {
+    pub use alloc::borrow::Cow;
+    pub use alloc::borrow::ToOwned;
+    pub use alloc::string::String;
+    pub use alloc::vec;
+    pub use alloc::vec::Vec;
+}
+#[cfg(feature = "std")]
+mod prelude {
+    pub use std::borrow::Cow;
+}
+
+#[cfg(not(feature = "std"))]
+use core as std;
+#[cfg(feature = "alloc")]
+use prelude::*;
 
 macro_rules! check {
     ($e: expr, $c: expr) => {
@@ -303,6 +326,7 @@ pub struct DecodeError {
     /// Error kind
     pub kind: DecodeKind,
 }
+#[cfg(feature = "std")]
 impl std::error::Error for DecodeError {
     fn description(&self) -> &str {
         match self.kind {
@@ -313,6 +337,7 @@ impl std::error::Error for DecodeError {
         }
     }
 }
+#[cfg(feature = "std")]
 impl std::fmt::Display for DecodeError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use std::error::Error;
@@ -799,6 +824,7 @@ fn decode_wrap_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>, I: Static
 /// assert_eq!(lsb.encode(&[0b01010011]), "11001010");
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg(feature = "alloc")]
 pub enum BitOrder {
     /// Most significant bit first
     ///
@@ -825,10 +851,16 @@ pub enum BitOrder {
     /// [base32]: constant.BASE32_DNSCURVE.html
     LeastSignificantFirst,
 }
+#[cfg(feature = "alloc")]
 use crate::BitOrder::*;
 
 #[doc(hidden)]
-pub type InternalEncoding = std::borrow::Cow<'static, [u8]>;
+#[cfg(feature = "alloc")]
+pub type InternalEncoding = Cow<'static, [u8]>;
+
+#[doc(hidden)]
+#[cfg(not(feature = "alloc"))]
+pub type InternalEncoding = &'static [u8];
 
 /// Base-conversion encoding
 ///
@@ -863,6 +895,7 @@ pub struct Encoding(pub InternalEncoding);
 ///
 /// See [Specification](struct.Specification.html) for more information.
 #[derive(Debug, Clone)]
+#[cfg(feature = "alloc")]
 pub struct Translate {
     /// Characters to translate from
     pub from: String,
@@ -874,6 +907,7 @@ pub struct Translate {
 ///
 /// See [Specification](struct.Specification.html) for more information.
 #[derive(Debug, Clone)]
+#[cfg(feature = "alloc")]
 pub struct Wrap {
     /// Wrapping width
     ///
@@ -1143,6 +1177,7 @@ pub struct Wrap {
 ///     https://en.wikipedia.org/wiki/Positional_notation#Base_conversion
 /// [canonical]: https://tools.ietf.org/html/rfc4648#section-3.5
 #[derive(Debug, Clone)]
+#[cfg(feature = "alloc")]
 pub struct Specification {
     /// Symbols
     ///
@@ -1191,21 +1226,7 @@ pub struct Specification {
     pub translate: Translate,
 }
 
-impl Specification {
-    /// Returns a default specification
-    pub fn new() -> Specification {
-        Specification {
-            symbols: String::new(),
-            bit_order: MostSignificantFirst,
-            check_trailing_bits: true,
-            padding: None,
-            ignore: String::new(),
-            wrap: Wrap { width: 0, separator: String::new() },
-            translate: Translate { from: String::new(), to: String::new() },
-        }
-    }
-}
-
+#[cfg(feature = "alloc")]
 impl Default for Specification {
     fn default() -> Self {
         Self::new()
@@ -1298,6 +1319,7 @@ impl Encoding {
     /// use data_encoding::BASE64;
     /// assert_eq!(BASE64.encode(b"Hello world"), "SGVsbG8gd29ybGQ=");
     /// ```
+    #[cfg(feature = "alloc")]
     pub fn encode(&self, input: &[u8]) -> String {
         let mut output = vec![0u8; self.encode_len(input.len())];
         self.encode_mut(input, &mut output);
@@ -1410,6 +1432,7 @@ impl Encoding {
     /// [`Trailing`]: enum.DecodeKind.html#variant.Trailing
     /// [`Padding`]: enum.DecodeKind.html#variant.Padding
     /// [position]: struct.DecodeError.html#structfield.position
+    #[cfg(feature = "alloc")]
     pub fn decode(&self, input: &[u8]) -> Result<Vec<u8>, DecodeError> {
         let mut output = vec![0u8; self.decode_len(input.len())?];
         let len = self.decode_mut(input, &mut output).map_err(|partial| partial.error)?;
@@ -1452,6 +1475,7 @@ impl Encoding {
     }
 
     /// Returns the encoding specification
+    #[cfg(feature = "alloc")]
     pub fn specification(&self) -> Specification {
         let mut specification = Specification::new();
         specification
@@ -1491,8 +1515,12 @@ impl Encoding {
     }
 
     #[doc(hidden)]
-    pub fn internal_new(implementation: &'static [u8]) -> Encoding {
-        Encoding(std::borrow::Cow::Borrowed(implementation))
+    pub const fn internal_new(implementation: &'static [u8]) -> Encoding {
+        #[cfg(feature = "alloc")]
+        let encoding = Encoding(Cow::Borrowed(implementation));
+        #[cfg(not(feature = "alloc"))]
+        let encoding = Encoding(implementation);
+        encoding
     }
 
     #[doc(hidden)]
@@ -1502,6 +1530,7 @@ impl Encoding {
 }
 
 #[derive(Debug, Copy, Clone)]
+#[cfg(feature = "alloc")]
 enum SpecificationErrorImpl {
     BadSize,
     NotAscii,
@@ -1512,12 +1541,15 @@ enum SpecificationErrorImpl {
     FromTo,
     Undefined(u8),
 }
+#[cfg(feature = "alloc")]
 use crate::SpecificationErrorImpl::*;
 
 /// Specification error
 #[derive(Debug, Copy, Clone)]
+#[cfg(feature = "alloc")]
 pub struct SpecificationError(SpecificationErrorImpl);
 
+#[cfg(feature = "alloc")]
 impl std::fmt::Display for SpecificationError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
@@ -1533,6 +1565,7 @@ impl std::fmt::Display for SpecificationError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for SpecificationError {
     fn description(&self) -> &str {
         match self.0 {
@@ -1548,7 +1581,21 @@ impl std::error::Error for SpecificationError {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl Specification {
+    /// Returns a default specification
+    pub fn new() -> Specification {
+        Specification {
+            symbols: String::new(),
+            bit_order: MostSignificantFirst,
+            check_trailing_bits: true,
+            padding: None,
+            ignore: String::new(),
+            wrap: Wrap { width: 0, separator: String::new() },
+            translate: Translate { from: String::new(), to: String::new() },
+        }
+    }
+
     /// Returns the specified encoding
     ///
     /// # Errors
@@ -1636,7 +1683,7 @@ impl Specification {
         } else if values.contains(&IGNORE) {
             encoding.push(0);
         }
-        Ok(Encoding(std::borrow::Cow::Owned(encoding)))
+        Ok(Encoding(Cow::Owned(encoding)))
     }
 }
 
@@ -1659,8 +1706,8 @@ impl Specification {
 /// assert_eq!(HEXLOWER.decode(b"deadbeef").unwrap(), deadbeef);
 /// assert_eq!(HEXLOWER.encode(&deadbeef), "deadbeef");
 /// ```
-pub const HEXLOWER: Encoding = HEXLOWER_IMPL;
-const HEXLOWER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const HEXLOWER: Encoding = Encoding::internal_new(HEXLOWER_IMPL);
+const HEXLOWER_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54,
     55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
     101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
@@ -1686,7 +1733,7 @@ const HEXLOWER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 28,
-]));
+];
 
 /// Lowercase hexadecimal encoding with case-insensitive decoding
 ///
@@ -1716,8 +1763,8 @@ const HEXLOWER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// use data_encoding::{Encoding, HEXLOWER_PERMISSIVE};
 /// const HEX: Encoding = HEXLOWER_PERMISSIVE;
 /// ```
-pub const HEXLOWER_PERMISSIVE: Encoding = HEXLOWER_PERMISSIVE_IMPL;
-const HEXLOWER_PERMISSIVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const HEXLOWER_PERMISSIVE: Encoding = Encoding::internal_new(HEXLOWER_PERMISSIVE_IMPL);
+const HEXLOWER_PERMISSIVE_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54,
     55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100,
     101, 102, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51,
@@ -1743,7 +1790,7 @@ const HEXLOWER_PERMISSIVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 28,
-]));
+];
 
 /// Uppercase hexadecimal encoding
 ///
@@ -1768,8 +1815,8 @@ const HEXLOWER_PERMISSIVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&
 /// ```
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-8
-pub const HEXUPPER: Encoding = HEXUPPER_IMPL;
-const HEXUPPER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const HEXUPPER: Encoding = Encoding::internal_new(HEXUPPER_IMPL);
+const HEXUPPER_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
     56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
@@ -1794,7 +1841,7 @@ const HEXUPPER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 28,
-]));
+];
 
 /// Uppercase hexadecimal encoding with case-insensitive decoding
 ///
@@ -1817,8 +1864,8 @@ const HEXUPPER_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// assert_eq!(HEXUPPER_PERMISSIVE.decode(b"DeadBeef").unwrap(), deadbeef);
 /// assert_eq!(HEXUPPER_PERMISSIVE.encode(&deadbeef), "DEADBEEF");
 /// ```
-pub const HEXUPPER_PERMISSIVE: Encoding = HEXUPPER_PERMISSIVE_IMPL;
-const HEXUPPER_PERMISSIVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const HEXUPPER_PERMISSIVE: Encoding = Encoding::internal_new(HEXUPPER_PERMISSIVE_IMPL);
+const HEXUPPER_PERMISSIVE_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
     56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
@@ -1843,7 +1890,7 @@ const HEXUPPER_PERMISSIVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 28,
-]));
+];
 
 /// Padded base32 encoding
 ///
@@ -1860,8 +1907,8 @@ const HEXUPPER_PERMISSIVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&
 /// It is conform to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-6
-pub const BASE32: Encoding = BASE32_IMPL;
-const BASE32_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE32: Encoding = Encoding::internal_new(BASE32_IMPL);
+const BASE32_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
     89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
     81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72,
@@ -1886,7 +1933,7 @@ const BASE32_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 29,
-]));
+];
 
 /// Unpadded base32 encoding
 ///
@@ -1898,8 +1945,8 @@ const BASE32_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567");
 /// assert_eq!(BASE32_NOPAD, spec.encoding().unwrap());
 /// ```
-pub const BASE32_NOPAD: Encoding = BASE32_NOPAD_IMPL;
-const BASE32_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE32_NOPAD: Encoding = Encoding::internal_new(BASE32_NOPAD_IMPL);
+const BASE32_NOPAD_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
     89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
     81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 50, 51, 52, 53, 54, 55, 65, 66, 67, 68, 69, 70, 71, 72,
@@ -1924,7 +1971,7 @@ const BASE32_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 29,
-]));
+];
 
 /// Padded base32hex encoding
 ///
@@ -1941,8 +1988,8 @@ const BASE32_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// It is conform to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-7
-pub const BASE32HEX: Encoding = BASE32HEX_IMPL;
-const BASE32HEX_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE32HEX: Encoding = Encoding::internal_new(BASE32HEX_IMPL);
+const BASE32HEX_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
     79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
     71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55,
@@ -1967,7 +2014,7 @@ const BASE32HEX_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 29,
-]));
+];
 
 /// Unpadded base32hex encoding
 ///
@@ -1979,8 +2026,8 @@ const BASE32HEX_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// spec.symbols.push_str("0123456789ABCDEFGHIJKLMNOPQRSTUV");
 /// assert_eq!(BASE32HEX_NOPAD, spec.encoding().unwrap());
 /// ```
-pub const BASE32HEX_NOPAD: Encoding = BASE32HEX_NOPAD_IMPL;
-const BASE32HEX_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE32HEX_NOPAD: Encoding = Encoding::internal_new(BASE32HEX_NOPAD_IMPL);
+const BASE32HEX_NOPAD_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
     79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70,
     71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 48, 49, 50, 51, 52, 53, 54, 55,
@@ -2005,7 +2052,7 @@ const BASE32HEX_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 29,
-]));
+];
 
 /// DNSSEC base32 encoding
 ///
@@ -2027,8 +2074,8 @@ const BASE32HEX_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// - It does not use padding.
 ///
 /// [RFC5155]: https://tools.ietf.org/html/rfc5155
-pub const BASE32_DNSSEC: Encoding = BASE32_DNSSEC_IMPL;
-const BASE32_DNSSEC_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE32_DNSSEC: Encoding = Encoding::internal_new(BASE32_DNSSEC_IMPL);
+const BASE32_DNSSEC_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
     108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
     97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
@@ -2055,7 +2102,7 @@ const BASE32_DNSSEC_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 29,
-]));
+];
 
 /// DNSCurve base32 encoding
 ///
@@ -2074,8 +2121,8 @@ const BASE32_DNSSEC_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// It is conform to [DNSCurve].
 ///
 /// [DNSCurve]: https://dnscurve.org/in-implement.html
-pub const BASE32_DNSCURVE: Encoding = BASE32_DNSCURVE_IMPL;
-const BASE32_DNSCURVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE32_DNSCURVE: Encoding = Encoding::internal_new(BASE32_DNSCURVE_IMPL);
+const BASE32_DNSCURVE_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 98, 99, 100, 102, 103, 104, 106, 107, 108, 109, 110,
     112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
     98, 99, 100, 102, 103, 104, 106, 107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119,
@@ -2102,7 +2149,7 @@ const BASE32_DNSCURVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 21,
-]));
+];
 
 /// Padded base64 encoding
 ///
@@ -2119,8 +2166,8 @@ const BASE32_DNSCURVE_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// It is conform to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-4
-pub const BASE64: Encoding = BASE64_IMPL;
-const BASE64_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE64: Encoding = Encoding::internal_new(BASE64_IMPL);
+const BASE64_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
     89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
     115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66,
@@ -2146,7 +2193,7 @@ const BASE64_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 30,
-]));
+];
 
 /// Unpadded base64 encoding
 ///
@@ -2158,8 +2205,8 @@ const BASE64_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 /// assert_eq!(BASE64_NOPAD, spec.encoding().unwrap());
 /// ```
-pub const BASE64_NOPAD: Encoding = BASE64_NOPAD_IMPL;
-const BASE64_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE64_NOPAD: Encoding = Encoding::internal_new(BASE64_NOPAD_IMPL);
+const BASE64_NOPAD_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
     89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
     115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66,
@@ -2185,7 +2232,7 @@ const BASE64_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 30,
-]));
+];
 
 /// MIME base64 encoding
 ///
@@ -2205,8 +2252,8 @@ const BASE64_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// and does not ignore all characters.
 ///
 /// [RFC2045]: https://tools.ietf.org/html/rfc2045
-pub const BASE64_MIME: Encoding = BASE64_MIME_IMPL;
-const BASE64_MIME_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE64_MIME: Encoding = Encoding::internal_new(BASE64_MIME_IMPL);
+const BASE64_MIME_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
     89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
     115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 43, 47, 65, 66,
@@ -2232,7 +2279,7 @@ const BASE64_MIME_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 30, 76, 13, 10,
-]));
+];
 
 /// Padded base64url encoding
 ///
@@ -2249,8 +2296,8 @@ const BASE64_MIME_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// It is conform to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-5
-pub const BASE64URL: Encoding = BASE64URL_IMPL;
-const BASE64URL_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE64URL: Encoding = Encoding::internal_new(BASE64URL_IMPL);
+const BASE64URL_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
     89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
     115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66,
@@ -2276,7 +2323,7 @@ const BASE64URL_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 30,
-]));
+];
 
 /// Unpadded base64url encoding
 ///
@@ -2288,8 +2335,8 @@ const BASE64URL_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
 /// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
 /// assert_eq!(BASE64URL_NOPAD, spec.encoding().unwrap());
 /// ```
-pub const BASE64URL_NOPAD: Encoding = BASE64URL_NOPAD_IMPL;
-const BASE64URL_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
+pub const BASE64URL_NOPAD: Encoding = Encoding::internal_new(BASE64URL_NOPAD_IMPL);
+const BASE64URL_NOPAD_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
     89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
     115, 116, 117, 118, 119, 120, 121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95, 65, 66,
@@ -2315,4 +2362,4 @@ const BASE64URL_NOPAD_IMPL: Encoding = Encoding(std::borrow::Cow::Borrowed(&[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 30,
-]));
+];

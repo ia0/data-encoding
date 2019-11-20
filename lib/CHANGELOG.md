@@ -1,5 +1,9 @@
 # Changelog
 
+### Minor
+
+- Add `std` and `alloc` features.
+
 ### Patch
 
 - Run `cargo clippy`
