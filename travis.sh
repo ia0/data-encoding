@@ -47,6 +47,10 @@ git clean -fxd
 ( info "Ensure cargo-outdated is installed"
   which cargo-outdated >/dev/null || cargo install cargo-outdated
 
+  # Workaround error: failed to parse lock file at: .../data-encoding/Cargo.lock
+  # Caused by: invalid serialized PackageId for key `package.dependencies`
+  git clean -fxd
+
   info "Test dependencies"
   cargo outdated -w -R --exit-code=1
 )
