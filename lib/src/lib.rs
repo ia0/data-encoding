@@ -314,6 +314,18 @@ pub enum DecodeKind {
     /// Invalid padding length
     Padding,
 }
+#[cfg(feature = "std")]
+impl std::fmt::Display for DecodeKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let description = match self {
+            DecodeKind::Length => "invalid length",
+            DecodeKind::Symbol => "invalid symbol",
+            DecodeKind::Trailing => "non-zero trailing bits",
+            DecodeKind::Padding => "invalid padding length",
+        };
+        write!(f, "{}", description)
+    }
+}
 
 /// Decoding error
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -327,21 +339,11 @@ pub struct DecodeError {
     pub kind: DecodeKind,
 }
 #[cfg(feature = "std")]
-impl std::error::Error for DecodeError {
-    fn description(&self) -> &str {
-        match self.kind {
-            DecodeKind::Length => "invalid length",
-            DecodeKind::Symbol => "invalid symbol",
-            DecodeKind::Trailing => "non-zero trailing bits",
-            DecodeKind::Padding => "invalid padding length",
-        }
-    }
-}
+impl std::error::Error for DecodeError {}
 #[cfg(feature = "std")]
 impl std::fmt::Display for DecodeError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use std::error::Error;
-        write!(f, "{} at {}", self.description(), self.position)
+        write!(f, "{} at {}", self.kind, self.position)
     }
 }
 

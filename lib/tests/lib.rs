@@ -17,7 +17,7 @@ macro_rules! test {
 }
 
 fn errmsg<T, E: std::error::Error>(x: Result<T, E>) -> String {
-    format!("{}", x.err().unwrap())
+    x.err().unwrap().to_string()
 }
 
 test! {

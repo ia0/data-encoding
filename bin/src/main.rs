@@ -44,22 +44,6 @@ impl ::std::fmt::Display for Error {
     }
 }
 
-impl ::std::error::Error for Error {
-    fn description(&self) -> &str {
-        use self::Error::*;
-        match self {
-            ParseOpts(ref e) => e.description(),
-            ExtraArgs(_) => "unexpected argument",
-            Cmdline(_) => "invalid command-line",
-            Decode(ref e) => e.description(),
-            Builder(ref e) => e.description(),
-            IO(_, ref e) => e.description(),
-            Read(ref e) => e.description(),
-            Write(ref e) => e.description(),
-        }
-    }
-}
-
 type Result<T> = std::result::Result<T, Error>;
 
 fn floor(x: usize, d: usize) -> usize {

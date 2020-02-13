@@ -84,7 +84,7 @@ fn get_padding(map: &mut HashMap<String, TokenTree>) -> Option<char> {
         return Some(result.value());
     }
     match syn::parse::<syn::Ident>(node.into()) {
-        Ok(ref result) if result.to_string() == "None" => None,
+        Ok(ref result) if result == "None" => None,
         _ => panic!("expected None or char for padding"),
     }
 }
