@@ -16,6 +16,6 @@ proc-macro = true
 stable = ["proc-macro-hack"]
 
 [dependencies]
-data-encoding = { version = "2.1", path = "../.." }
+data-encoding = { version = "2.2", path = "../.." }
 proc-macro-hack = { version = "0.5", optional = true }
 syn = "1"

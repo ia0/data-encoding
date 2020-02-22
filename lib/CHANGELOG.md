@@ -1,5 +1,7 @@
 # Changelog
 
+## 2.2.0
+
 ### Minor
 
 - Add `std` and `alloc` features.

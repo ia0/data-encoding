@@ -20,6 +20,6 @@ default = ["stable"]
 stable = ["data-encoding-macro-internal/stable", "proc-macro-hack"]
 
 [dependencies]
-data-encoding = { version = "2.1", path = ".." }
+data-encoding = { version = "2.2", path = ".." }
 data-encoding-macro-internal = { version = "0.1.7", path = "internal" }
 proc-macro-hack = { version = "0.5", optional = true }
