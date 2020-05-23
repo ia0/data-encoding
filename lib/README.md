@@ -1,3 +1,8 @@
+[![Build Status][travis_badge]][travis]
+[![Build Status][appveyor_badge]][appveyor]
+[![Coverage Status][coveralls_badge]][coveralls]
+[![fuzzit][fuzzit_badge]][fuzzit]
+
 ## Common use-cases
 
 This library provides the following common encodings:
@@ -94,8 +99,16 @@ high-performance languages (see how to run the benchmarks on [github]).
 This crate is a library. If you are looking for the [binary] using this library,
 see the installation instructions on [github].
 
+[appveyor]: https://ci.appveyor.com/project/ia0/data-encoding
+[appveyor_badge]:https://ci.appveyor.com/api/projects/status/wm4ga69xnlriukhl/branch/master?svg=true
 [binary]: https://crates.io/crates/data-encoding-bin
 [changelog]: https://github.com/ia0/data-encoding/blob/master/lib/CHANGELOG.md
+[coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
+[coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
 [documentation]: https://docs.rs/data-encoding
+[fuzzit]: https://app.fuzzit.dev/orgs/ia0-gh/dashboard
+[fuzzit_badge]: https://app.fuzzit.dev/badge?org_id=ia0-gh
 [github]: https://github.com/ia0/data-encoding
 [macro]: https://crates.io/crates/data-encoding-macro
+[travis]: https://travis-ci.org/ia0/data-encoding
+[travis_badge]: https://travis-ci.org/ia0/data-encoding.svg?branch=master
