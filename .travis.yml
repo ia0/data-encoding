@@ -14,9 +14,7 @@ addons:
   apt:
     packages:
     - bc
-    - binutils-dev
-    - libdw-dev
-    - libelf-dev
+    - libssl-dev
     - time
 
 env:

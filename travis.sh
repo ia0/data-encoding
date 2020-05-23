@@ -97,32 +97,19 @@ git clean -fxd
 )
 
 ( [ -n "$TRAVIS_JOB_ID" ] || exit
-  [ "$TRAVIS_RUST_VERSION" = nightly ] || exit
+  [ "$TRAVIS_RUST_VERSION" = stable ] || exit
   git clean -fxd
 
-  info "Download kcov"
-  wget -q https://github.com/SimonKagstrom/kcov/archive/master.tar.gz
+  info "Install tarpaulin"
+  which cargo-tarpaulin >/dev/null || cargo install cargo-tarpaulin
 
-  info "Build kcov"
-  tar xf master.tar.gz
-  mkdir kcov-master/build
-  ( cd kcov-master/build
-    cmake ..
-    make >/dev/null
-  ) || return
-
-  info "Test library coverage"
-  ( cd lib; cargo test --verbose --no-run )
-  find target/debug -maxdepth 1 -type f -perm /u+x -printf '%P\n' |
-    while IFS= read -r test; do
-      info "Run $test"
-      ./kcov-master/build/src/kcov --include-path=lib/src/ target/kcov-"$test" \
-                                   ./target/debug/"$test"
-    done; unset test
-
-  info "Send coverage to coveralls.io"
-  ./kcov-master/build/src/kcov --coveralls-id="$TRAVIS_JOB_ID" \
-                               --merge target/kcov target/kcov-*
+  info "Test and send library coverage to coveralls.io"
+  ( cd lib
+    # We have to give an explicit list of --exclude-files due to
+    # https://github.com/xd009642/tarpaulin/issues/394
+    cargo tarpaulin --ciserver travis-ci --coveralls "$TRAVIS_JOB_ID" \
+      --exclude-files '../*' --exclude-files fuzz --exclude-files tests
+  )
 ) || true
 
 info "Done"
