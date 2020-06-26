@@ -1,7 +1,6 @@
 [![Build Status][travis_badge]][travis]
 [![Build Status][appveyor_badge]][appveyor]
 [![Coverage Status][coveralls_badge]][coveralls]
-[![fuzzit][fuzzit_badge]][fuzzit]
 
 ## Common use-cases
 
@@ -106,8 +105,6 @@ see the installation instructions on [github].
 [coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
 [coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
 [documentation]: https://docs.rs/data-encoding
-[fuzzit]: https://app.fuzzit.dev/orgs/ia0-gh/dashboard
-[fuzzit_badge]: https://app.fuzzit.dev/badge?org_id=ia0-gh
 [github]: https://github.com/ia0/data-encoding
 [macro]: https://crates.io/crates/data-encoding-macro
 [travis]: https://travis-ci.org/ia0/data-encoding

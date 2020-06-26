@@ -6,7 +6,6 @@
 [![Build Status][travis_badge]][travis]
 [![Build Status][appveyor_badge]][appveyor]
 [![Coverage Status][coveralls_badge]][coveralls]
-[![fuzzit][fuzzit_badge]][fuzzit]
 
 This repository provides a Rust [library] and a [binary] providing efficient
 common and custom data-encodings.
@@ -165,8 +164,6 @@ Examples:
 [coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
 [documentation]: https://docs.rs/data-encoding
 [documentation_badge]: https://docs.rs/data-encoding/badge.svg
-[fuzzit]: https://app.fuzzit.dev/orgs/ia0-gh/dashboard
-[fuzzit_badge]: https://app.fuzzit.dev/badge?org_id=ia0-gh
 [library]: https://crates.io/crates/data-encoding
 [license]: https://github.com/ia0/data-encoding/blob/master/LICENSE
 [license_badge]: https://img.shields.io/crates/l/data-encoding.svg
