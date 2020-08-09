@@ -1313,6 +1313,26 @@ impl Encoding {
         }
     }
 
+    /// Appends the encoding of `input` to `output`
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use data_encoding::BASE64;
+    /// # let mut buffer = vec![0; 100];
+    /// let input = b"Hello world";
+    /// let mut output = "Result: ".to_string();
+    /// BASE64.encode_append(input, &mut output);
+    /// assert_eq!(output, "Result: SGVsbG8gd29ybGQ=");
+    /// ```
+    #[cfg(feature = "alloc")]
+    pub fn encode_append(&self, input: &[u8], output: &mut String) {
+        let output = unsafe { output.as_mut_vec() };
+        let output_len = output.len();
+        output.resize(output_len + self.encode_len(input.len()), 0u8);
+        self.encode_mut(input, &mut output[output_len ..]);
+    }
+
     /// Returns encoded `input`
     ///
     /// # Examples

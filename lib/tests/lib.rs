@@ -657,3 +657,17 @@ fn decode_pad_wrap() {
     assert_eq!(b.decode(b":A:B:=:=:"), err_trailing(3));
     assert_eq!(b.decode(b":A:A:B:=:"), err_trailing(5));
 }
+
+#[test]
+fn encode_append() {
+    fn test(input: &[u8], output: &str, expected: &str) {
+        let mut output = output.to_string();
+        data_encoding::BASE64.encode_append(input, &mut output);
+        assert_eq!(output, expected);
+    }
+    test(b"", "", "");
+    test(b"foo", "", "Zm9v");
+    test(b"foo", "bar", "barZm9v");
+    test(b"fo", "", "Zm8=");
+    test(b"fo", "ba", "baZm8=");
+}

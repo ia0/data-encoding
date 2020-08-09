@@ -1,5 +1,9 @@
 # Changelog
 
+### Minor
+
+- Add `encode_append` function.
+
 ## 2.2.1
 
 ## 2.2.0
