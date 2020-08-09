@@ -191,7 +191,7 @@ mod prelude {
 #[cfg(not(feature = "std"))]
 use core as std;
 #[cfg(feature = "alloc")]
-use prelude::*;
+use self::prelude::*;
 
 macro_rules! check {
     ($e: expr, $c: expr) => {

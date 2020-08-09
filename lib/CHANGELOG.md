@@ -1,10 +1,14 @@
 # Changelog
 
+### Patch
+
+- Maybe fix #33
+
 ## 2.3.0
 
 ### Minor
 
-- Add `encode_append` function.
+- Add `encode_append` function
 
 ## 2.2.1
 
@@ -12,7 +16,7 @@
 
 ### Minor
 
-- Add `std` and `alloc` features.
+- Add `std` and `alloc` features
 
 ### Patch
 
