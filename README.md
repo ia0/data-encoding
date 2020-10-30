@@ -6,6 +6,7 @@
 [![Build Status][travis_badge]][travis]
 [![Build Status][appveyor_badge]][appveyor]
 [![Coverage Status][coveralls_badge]][coveralls]
+[![dependency status][dependency_badge]][dependency]
 
 This repository provides a Rust [library] and a [binary] providing efficient
 common and custom data-encodings.
@@ -162,6 +163,8 @@ Examples:
 [changelog]: https://github.com/ia0/data-encoding/blob/master/lib/CHANGELOG.md
 [coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
 [coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
+[dependency]: https://deps.rs/crate/data-encoding/2.3.0
+[dependency_badge]: https://deps.rs/crate/data-encoding/2.3.0/status.svg
 [documentation]: https://docs.rs/data-encoding
 [documentation_badge]: https://docs.rs/data-encoding/badge.svg
 [library]: https://crates.io/crates/data-encoding
