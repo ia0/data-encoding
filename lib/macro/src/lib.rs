@@ -74,6 +74,7 @@
 
 #![cfg_attr(not(feature = "stable"), feature(proc_macro_hygiene))]
 #![warn(unused_results)]
+#![no_std]
 
 #[cfg(feature = "stable")]
 extern crate proc_macro_hack;
