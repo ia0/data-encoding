@@ -6,7 +6,7 @@
 [![Build Status][travis_badge]][travis]
 [![Build Status][appveyor_badge]][appveyor]
 [![Coverage Status][coveralls_badge]][coveralls]
-[![dependency status][dependency_badge]][dependency]
+[![Dependency Status][dependency_badge]][dependency]
 
 This repository provides a Rust [library] and a [binary] providing efficient
 common and custom data-encodings.
