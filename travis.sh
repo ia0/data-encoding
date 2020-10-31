@@ -29,14 +29,6 @@ git clean -fxd
   if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
     info "Benchmark library"
     cargo bench --verbose
-
-    ( cd macro
-      info "Build macro library (no stable feature)"
-      cargo build --verbose --no-default-features
-
-      info "Test macro library (no stable feature)"
-      cargo test --verbose --no-default-features
-    )
   fi
 )
 ( [ "$TRAVIS_RUST_VERSION" = nightly ] || exit 0

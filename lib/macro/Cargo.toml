@@ -4,22 +4,14 @@ version = "0.1.8"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "MIT"
 edition = "2018"
-keywords = ["data-encoding", "macro", "static", "const", "compile-time"]
-categories = ["encoding"]
+keywords = ["no_std", "base64", "base32", "hex", "macro"]
+categories = ["encoding", "no-std"]
 readme = "README.md"
 repository = "https://github.com/ia0/data-encoding"
 documentation = "https://docs.rs/data-encoding-macro"
 description = "Macros for data-encoding"
 include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 
-[package.metadata.docs.rs]
-no-default-features = true
-
-[features]
-default = ["stable"]
-stable = ["data-encoding-macro-internal/stable", "proc-macro-hack"]
-
 [dependencies]
-data-encoding = { version = "2.3", path = "..", default-features = false, features = ["alloc"] }
+data-encoding = { version = "2.3", path = "..", default-features = false }
 data-encoding-macro-internal = { version = "0.1.8", path = "internal" }
-proc-macro-hack = { version = "0.5", optional = true }

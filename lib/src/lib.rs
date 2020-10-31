@@ -169,29 +169,22 @@
 //! [github]: https://github.com/ia0/data-encoding
 //! [macro]: https://crates.io/crates/data-encoding-macro
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
 #![warn(unused_results, missing_docs)]
 
-#[cfg(all(feature = "alloc", not(feature = "std")))]
-extern crate alloc;
-
-#[cfg(all(feature = "alloc", not(feature = "std")))]
-mod prelude {
-    pub use alloc::borrow::Cow;
-    pub use alloc::borrow::ToOwned;
-    pub use alloc::string::String;
-    pub use alloc::vec;
-    pub use alloc::vec::Vec;
-}
-#[cfg(feature = "std")]
-mod prelude {
-    pub use std::borrow::Cow;
-}
-
-#[cfg(not(feature = "std"))]
-use core as std;
 #[cfg(feature = "alloc")]
-use self::prelude::*;
+extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
+
+#[cfg(feature = "alloc")]
+use alloc::borrow::{Cow, ToOwned};
+#[cfg(feature = "alloc")]
+use alloc::string::String;
+#[cfg(feature = "alloc")]
+use alloc::vec;
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 macro_rules! check {
     ($e: expr, $c: expr) => {
@@ -273,12 +266,12 @@ macro_rules! dispatch {
 unsafe fn chunk_unchecked(x: &[u8], n: usize, i: usize) -> &[u8] {
     debug_assert!((i + 1) * n <= x.len());
     let ptr = x.as_ptr().add(n * i);
-    std::slice::from_raw_parts(ptr, n)
+    core::slice::from_raw_parts(ptr, n)
 }
 unsafe fn chunk_mut_unchecked(x: &mut [u8], n: usize, i: usize) -> &mut [u8] {
     debug_assert!((i + 1) * n <= x.len());
     let ptr = x.as_mut_ptr().add(n * i);
-    std::slice::from_raw_parts_mut(ptr, n)
+    core::slice::from_raw_parts_mut(ptr, n)
 }
 unsafe fn as_array(x: &[u8]) -> &[u8; 256] {
     debug_assert_eq!(x.len(), 256);
@@ -1502,7 +1495,7 @@ impl Encoding {
         let mut specification = Specification::new();
         specification
             .symbols
-            .push_str(std::str::from_utf8(&self.sym()[0 .. 1 << self.bit()]).unwrap());
+            .push_str(core::str::from_utf8(&self.sym()[0 .. 1 << self.bit()]).unwrap());
         specification.bit_order =
             if self.msb() { MostSignificantFirst } else { LeastSignificantFirst };
         specification.check_trailing_bits = self.ctb();
@@ -1517,7 +1510,7 @@ impl Encoding {
         }
         if let Some((col, end)) = self.wrap() {
             specification.wrap.width = col;
-            specification.wrap.separator = std::str::from_utf8(end).unwrap().to_owned();
+            specification.wrap.separator = core::str::from_utf8(end).unwrap().to_owned();
         }
         for i in 0 .. 128u8 {
             let canonical = if self.val()[i as usize] < 1 << self.bit() {
@@ -1572,8 +1565,8 @@ use crate::SpecificationErrorImpl::*;
 pub struct SpecificationError(SpecificationErrorImpl);
 
 #[cfg(feature = "alloc")]
-impl std::fmt::Display for SpecificationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Display for SpecificationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self.0 {
             BadSize => write!(f, "invalid number of symbols"),
             NotAscii => write!(f, "non-ascii character"),

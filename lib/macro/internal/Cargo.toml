@@ -12,10 +12,6 @@ include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 [lib]
 proc-macro = true
 
-[features]
-stable = ["proc-macro-hack"]
-
 [dependencies]
-data-encoding = { version = "2.3", path = "../..", default-features = false, features = ["alloc"] }
-proc-macro-hack = { version = "0.5", optional = true }
+data-encoding = { version = "2.3", path = "../.." }
 syn = "1"

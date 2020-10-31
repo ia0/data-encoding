@@ -74,13 +74,8 @@ fn test(encoding: &Encoding, input: &[u8], output: &str, buffer: &mut [u8]) {
 
 #[cfg(feature = "alloc")]
 fn test_macro() {
-    // TODO(ia0): We shouldn't need to import decode_slice. Might be fixed by #36.
-    use data_encoding_macro::{
-        base64, decode_slice, internal_decode_slice, internal_new_encoding, new_encoding,
-    };
-
-    const FOOBAR: &'static [u8] = &base64!("Zm9vYmFy");
-    const LETTER8: Encoding = new_encoding! {
+    const FOOBAR: &'static [u8] = &data_encoding_macro::base64!("Zm9vYmFy");
+    const LETTER8: Encoding = data_encoding_macro::new_encoding! {
         symbols: "ABCDEFGH",
     };
 
@@ -91,12 +86,11 @@ fn test_macro() {
 
 #[no_mangle]
 pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
-    use data_encoding::{BASE32, BASE64, BASE64_NOPAD, HEXLOWER_PERMISSIVE};
-    test(&BASE32, b"hello", "NBSWY3DP", &mut [0; 8]);
-    test(&BASE64, b"hello", "aGVsbG8=", &mut [0; 8]);
-    test(&BASE64_NOPAD, b"hello", "aGVsbG8", &mut [0; 8]);
-    test(&HEXLOWER_PERMISSIVE, b"hello", "68656c6c6f", &mut [0; 10]);
-    test_decode(&HEXLOWER_PERMISSIVE, "68656C6C6F", &mut [0; 5], b"hello");
+    test(&data_encoding::BASE32, b"hello", "NBSWY3DP", &mut [0; 8]);
+    test(&data_encoding::BASE64, b"hello", "aGVsbG8=", &mut [0; 8]);
+    test(&data_encoding::BASE64_NOPAD, b"hello", "aGVsbG8", &mut [0; 8]);
+    test(&data_encoding::HEXLOWER_PERMISSIVE, b"hello", "68656c6c6f", &mut [0; 10]);
+    test_decode(&data_encoding::HEXLOWER_PERMISSIVE, "68656C6C6F", &mut [0; 5], b"hello");
     #[cfg(feature = "alloc")]
     test_macro();
     let _ = writeln!(Fd(1), "All tests passed.");
