@@ -7,11 +7,11 @@ license = "MIT"
 publish = false
 
 [features]
-alloc = ["data-encoding/alloc", "data-encoding-macro"]
+alloc = ["data-encoding/alloc"]
 
 [dependencies]
 data-encoding = { path = "../lib", default-features = false }
-data-encoding-macro = { path = "../lib/macro", optional = true }
+data-encoding-macro = { path = "../lib/macro" }
 libc = { version = "0.2", default-features = false }
 
 [profile.release]

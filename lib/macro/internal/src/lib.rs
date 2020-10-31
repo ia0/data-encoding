@@ -9,17 +9,8 @@
 
 #![warn(unused_results)]
 
-extern crate proc_macro;
-#[cfg(feature = "stable")]
-extern crate proc_macro_hack;
-extern crate syn;
-
-extern crate data_encoding;
-
 use proc_macro::token_stream::IntoIter;
 use proc_macro::{TokenStream, TokenTree};
-#[cfg(feature = "stable")]
-use proc_macro_hack::proc_macro_hack;
 use std::collections::HashMap;
 
 use data_encoding::{BitOrder, Encoding, Specification, Translate, Wrap};
@@ -150,8 +141,7 @@ fn check_empty<T>(hash_map: HashMap<String, T>) {
     }
 }
 
-#[cfg_attr(feature = "stable", proc_macro_hack)]
-#[cfg_attr(not(feature = "stable"), proc_macro)]
+#[proc_macro]
 #[doc(hidden)]
 pub fn internal_new_encoding(input: TokenStream) -> TokenStream {
     let mut hash_map = parse_map(input.into_iter());
@@ -160,7 +150,6 @@ pub fn internal_new_encoding(input: TokenStream) -> TokenStream {
     format!("{:?}", encoding.internal_implementation()).parse().unwrap()
 }
 
-#[cfg(not(feature = "stable"))]
 #[proc_macro]
 #[doc(hidden)]
 pub fn internal_decode_array(input: TokenStream) -> TokenStream {
@@ -175,8 +164,7 @@ pub fn internal_decode_array(input: TokenStream) -> TokenStream {
     format!("{}: [u8; {}] = {:?};", name, output.len(), output).parse().unwrap()
 }
 
-#[cfg_attr(feature = "stable", proc_macro_hack)]
-#[cfg_attr(not(feature = "stable"), proc_macro)]
+#[proc_macro]
 #[doc(hidden)]
 pub fn internal_decode_slice(input: TokenStream) -> TokenStream {
     let mut hash_map = parse_map(input.into_iter());

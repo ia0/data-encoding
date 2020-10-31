@@ -6,12 +6,6 @@ encodings to be used with the [data-encoding] crate.
 If you were familiar with the [binary_macros] crate, this library is actually
 [inspired][binary_macros_issue] from it.
 
-If you use a nightly compiler, you may disable the "stable" feature:
-
-```
-data-encoding-macro = { version = "0.1", default-features = false }
-```
-
 ### Examples
 
 You can define a compile-time byte slice or array (using the `hexlower` or
@@ -20,7 +14,7 @@ You can define a compile-time byte slice or array (using the `hexlower` or
 ```rust
 const HELLO: &'static [u8] = &hexlower!("68656c6c6f");
 const FOOBAR: &'static [u8] = &base64!("Zm9vYmFy");
-// In nightly, it is possible to define an array instead of a slice:
+// It is possible to define an array instead of a slice:
 hexlower_array!("const HELLO" = "68656c6c6f");
 base64_array!("const FOOBAR" = "Zm9vYmFy");
 ```
