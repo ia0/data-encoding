@@ -22,8 +22,8 @@ This repository provides the following Rust crates for data-encoding:
 [binary]: https://crates.io/crates/data-encoding-bin
 [coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
 [coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
-[dependency]: https://deps.rs/crate/data-encoding/2.3.0
-[dependency_badge]: https://deps.rs/crate/data-encoding/2.3.0/status.svg
+[dependency]: https://deps.rs/repo/github/ia0/data-encoding
+[dependency_badge]: https://deps.rs/repo/github/ia0/data-encoding/status.svg
 [documentation]: https://docs.rs/data-encoding
 [documentation_badge]: https://docs.rs/data-encoding/badge.svg
 [library]: https://crates.io/crates/data-encoding
