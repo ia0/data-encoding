@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.3.0
+
 ### Minor
 
 - Support prefix for modes
