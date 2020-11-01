@@ -18,7 +18,3 @@ path = "src/main.rs"
 [dependencies]
 data-encoding = { version = "2", path = "../lib" }
 getopts = "0.2"
-
-[badges]
-appveyor = { repository = "ia0/data-encoding" }
-travis-ci = { repository = "ia0/data-encoding" }
