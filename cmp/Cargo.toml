@@ -11,8 +11,6 @@ publish = false
 base64 = { git = "https://github.com/alicemaz/rust-base64" }
 data-encoding = { path = "../lib" }
 libc = "0.2"
-rustc-serialize = "0.3"
-lazy_static = "1"
 
 [build-dependencies]
 cc = "1"
