@@ -11,7 +11,7 @@ help:
 
 .PHONY: install
 install:
-	cd bin && cargo install
+	cargo install --path bin
 
 .PHONY: bench
 bench:
