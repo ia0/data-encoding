@@ -1,8 +1,5 @@
 #![warn(unused_results)]
 
-extern crate data_encoding;
-extern crate getopts;
-
 use data_encoding::{DecodeKind, Encoding};
 use getopts::Options;
 use std::fs::File;
@@ -18,18 +15,18 @@ macro_rules! check {
 
 #[derive(Debug)]
 pub enum Error {
-    ParseOpts(::getopts::Fail),
+    ParseOpts(getopts::Fail),
     ExtraArgs(Vec<String>),
     Cmdline(String),
-    Decode(::data_encoding::DecodeError),
-    Builder(::data_encoding::SpecificationError),
-    IO(String, ::std::io::Error),
-    Read(::std::io::Error),
-    Write(::std::io::Error),
+    Decode(data_encoding::DecodeError),
+    Builder(data_encoding::SpecificationError),
+    IO(String, std::io::Error),
+    Read(std::io::Error),
+    Write(std::io::Error),
 }
 
-impl ::std::fmt::Display for Error {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use self::Error::*;
         match self {
             ParseOpts(ref e) => e.fmt(f),
@@ -165,7 +162,7 @@ fn main() {
 fn wrapped_main(program: &str, args: Vec<String>) -> Result<()> {
     let mut opts = Options::new();
     let _ = opts
-        .reqopt("m", "mode", "{encode|decode|describe}", "<mode>")
+        .reqopt("m", "mode", "{encode|decode|specification} or any prefix of those", "<mode>")
         .optopt("b", "base", "{16|hex|32|32hex|64|64url}", "<base>")
         .optopt("i", "input", "read from <file> instead of standard input", "<file>")
         .optopt("o", "output", "write to <file> instead of standard output", "<file>")
@@ -188,18 +185,20 @@ Usage: {program} --mode=<mode> --symbols=<symbols> [<options>]",
         print!(
             "{0}
 Examples:
-    # Encode using the RFC4648 base64 encoding
-    {1} -mencode -b64     # without padding
-    {1} -mencode -b64 -p= # with padding
+    # Using the RFC4648 base64 encoding
+    {1} -menc -b64   # Encode without padding
+    {1} -me -b64 -p= # Encode with padding
+    {1} -mdec -b64   # Decode without padding
+    {1} -md -b64 -p= # Decode with padding
 
     # Encode using the MIME base64 encoding
-    {1} -mencode -b64 -p= -w76 -s$'\\r\\n'
+    {1} -me -b64 -p= -w76 -s$'\\r\\n'
 
     # Show base information for the permissive hexadecimal encoding
-    {1} --mode=describe --base=hex
+    {1} --mode=specification --base=hex
 
     # Decode using the DNSCurve base32 encoding
-    {1} -mdecode \\
+    {1} --mode=decode \\
         --symbols=0123456789bcdfghjklmnpqrstuvwxyz \\
         --translate=BCDFGHJKLMNPQRSTUVWXYZbcdfghjklmnpqrstuvwxyz \\
         --least_significant_bit_first
@@ -215,7 +214,7 @@ Examples:
 
     let mut spec = match matches.opt_str("base") {
         None => {
-            let mut spec = ::data_encoding::Specification::new();
+            let mut spec = data_encoding::Specification::new();
             spec.symbols = matches
                 .opt_str("symbols")
                 .ok_or_else(|| Error::Cmdline("Base or symbols must be provided".into()))?;
@@ -227,12 +226,12 @@ Examples:
                 !matches.opt_present("symbols")
             );
             match base.as_str() {
-                "16" => ::data_encoding::HEXUPPER.specification(),
-                "hex" => ::data_encoding::HEXLOWER_PERMISSIVE.specification(),
-                "32" => ::data_encoding::BASE32.specification(),
-                "32hex" => ::data_encoding::BASE32HEX.specification(),
-                "64" => ::data_encoding::BASE64.specification(),
-                "64url" => ::data_encoding::BASE64URL.specification(),
+                "16" => data_encoding::HEXUPPER.specification(),
+                "hex" => data_encoding::HEXLOWER_PERMISSIVE.specification(),
+                "32" => data_encoding::BASE32.specification(),
+                "32hex" => data_encoding::BASE32HEX.specification(),
+                "64" => data_encoding::BASE64.specification(),
+                "64url" => data_encoding::BASE64URL.specification(),
                 _ => return Err(Error::Cmdline("Invalid base".into())),
             }
         }
@@ -257,7 +256,7 @@ Examples:
         spec.check_trailing_bits = false;
     }
     if matches.opt_present("least_significant_bit_first") {
-        spec.bit_order = ::data_encoding::BitOrder::LeastSignificantFirst;
+        spec.bit_order = data_encoding::BitOrder::LeastSignificantFirst;
     }
     if let Some(ignore) = matches.opt_str("ignore") {
         spec.ignore.push_str(ignore.as_str());
@@ -272,9 +271,10 @@ Examples:
     let base = spec.encoding().map_err(Error::Builder)?;
 
     let mode = match matches.opt_str("mode").unwrap().as_str() {
-        "encode" => true,
-        "decode" => false,
-        "describe" => {
+        "" => return Err(Error::Cmdline("Empty mode".into())),
+        x if "encode".starts_with(x) => true,
+        x if "decode".starts_with(x) => false,
+        x if "specification".starts_with(x) => {
             println!("{:#?}", base.specification());
             return Ok(());
         }

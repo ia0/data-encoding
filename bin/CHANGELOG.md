@@ -1,5 +1,13 @@
 # Changelog
 
+### Minor
+
+- Support prefix for modes
+
+### Major
+
+- Rename the mode `describe` to `specification`
+
 ## 0.2.3
 
 ### Patch
