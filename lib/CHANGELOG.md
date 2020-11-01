@@ -3,6 +3,7 @@
 ### Patch
 
 - Maybe fix #33
+- Update documentation
 
 ## 2.3.0
 
