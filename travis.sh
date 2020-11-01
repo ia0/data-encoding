@@ -1,80 +1,129 @@
 #!/bin/sh
 set -e
 
-info() { echo "[1;36mInfo:[m $1"; }
+info() {
+  echo -n "[1;36mInfo:[m $1"
+  if [ -n "$TOOLCHAIN" ]; then
+    echo -n " ($TOOLCHAIN)"
+  fi
+  echo
+}
 
-git clean -fxd
+test_lib() {
+  ( cd lib
+    [ -n "$1" ] && TOOLCHAIN="${1#+}"
 
-( cd lib
-  info "Build library"
-  cargo build --verbose
+    info "Build library"
+    cargo $1 build --verbose
 
-  info "Test library"
-  cargo test --verbose
+    info "Test library"
+    cargo $1 test --verbose
 
-  info "Build noalloc library"
-  cargo build --verbose --no-default-features
+    info "Build noalloc library"
+    cargo $1 build --verbose --no-default-features
 
-  info "Build nostd library"
-  cargo build --verbose --no-default-features --features=alloc
+    info "Build nostd library"
+    cargo $1 build --verbose --no-default-features --features=alloc
 
-  ( cd macro
-    info "Build macro library"
-    cargo build --verbose
+    ( cd macro
+      info "Build macro library"
+      cargo $1 build --verbose
 
-    info "Test macro library"
-    cargo test --verbose
+      info "Test macro library"
+      cargo $1 test --verbose
+    )
   )
+}
 
-  if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
+bench_lib() {
+  ( cd lib
+
     info "Benchmark library"
     cargo bench --verbose
-  fi
-)
-( [ "$TRAVIS_RUST_VERSION" = nightly ] || exit 0
-  cd nostd
-  info "Test noalloc binary"
-  cargo run --verbose --release
-
-  info "Test nostd binary"
-  cargo run --verbose --release --features=alloc
-)
-( cd bin
-  info "Build binary"
-  cargo build --verbose
-
-  info "Test binary"
-  cargo test --verbose
-  ./test.sh
-
-  info "Benchmark binary"
-  ./bench.sh
-)
-( info "Ensure cargo-outdated is installed"
-  which cargo-outdated >/dev/null || cargo install cargo-outdated
-
-  # Workaround error: failed to parse lock file at: .../data-encoding/Cargo.lock
-  # Caused by: invalid serialized PackageId for key `package.dependencies`
-  git clean -fxd
-
-  info "Test dependencies"
-  cargo outdated -w -R --exit-code=1
-)
-
-( [ -n "$TRAVIS_JOB_ID" ] || exit
-  [ "$TRAVIS_RUST_VERSION" = stable ] || exit
-  git clean -fxd
-
-  info "Install tarpaulin"
-  which cargo-tarpaulin >/dev/null || cargo install cargo-tarpaulin
-
-  info "Test and send library coverage to coveralls.io"
-  ( cd lib
-    # We have to give an explicit list of --exclude-files due to
-    # https://github.com/xd009642/tarpaulin/issues/394
-    cargo tarpaulin --ciserver travis-ci --coveralls "$TRAVIS_JOB_ID" \
-      --exclude-files '../*' --exclude-files fuzz --exclude-files tests
   )
-) || true
+}
+
+test_nostd() {
+  ( cd nostd
+    [ -n "$1" ] && TOOLCHAIN="${1#+}"
+
+    info "Test noalloc binary"
+    cargo $1 run --verbose --release
+
+    info "Test nostd binary"
+    cargo $1 run --verbose --release --features=alloc
+  )
+}
+
+test_bin() {
+  ( cd bin
+    [ -n "$1" ] && TOOLCHAIN="${1#+}"
+
+    info "Build binary"
+    cargo $1 build --verbose
+
+    info "Test binary"
+    cargo $1 test --verbose
+    ./test.sh $1
+  )
+}
+
+bench_bin() {
+  ( cd bin
+
+    info "Benchmark binary"
+    ./bench.sh
+  )
+}
+
+test_outdated() {
+  ( info "Ensure cargo-outdated is installed"
+    which cargo-outdated >/dev/null || cargo install cargo-outdated
+
+    # Workaround error: failed to parse lock file at: data-encoding/Cargo.lock
+    # Caused by: invalid serialized PackageId for key `package.dependencies`
+    git clean -fxd
+
+    info "Test dependencies"
+    cargo outdated -w -R --exit-code=1
+  )
+}
+
+send_coverage() {
+  ( git clean -fxd
+
+    info "Install tarpaulin"
+    which cargo-tarpaulin >/dev/null || cargo install cargo-tarpaulin
+
+    info "Test and send library coverage to coveralls.io"
+    ( cd lib
+      # We have to give an explicit list of --exclude-files due to
+      # https://github.com/xd009642/tarpaulin/issues/394
+      cargo tarpaulin --ciserver travis-ci --coveralls "$TRAVIS_JOB_ID" \
+        --exclude-files '../*' --exclude-files fuzz --exclude-files tests
+    )
+  ) || true
+}
+
+if [ -n "$TRAVIS_JOB_ID" ]; then
+  git clean -fxd
+  test_lib
+  if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
+    bench_lib
+    test_nostd
+  fi
+  test_bin
+  bench_bin
+  test_outdated
+  if [ "$TRAVIS_RUST_VERSION" = stable ]; then
+    send_coverage
+  fi
+else
+  test_lib +stable
+  test_lib +nightly
+  test_nostd +nightly
+  test_bin +stable
+  test_bin +nightly
+fi
 
 info "Done"

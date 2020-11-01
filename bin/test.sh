@@ -36,7 +36,7 @@ unit() {
   fi
 }
 
-cargo build
+cargo $1 build
 
 echo -n 'encode:'
 unit '-me -b64 -p='
