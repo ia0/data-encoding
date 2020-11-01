@@ -1,5 +1,7 @@
 # Changelog
 
+## 2.3.1
+
 ### Patch
 
 - Maybe fix #33
