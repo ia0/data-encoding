@@ -1,6 +1,3 @@
-# Workaround for kcov. See https://github.com/travis-ci/travis-ci/issues/9061.
-sudo: required
-
 language: rust
 
 rust:
@@ -16,10 +13,5 @@ addons:
     - bc
     - libssl-dev
     - time
-
-env:
-  global:
-    # FUZZIT_API_KEY
-    - secure: "itpph9IM3PcjIHURfPQN36D3oCmlY7vOq2Q6W8aL+GTR8uAjEmKu/EvYiczLMcmnafpTcMGfEk1PcRt0ZvV3bCCPb2JmDm1Qicr4TeFJVeqQFZtojHvqjBCNkj/OVFpSGvovQMLg6Xu/s6k5bqEdv3el3tpnrz/3h3CsXo+3fzKOQUo1tAT5TUZuUezwQjvk1/yK3+dvMrUKKv4EDTn3f7/9ZPI0Gm4WScYHJut3yqrYiU8FTeQyT/gXG49aM1+faGUTd8P9upcCmEuLB3/gNmEiFggGm0Kdcrq8ERt/iLQP5KKZlA/jHjmbr8E/PE2nnM0/r73l37YcThHabGsPN1cUmshDZHGaHF/eUV9KqgDrMlRpUUt4wcaQnAGV0ISM4D1LZ/9U1fqRaHBprquJ+96M5MUKkJWxzUlyVQn3wELtixC6arvIJD6Fo8CwGXBvAugGQ+fGDsbYE1QuuFP7F5S0ua59DfB0czPJKJCJaq2Kl0uTLUtxoN8mxaex7osqjbh7hkgILt1TNARvHv4Q8mNfjA8iNd6AHAK29usiWCKA3fgZ5by/VvlRfSZPdR1c1ScoIvs/8DHjKAwlJ9/l/OrLlIVFfLc8z9QpcOCkI2UP7MIXnQY+e9AgK9mEqbO2tPJGZl7QyAasrLn5/lLHNN77cWBFa04MBRvcA1LwtFY="
 
 script: ./travis.sh
