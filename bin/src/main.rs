@@ -209,6 +209,11 @@ Examples:
         return Ok(());
     }
 
+    if args.len() == 1 && (args[0] == "--version" || args[0] == "-v") {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
     let matches = opts.parse(&args).map_err(Error::ParseOpts)?;
     check!(Error::ExtraArgs(matches.free), matches.free.is_empty());
 

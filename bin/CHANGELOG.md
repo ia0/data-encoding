@@ -1,5 +1,9 @@
 # Changelog
 
+### Minor
+
+- Add `--version` flag
+
 ## 0.3.0
 
 ### Minor
