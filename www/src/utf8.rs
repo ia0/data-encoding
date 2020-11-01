@@ -2,17 +2,17 @@ use std::str::from_utf8;
 
 fn to_hex(x: u8) -> char {
     (match x {
-        0 ... 9 => b'0' + x,
-        10 ... 15 => b'a' + x - 10,
+        0 ..= 9 => b'0' + x,
+        10 ..= 15 => b'a' + x - 10,
         _ => panic!(),
     }) as char
 }
 
 fn from_hex(x: u8) -> u8 {
     match x {
-        b'0' ... b'9' => x - b'0',
-        b'A' ... b'F' => x - b'A' + 10,
-        b'a' ... b'f' => x - b'a' + 10,
+        b'0' ..= b'9' => x - b'0',
+        b'A' ..= b'F' => x - b'A' + 10,
+        b'a' ..= b'f' => x - b'a' + 10,
         _ => panic!(),
     }
 }
@@ -49,7 +49,7 @@ pub fn encode(input: &[u8], whitespace: bool) -> String {
                     }
                 }
                 '\t' | '\r' | '\\' => escape_char(c, &mut result),
-                '\x00' ... '\x1f' | '\x7f' => escape_byte(c as u8, &mut result),
+                '\x00' ..= '\x1f' | '\x7f' => escape_byte(c as u8, &mut result),
                 _ => result.push(c),
             }
         }

@@ -69,8 +69,8 @@ lazy_static! {
         add!(HEXUPPER_PERMISSIVE);
         map
     };
-    static ref TOP_BUTTONS: HashMap<String, Box<Fn() -> JsValue + Sync>> = {
-        let mut result: HashMap<String, Box<Fn() -> JsValue + Sync>> = HashMap::new();
+    static ref TOP_BUTTONS: HashMap<String, Box<dyn Fn() -> JsValue + Sync>> = {
+        let mut result: HashMap<String, Box<dyn Fn() -> JsValue + Sync>> = HashMap::new();
         result.insert("tutorial".to_string(), Box::new(|| create_tutorial()));
         result.insert("settings".to_string(), Box::new(|| create_settings()));
         result.insert("help".to_string(), Box::new(|| create_help()));
