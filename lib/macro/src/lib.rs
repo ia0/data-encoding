@@ -1,12 +1,18 @@
 //! Macros for data-encoding
 //!
-//! This library provides macros to define compile-time byte arrays from encoded
-//! strings (using common bases like [base64], [base32], or [hexadecimal], and
-//! also custom bases). It also provides a macro to define compile-time custom
-//! encodings to be used with the [data-encoding] crate at run-time.
+//! This library provides macros to define compile-time byte arrays from encoded strings (using
+//! common bases like [base64], [base32], or [hexadecimal], and also custom bases). It also provides
+//! a macro to define compile-time custom encodings to be used with the [data-encoding] crate at
+//! run-time.
 //!
-//! If you were familiar with the [binary_macros] crate, this library is
-//! actually [inspired][binary_macros_issue] from it.
+//! Until [rust-lang/cargo#7915](https://github.com/rust-lang/cargo/issues/7915) is fixed, you may
+//! need to add the following to your `.cargo/config.toml` to use this library in no-std or no-alloc
+//! environments:
+//!
+//! ```toml
+//! [unstable]
+//! features = ["host_dep"]
+//! ```
 //!
 //! # Examples
 //!
@@ -43,8 +49,6 @@
 //!
 //! [base32]: macro.base32.html
 //! [base64]: macro.base64.html
-//! [binary_macros]: https://crates.io/crates/binary_macros
-//! [binary_macros_issue]: https://github.com/ia0/data-encoding/issues/7
 //! [data-encoding]: https://crates.io/crates/data-encoding
 //! [hexadecimal]: macro.hexlower_permissive.html
 
@@ -58,11 +62,10 @@ pub use data_encoding_macro_internal::{
 
 /// Defines a compile-time byte array by decoding a string literal
 ///
-/// This macro takes a list of `key: value,` pairs (the last comma is required).
-/// It takes the key-value pairs specifying the encoding to use to decode the
-/// input (see [new_encoding] for the possible key-value pairs), the input
-/// itself keyed by `input`, and the output keyed by `name`. The output must be
-/// of the form `[pub] {const|static} <name>`.
+/// This macro takes a list of `key: value,` pairs (the last comma is required). It takes the
+/// key-value pairs specifying the encoding to use to decode the input (see [new_encoding] for the
+/// possible key-value pairs), the input itself keyed by `input`, and the output keyed by `name`.
+/// The output must be of the form `[pub] {const|static} <name>`.
 ///
 /// # Examples
 ///
@@ -86,10 +89,9 @@ macro_rules! decode_array {
 
 /// Defines a compile-time byte slice by decoding a string literal
 ///
-/// This macro takes a list of `key: value,` pairs (the last comma is required).
-/// It takes the key-value pairs specifying the encoding to use to decode the
-/// input (see [new_encoding] for the possible key-value pairs), the input
-/// itself keyed by `input`, and the output keyed by `name`.
+/// This macro takes a list of `key: value,` pairs (the last comma is required). It takes the
+/// key-value pairs specifying the encoding to use to decode the input (see [new_encoding] for the
+/// possible key-value pairs), the input itself keyed by `input`, and the output keyed by `name`.
 ///
 /// # Examples
 ///
@@ -112,8 +114,8 @@ macro_rules! decode_slice {
 
 /// Defines a compile-time custom encoding
 ///
-/// This macro takes a list of `key: value,` pairs (the last comma is required).
-/// The possible key-value pairs are:
+/// This macro takes a list of `key: value,` pairs (the last comma is required). The possible
+/// key-value pairs are:
 ///
 /// ```text
 ///             symbols: <string>,       // e.g. "01234567"
@@ -127,8 +129,8 @@ macro_rules! decode_slice {
 ///        translate_to: [""]|<string>,  // e.g. "abcdef"
 /// ```
 ///
-/// Only `symbols` is required. Everything else is optional and defaults to the
-/// value between square brackets.
+/// Only `symbols` is required. Everything else is optional and defaults to the value between square
+/// brackets.
 ///
 /// # Examples
 ///
