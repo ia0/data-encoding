@@ -43,13 +43,13 @@ test_outdated() {
   which cargo-outdated >/dev/null || info_exec cargo install cargo-outdated
   # Workaround error: failed to parse lock file at: data-encoding/Cargo.lock
   # Caused by: invalid serialized PackageId for key `package.dependencies`
-  info_exec git clean -fxd
+  info_exec . git clean -fxd
   info_exec cargo outdated -w -R --exit-code=1
 }
 
 send_coverage() {
   which cargo-tarpaulin >/dev/null || info_exec cargo install cargo-tarpaulin
-  info_exec git clean -fxd
+  info_exec . git clean -fxd
   # We have to give an explicit list of --exclude-files due to
   # https://github.com/xd009642/tarpaulin/issues/394
   info_exec lib cargo tarpaulin \
@@ -58,7 +58,7 @@ send_coverage() {
 }
 
 if [ -n "$TRAVIS_JOB_ID" ]; then
-  info_exec git clean -fxd
+  info_exec . git clean -fxd
   test_lib
   if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
     bench_lib
