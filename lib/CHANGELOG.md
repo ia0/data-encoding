@@ -1,5 +1,9 @@
 # Changelog
 
+### Patch
+
+- Remove the `std` feature for `Display`
+
 ## 2.3.1
 
 ### Patch

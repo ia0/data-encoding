@@ -290,9 +290,8 @@ pub enum DecodeKind {
     Padding,
 }
 
-#[cfg(feature = "std")]
-impl std::fmt::Display for DecodeKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Display for DecodeKind {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let description = match self {
             DecodeKind::Length => "invalid length",
             DecodeKind::Symbol => "invalid symbol",
@@ -318,9 +317,8 @@ pub struct DecodeError {
 #[cfg(feature = "std")]
 impl std::error::Error for DecodeError {}
 
-#[cfg(feature = "std")]
-impl std::fmt::Display for DecodeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Display for DecodeError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "{} at {}", self.kind, self.position)
     }
 }
