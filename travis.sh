@@ -66,7 +66,8 @@ if [ -n "$TRAVIS_JOB_ID" ]; then
   fi
   test_bin
   bench_bin
-  test_outdated
+  # TODO(https://github.com/rust-lang/cargo/issues/9124): Re-enable when fixed.
+  # test_outdated
   if [ "$TRAVIS_RUST_VERSION" = stable ]; then
     send_coverage || true
   fi
