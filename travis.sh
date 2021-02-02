@@ -40,7 +40,8 @@ bench_bin() {
 }
 
 test_outdated() {
-  which cargo-outdated >/dev/null || info_exec . cargo install cargo-outdated
+  # Use --locked to work around https://github.com/rust-lang/cargo/issues/9124
+  which cargo-outdated >/dev/null || info_exec . cargo install --locked cargo-outdated
   # Workaround error: failed to parse lock file at: data-encoding/Cargo.lock
   # Caused by: invalid serialized PackageId for key `package.dependencies`
   info_exec . git clean -fxd
@@ -66,8 +67,7 @@ if [ -n "$TRAVIS_JOB_ID" ]; then
   fi
   test_bin
   bench_bin
-  # TODO(https://github.com/rust-lang/cargo/issues/9124): Re-enable when fixed.
-  # test_outdated
+  test_outdated
   if [ "$TRAVIS_RUST_VERSION" = stable ]; then
     send_coverage || true
   fi
