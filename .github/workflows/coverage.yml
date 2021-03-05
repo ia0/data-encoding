@@ -15,5 +15,5 @@ jobs:
           override: true
       - run: cargo install cargo-tarpaulin
       - run: >
-          cargo tarpaulin --coveralls=${{ secrets.COVERALLS_TOKEN }}
+          cd lib && cargo tarpaulin --coveralls=${{ secrets.COVERALLS_TOKEN }}
           --exclude-files='../*' --exclude-files=fuzz --exclude-files=tests
