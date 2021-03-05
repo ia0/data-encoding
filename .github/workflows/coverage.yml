@@ -1,0 +1,19 @@
+name: coverage
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  tarpaulin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - run: cargo install cargo-tarpaulin
+      - run: >
+          cargo tarpaulin --coveralls=${{ secrets.COVERALLS_TOKEN }}
+          --exclude-files='../*' --exclude-files=fuzz --exclude-files=tests

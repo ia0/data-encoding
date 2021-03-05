@@ -1,0 +1,32 @@
+name: bin
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule: [{cron: '38 11 * * *'}]
+
+jobs:
+  bin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --manifest-path=bin/Cargo.toml --release
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path=bin/Cargo.toml
+      - run: cd bin && ./test.sh
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - run: cd bin && ./bench.sh
