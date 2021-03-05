@@ -1,5 +1,4 @@
-[![Build Status][travis_badge]][travis]
-[![Build Status][appveyor_badge]][appveyor]
+[![Build Status][build_badge]][build]
 [![Coverage Status][coveralls_badge]][coveralls]
 
 This library provides the following common encodings:
@@ -28,10 +27,8 @@ all above use-cases are particular instances).
 
 See the [documentation] for more details.
 
-[appveyor]: https://ci.appveyor.com/project/ia0/data-encoding
-[appveyor_badge]:https://ci.appveyor.com/api/projects/status/wm4ga69xnlriukhl/branch/master?svg=true
+[build]: https://github.com/ia0/data-encoding/actions/workflows/build.yml
+[build_badge]: https://github.com/ia0/data-encoding/actions/workflows/build.yml/badge.svg?event=schedule
 [coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
 [coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
 [documentation]: https://docs.rs/data-encoding
-[travis]: https://travis-ci.org/ia0/data-encoding
-[travis_badge]: https://travis-ci.org/ia0/data-encoding.svg?branch=master

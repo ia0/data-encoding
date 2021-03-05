@@ -3,8 +3,7 @@
 [![Latest Version][version_badge]][library]
 [![Documentation][documentation_badge]][documentation]
 [![Latest License][license_badge]][license]
-[![Build Status][travis_badge]][travis]
-[![Build Status][appveyor_badge]][appveyor]
+[![Build Status][build_badge]][build]
 [![Coverage Status][coveralls_badge]][coveralls]
 [![Dependency Status][dependency_badge]][dependency]
 
@@ -17,9 +16,9 @@ This repository provides the following Rust crates for data-encoding:
   encodings. See the [binary] for more information.
 - The [website] provides a playground to define and use encodings.
 
-[appveyor]: https://ci.appveyor.com/project/ia0/data-encoding
-[appveyor_badge]:https://ci.appveyor.com/api/projects/status/wm4ga69xnlriukhl/branch/master?svg=true
 [binary]: https://crates.io/crates/data-encoding-bin
+[build]: https://github.com/ia0/data-encoding/actions/workflows/build.yml
+[build_badge]: https://github.com/ia0/data-encoding/actions/workflows/build.yml/badge.svg?event=schedule
 [coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
 [coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
 [dependency]: https://deps.rs/repo/github/ia0/data-encoding
@@ -30,7 +29,5 @@ This repository provides the following Rust crates for data-encoding:
 [license]: https://github.com/ia0/data-encoding/blob/master/LICENSE
 [license_badge]: https://img.shields.io/crates/l/data-encoding.svg
 [macro]: https://docs.rs/data-encoding-macro
-[travis]: https://travis-ci.org/ia0/data-encoding
-[travis_badge]: https://travis-ci.org/ia0/data-encoding.svg?branch=master
 [version_badge]: https://img.shields.io/crates/v/data-encoding.svg
 [website]: https://data-encoding.rs

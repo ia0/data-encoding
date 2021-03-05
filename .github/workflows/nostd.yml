@@ -1,0 +1,29 @@
+name: nostd
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule: [{cron: '38 11 * * *'}]
+
+jobs:
+  nostd:
+    strategy:
+      matrix:
+        features:
+          - ''
+          - '--features=alloc'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      # TODO(https://github.com/actions-rs/cargo/pull/59): Use actions-rs/cargo.
+      - uses: marcopolo/cargo@master
+        with:
+          command: run
+          args: --release ${{ matrix.features }}
+          working-directory: nostd
