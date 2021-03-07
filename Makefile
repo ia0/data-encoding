@@ -15,7 +15,7 @@ install:
 
 .PHONY: test
 test:
-	./travis.sh
+	./test.sh
 
 FUZZ_J = 1
 .PHONY: fuzz
