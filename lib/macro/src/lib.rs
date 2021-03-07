@@ -5,13 +5,19 @@
 //! a macro to define compile-time custom encodings to be used with the [data-encoding] crate at
 //! run-time.
 //!
-//! Until [rust-lang/cargo#7915](https://github.com/rust-lang/cargo/issues/7915) is fixed, you may
-//! need to add the following to your `.cargo/config.toml` to use this library in no-std or no-alloc
-//! environments:
+//! Up to Rust 1.50, you may need to add the following to your `.cargo/config.toml` to use this
+//! library in no-std or no-alloc environments:
 //!
 //! ```toml
 //! [unstable]
 //! features = ["host_dep"]
+//! ```
+//!
+//! From Rust 1.51, you may need to add the following to your `Cargo.toml`:
+//!
+//! ```toml
+//! [package]
+//! resolver = "2"
 //! ```
 //!
 //! # Examples
