@@ -5,6 +5,7 @@ authors = ["Julien Cretin <cretin@google.com>"]
 edition = "2018"
 license = "MIT"
 publish = false
+resolver = "2"
 
 [features]
 alloc = ["data-encoding/alloc"]
