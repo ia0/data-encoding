@@ -72,7 +72,6 @@ fn test(encoding: &Encoding, input: &[u8], output: &str, buffer: &mut [u8]) {
     test_decode(encoding, output, buffer, input);
 }
 
-#[cfg(feature = "alloc")]
 fn test_macro() {
     const FOOBAR: &'static [u8] = &data_encoding_macro::base64!("Zm9vYmFy");
     const LETTER8: Encoding = data_encoding_macro::new_encoding! {
@@ -91,7 +90,6 @@ pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     test(&data_encoding::BASE64_NOPAD, b"hello", "aGVsbG8", &mut [0; 8]);
     test(&data_encoding::HEXLOWER_PERMISSIVE, b"hello", "68656c6c6f", &mut [0; 10]);
     test_decode(&data_encoding::HEXLOWER_PERMISSIVE, "68656C6C6F", &mut [0; 5], b"hello");
-    #[cfg(feature = "alloc")]
     test_macro();
     let _ = writeln!(Fd(1), "All tests passed.");
     0
