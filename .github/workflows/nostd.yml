@@ -19,6 +19,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
+          # TODO(https://github.com/rust-lang/rust/issues/66741): Test stable.
           toolchain: nightly
           override: true
       # TODO(https://github.com/actions-rs/cargo/pull/59): Use actions-rs/cargo.
