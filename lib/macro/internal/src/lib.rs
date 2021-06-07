@@ -116,7 +116,7 @@ fn check_present<T>(hash_map: &HashMap<String, T>, key: &str) {
 }
 
 fn get_encoding(mut hash_map: &mut HashMap<String, TokenTree>) -> Encoding {
-    check_present(&hash_map, "symbols");
+    check_present(hash_map, "symbols");
     let spec = Specification {
         symbols: get_string(&mut hash_map, "symbols"),
         bit_order: get_bit_order(&mut hash_map),

@@ -76,12 +76,12 @@ pub fn encode<R: Read, W: Write>(
     base: &Encoding, wrap: usize, mut reader: R, mut writer: W, size: usize,
 ) -> Result<()> {
     let block = if wrap == 0 {
-        encode_block(&base)
+        encode_block(base)
     } else {
         assert_eq!(wrap * base.bit_width() % 8, 0);
         wrap * base.bit_width() / 8
     };
-    assert_eq!(block % encode_block(&base), 0);
+    assert_eq!(block % encode_block(base), 0);
     assert!(size >= block);
     let mut input = vec![0u8; size];
     let mut output = vec![0u8; base.encode_len(size)];
