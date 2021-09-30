@@ -110,35 +110,31 @@ fn get_bit_order(map: &mut HashMap<String, TokenTree>) -> BitOrder {
 }
 
 fn check_present<T>(hash_map: &HashMap<String, T>, key: &str) {
-    if !hash_map.contains_key(key) {
-        panic!("{} is required", key);
-    }
+    assert!(hash_map.contains_key(key), "{} is required", key);
 }
 
-fn get_encoding(mut hash_map: &mut HashMap<String, TokenTree>) -> Encoding {
+fn get_encoding(hash_map: &mut HashMap<String, TokenTree>) -> Encoding {
     check_present(hash_map, "symbols");
     let spec = Specification {
-        symbols: get_string(&mut hash_map, "symbols"),
-        bit_order: get_bit_order(&mut hash_map),
-        check_trailing_bits: get_bool(&mut hash_map, "check_trailing_bits").unwrap_or(true),
-        padding: get_padding(&mut hash_map),
-        ignore: get_string(&mut hash_map, "ignore"),
+        symbols: get_string(hash_map, "symbols"),
+        bit_order: get_bit_order(hash_map),
+        check_trailing_bits: get_bool(hash_map, "check_trailing_bits").unwrap_or(true),
+        padding: get_padding(hash_map),
+        ignore: get_string(hash_map, "ignore"),
         wrap: Wrap {
-            width: get_usize(&mut hash_map, "wrap_width"),
-            separator: get_string(&mut hash_map, "wrap_separator"),
+            width: get_usize(hash_map, "wrap_width"),
+            separator: get_string(hash_map, "wrap_separator"),
         },
         translate: Translate {
-            from: get_string(&mut hash_map, "translate_from"),
-            to: get_string(&mut hash_map, "translate_to"),
+            from: get_string(hash_map, "translate_from"),
+            to: get_string(hash_map, "translate_to"),
         },
     };
     spec.encoding().unwrap()
 }
 
 fn check_empty<T>(hash_map: HashMap<String, T>) {
-    if !hash_map.is_empty() {
-        panic!("Unexpected keys {:?}", hash_map.keys());
-    }
+    assert!(hash_map.is_empty(), "Unexpected keys {:?}", hash_map.keys());
 }
 
 #[proc_macro]
