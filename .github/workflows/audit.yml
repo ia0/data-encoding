@@ -9,9 +9,16 @@ on:
 
 jobs:
   audit:
+    strategy:
+      matrix:
+        rust: [stable, nightly]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
