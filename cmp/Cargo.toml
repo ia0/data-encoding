@@ -3,7 +3,7 @@ name = "cmp"
 version = "0.1.0"
 authors = ["ia0 <git@ia0.eu>"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 build = "build.rs"
 publish = false
 

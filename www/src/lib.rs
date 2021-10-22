@@ -442,7 +442,7 @@ fn encoding_update(encoding: &Option<Encoding>, id: i32) {
         AllButSymbol,
         TrailingBits,
         Nothing,
-    };
+    }
     let hide = match encoding {
         None => Hide::AllButSymbol,
         Some(encoding) => match encoding.bit_width() {
