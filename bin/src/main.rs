@@ -286,19 +286,17 @@ Examples:
         _ => return Err(Error::Cmdline("Invalid mode".into())),
     };
 
-    let input: Box<dyn Read>;
-    if let Some(file) = matches.opt_str("input") {
-        input = Box::new(File::open(&file).map_err(|e| Error::IO(file, e))?);
+    let input: Box<dyn Read> = if let Some(file) = matches.opt_str("input") {
+        Box::new(File::open(&file).map_err(|e| Error::IO(file, e))?)
     } else {
-        input = Box::new(std::io::stdin());
+        Box::new(std::io::stdin())
     };
 
-    let mut output: Box<dyn Write>;
-    if let Some(file) = matches.opt_str("output") {
-        output = Box::new(File::create(&file).map_err(|e| Error::IO(file, e))?);
+    let mut output: Box<dyn Write> = if let Some(file) = matches.opt_str("output") {
+        Box::new(File::create(&file).map_err(|e| Error::IO(file, e))?)
     } else {
-        output = stdout();
-    }
+        stdout()
+    };
     output = Box::new(std::io::BufWriter::new(output));
 
     let size = matches
