@@ -1,5 +1,9 @@
 # Changelog
 
+### Patch
+
+- Specify MSRV to minimum that passes the tests
+
 ## 2.3.2
 
 ### Patch

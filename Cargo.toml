@@ -1,3 +1,15 @@
 [workspace]
-members = ["lib", "lib/macro/internal", "lib/macro", "bin"]
-exclude = ["www", "nostd", "cmp"]
+# We only list exported libraries as they share MSRV.
+members = [
+  "lib",
+  "lib/macro",
+  "lib/macro/internal",
+]
+# Exported binaries or non-exported crates.
+exclude = [
+  "bin",
+  "cmp",
+  "lib/fuzz",
+  "nostd",
+  "www",
+]
