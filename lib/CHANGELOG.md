@@ -1,9 +1,5 @@
 # Changelog
 
-### Patch
-
-- Switch to edition 2021
-
 ## 2.3.2
 
 ### Patch

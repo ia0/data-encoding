@@ -2,6 +2,7 @@
 name = "data-encoding-fuzz"
 version = "0.0.1"
 authors = ["Automatically generated"]
+edition = "2021"
 publish = false
 
 [package.metadata]
