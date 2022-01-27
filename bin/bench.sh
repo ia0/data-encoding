@@ -17,7 +17,7 @@ input='"$INPUT"'
 output='"$OUTPUT"'
 
 cargo build --release
-cp ../target/release/data-encoding "$DIR/de"
+cp ./target/release/data-encoding "$DIR/de"
 PATH="$DIR:$PATH"
 
 head -c16M /dev/urandom > "$INPUT" || fail "Could not create input."

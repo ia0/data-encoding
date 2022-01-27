@@ -31,6 +31,7 @@ test_bin() {
   info_exec bin ./test.sh $1
 }
 
+test_lib +1.46
 test_lib +stable
 test_lib +nightly
 test_nostd +nightly

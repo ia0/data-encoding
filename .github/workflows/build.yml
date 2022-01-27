@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        rust: [stable, nightly]
+        rust: [1.46, stable, nightly]
         features:
           - ''
           - '--no-default-features --features=alloc'

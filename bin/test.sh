@@ -23,7 +23,7 @@ error=0
 unit() {
   local opts="$1" in="$2" out="$3" err="$4" cmd res
   [ -z "$err" ] || err="data-encoding: $err"
-  cmd="../target/debug/data-encoding $opts"
+  cmd="./target/debug/data-encoding $opts"
   count=$(expr $count + 1)
   if res=$(run "$cmd" "$in" "$out" "$err"); then
     echo -n " [32m$count[m"
