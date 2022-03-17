@@ -7,8 +7,9 @@ mod range;
 mod state;
 mod utf8;
 
-use data_encoding::{Encoding, Specification, BASE64URL_NOPAD};
 use std::collections::HashMap;
+
+use data_encoding::{Encoding, Specification, BASE64URL_NOPAD};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[wasm_bindgen]

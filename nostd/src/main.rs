@@ -3,6 +3,7 @@
 #![no_main]
 
 use core::fmt::Write;
+
 use data_encoding::Encoding;
 
 #[lang = "eh_personality"]
@@ -73,7 +74,7 @@ fn test(encoding: &Encoding, input: &[u8], output: &str, buffer: &mut [u8]) {
 }
 
 fn test_macro() {
-    const FOOBAR: &'static [u8] = &data_encoding_macro::base64!("Zm9vYmFy");
+    const FOOBAR: &[u8] = &data_encoding_macro::base64!("Zm9vYmFy");
     const LETTER8: Encoding = data_encoding_macro::new_encoding! {
         symbols: "ABCDEFGH",
     };

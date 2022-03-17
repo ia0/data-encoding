@@ -1,0 +1,556 @@
+---
+name: Continuous Integration
+"on":
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: 38 11 * * *
+jobs:
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          components: "clippy,rustfmt"
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml -- --check"
+          command: fmt
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml -- --check"
+          command: fmt
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml -- --check"
+          command: fmt
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=bin/Cargo.toml -- --check"
+          command: fmt
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=nostd/Cargo.toml -- --check"
+          command: fmt
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/fuzz/Cargo.toml -- --check"
+          command: fmt
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=cmp/Cargo.toml -- --check"
+          command: fmt
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=www/Cargo.toml -- --check"
+          command: fmt
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml -- --deny=warnings"
+          command: clippy
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml -- --deny=warnings"
+          command: clippy
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml -- --deny=warnings"
+          command: clippy
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=bin/Cargo.toml -- --deny=warnings"
+          command: clippy
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=nostd/Cargo.toml -- --deny=warnings"
+          command: clippy
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/fuzz/Cargo.toml -- --deny=warnings"
+          command: clippy
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml --release"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=bin/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=bin/Cargo.toml --release"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=nostd/Cargo.toml --release"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/fuzz/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=cmp/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=www/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml"
+          command: test
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml"
+          command: test
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml"
+          command: test
+          toolchain: nightly
+      - run: cd bin && ./test.sh +nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=nostd/Cargo.toml --release"
+          command: run
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=nostd/Cargo.toml --release --features=alloc"
+          command: run
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/fuzz/Cargo.toml"
+          command: test
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=cmp/Cargo.toml"
+          command: test
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=www/Cargo.toml"
+          command: test
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml"
+          command: bench
+          toolchain: nightly
+      - run: cd bin && ./bench.sh +nightly
+      - run: "echo 'workspace.members = [\"lib\"]' > Cargo.toml"
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+      - run: rm Cargo.toml
+      - run: "echo 'workspace.members = [\"lib/macro/internal\"]' > Cargo.toml"
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+      - run: rm Cargo.toml
+      - run: "echo 'workspace.members = [\"lib/macro\"]' > Cargo.toml"
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+      - run: rm Cargo.toml
+      - run: "echo 'workspace.members = [\"bin\"]' > Cargo.toml"
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+      - run: rm Cargo.toml
+      - run: "echo 'workspace.members = [\"nostd\"]' > Cargo.toml"
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+      - run: rm Cargo.toml
+      - run: "echo 'workspace.members = [\"lib/fuzz\"]' > Cargo.toml"
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+      - run: rm Cargo.toml
+      - run: "echo 'workspace.members = [\"cmp\"]' > Cargo.toml"
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+      - run: rm Cargo.toml
+      - run: "echo 'workspace.members = [\"www\"]' > Cargo.toml"
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+      - run: rm Cargo.toml
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml --release"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=bin/Cargo.toml"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=bin/Cargo.toml --release"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml --release"
+          command: build
+          toolchain: "1.46"
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml --release"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=bin/Cargo.toml"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=bin/Cargo.toml --release"
+          command: build
+          toolchain: nightly
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml --release"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=bin/Cargo.toml"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=bin/Cargo.toml --release"
+          command: build
+          toolchain: stable
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --no-default-features"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml"
+          command: build
+          toolchain: "1.46"
+      - uses: actions-rs/cargo@v1
+        with:
+          args: "--manifest-path=lib/macro/Cargo.toml --release"
+          command: build
+          toolchain: "1.46"

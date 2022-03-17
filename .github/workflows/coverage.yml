@@ -16,5 +16,4 @@ jobs:
       - run: cargo install cargo-tarpaulin
       - run: >
           cd lib && cargo tarpaulin --coveralls=${{ secrets.COVERALLS_TOKEN }}
-          --exclude-files='../*' --exclude-files=fuzz --exclude-files=tests
-          --exclude-files=macro
+          --exclude-files=fuzz --exclude-files=tests --exclude-files=macro
