@@ -9,11 +9,11 @@
 
 #![warn(unused_results)]
 
-use proc_macro::token_stream::IntoIter;
-use proc_macro::{TokenStream, TokenTree};
 use std::collections::HashMap;
 
 use data_encoding::{BitOrder, Encoding, Specification, Translate, Wrap};
+use proc_macro::token_stream::IntoIter;
+use proc_macro::{TokenStream, TokenTree};
 
 fn parse_op(tokens: &mut IntoIter, op: char, key: &str) {
     match tokens.next() {

@@ -1,0 +1,6 @@
+[alias]
+xtask = "run --manifest-path ./xtask/Cargo.toml --"
+
+[build]
+# Share the target directory between all crates.
+target-dir = "target"

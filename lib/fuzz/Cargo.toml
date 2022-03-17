@@ -1,17 +1,19 @@
 [package]
 name = "data-encoding-fuzz"
-version = "0.0.1"
+version = "0.0.0"
 authors = ["Automatically generated"]
-edition = "2021"
 publish = false
+edition = "2021"
 
 [package.metadata]
 cargo-fuzz = true
 
 [dependencies]
 data-encoding = { path = ".." }
-libfuzzer-sys = { git = "https://github.com/rust-fuzz/libfuzzer-sys.git" }
+libfuzzer-sys = "0.4.3"
 
 [[bin]]
 name = "round_trip"
 path = "fuzz_targets/round_trip.rs"
+test = false
+doc = false

@@ -3,10 +3,11 @@
 extern crate data_encoding;
 extern crate data_encoding_fuzz;
 
-use data_encoding::BitOrder;
-use data_encoding_fuzz::{decode_prefix, generate_specification};
 use std::collections::HashMap;
 use std::ops::AddAssign;
+
+use data_encoding::BitOrder;
+use data_encoding_fuzz::{decode_prefix, generate_specification};
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 enum Key {

@@ -1,9 +1,10 @@
 #![warn(unused_results)]
 
-use data_encoding::{DecodeKind, Encoding};
-use getopts::Options;
 use std::fs::File;
 use std::io::{Read, Write};
+
+use data_encoding::{DecodeKind, Encoding};
+use getopts::Options;
 
 macro_rules! check {
     ($e: expr, $c: expr) => {

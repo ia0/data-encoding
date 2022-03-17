@@ -15,7 +15,7 @@ install:
 
 .PHONY: test
 test:
-	./test.sh
+	cargo xtask test
 
 FUZZ_J = 1
 .PHONY: fuzz
@@ -24,9 +24,7 @@ fuzz:
 
 .PHONY: bench
 bench:
-	rustc -V | grep -v nightly >/dev/null || { cd lib && cargo bench; }
-	rustc -V | grep -v nightly >/dev/null || { cd cmp && cargo bench; }
-	cd bin && ./bench.sh
+	cargo xtask test --task=bench
 
 .PHONY: clean
 clean:

@@ -1,0 +1,11 @@
+[package]
+name = "xtask"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0.136", features = ["derive"] }
+serde_yaml = "0.8.23"
+shell-escape = "0.1.5"
+structopt = { version = "0.3.26", default-features = false }
+strum = { version = "0.24.0", features = ["derive"] }
