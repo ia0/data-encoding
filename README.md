@@ -3,7 +3,7 @@
 [![Latest Version][version_badge]][library]
 [![Documentation][documentation_badge]][documentation]
 [![Latest License][license_badge]][license]
-[![Build Status][build_badge]][build]
+[![Continuous Integration][ci_badge]][ci]
 [![Coverage Status][coveralls_badge]][coveralls]
 [![Dependency Status][dependency_badge]][dependency]
 
@@ -17,8 +17,8 @@ This repository provides the following Rust crates for data-encoding:
 - The [website] provides a playground to define and use encodings.
 
 [binary]: https://crates.io/crates/data-encoding-bin
-[build]: https://github.com/ia0/data-encoding/actions/workflows/build.yml
-[build_badge]: https://github.com/ia0/data-encoding/actions/workflows/build.yml/badge.svg?event=schedule
+[ci]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml
+[ci_badge]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml/badge.svg?event=schedule
 [coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
 [coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
 [dependency]: https://deps.rs/repo/github/ia0/data-encoding
