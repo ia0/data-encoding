@@ -344,7 +344,7 @@ impl Flags {
                     on: WorkflowOn {
                         push: WorkflowEvents { branches: vec!["master".to_owned()] },
                         pull_request: WorkflowEvents { branches: vec!["master".to_owned()] },
-                        schedule: vec![WorkflowSchedule { cron: "38 11 * * *".to_owned() }],
+                        schedule: vec![WorkflowSchedule { cron: "38 11 * * 6".to_owned() }],
                     },
                     jobs: BTreeMap::new(),
                 };

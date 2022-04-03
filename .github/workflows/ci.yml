@@ -8,7 +8,7 @@ name: Continuous Integration
     branches:
       - master
   schedule:
-    - cron: 38 11 * * *
+    - cron: 38 11 * * 6
 jobs:
   ubuntu:
     runs-on: ubuntu-latest
