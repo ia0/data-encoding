@@ -5,7 +5,6 @@
 [![Latest License][license_badge]][license]
 [![Continuous Integration][ci_badge]][ci]
 [![Coverage Status][coveralls_badge]][coveralls]
-[![Dependency Status][dependency_badge]][dependency]
 
 This repository provides the following Rust crates for data-encoding:
 - The `data-encoding` library provides common and custom encodings, like
@@ -21,8 +20,6 @@ This repository provides the following Rust crates for data-encoding:
 [ci_badge]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml/badge.svg?event=schedule
 [coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
 [coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
-[dependency]: https://deps.rs/repo/github/ia0/data-encoding
-[dependency_badge]: https://deps.rs/repo/github/ia0/data-encoding/status.svg
 [documentation]: https://docs.rs/data-encoding
 [documentation_badge]: https://docs.rs/data-encoding/badge.svg
 [library]: https://crates.io/crates/data-encoding
