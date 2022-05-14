@@ -87,7 +87,7 @@ fn get_bool(map: &mut HashMap<String, TokenTree>, key: &str) -> Option<bool> {
     };
     match syn::parse::<syn::LitBool>(node.into()) {
         Ok(result) => Some(result.value),
-        _ => panic!("expected bool for padding"),
+        _ => panic!("expected bool for {}", key),
     }
 }
 
