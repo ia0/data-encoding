@@ -76,3 +76,11 @@ fn base64_decode() {
     const OUTPUT: &'static [u8] = &data_encoding_macro::base64!("deadbeef");
     assert_eq!(OUTPUT, data_encoding::BASE64.decode(b"deadbeef").unwrap());
 }
+
+#[test]
+fn escaped_symbols() {
+    const BASE: data_encoding::Encoding = data_encoding_macro::new_encoding! {
+        symbols: "\x00\n\"\\",
+    };
+    assert_eq!(BASE.encode(b"K"), "\n\x00\"\\");
+}

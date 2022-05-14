@@ -15,4 +15,4 @@ proc-macro = true
 
 [dependencies]
 data-encoding = { version = "2.3", path = "../..", default-features = false, features = ["alloc"] }
-syn = "1"
+syn = { version = "1", default-features = false, features = ["parsing", "proc-macro"] }
