@@ -1,4 +1,4 @@
-#![feature(lang_items, alloc_error_handler)]
+#![feature(lang_items, default_alloc_error_handler)]
 #![no_std]
 #![no_main]
 
@@ -41,11 +41,6 @@ mod alloc {
         unsafe fn dealloc(&self, ptr: *mut u8, _: Layout) {
             libc::free(ptr as *mut libc::c_void)
         }
-    }
-
-    #[alloc_error_handler]
-    fn foo(_: Layout) -> ! {
-        loop {}
     }
 
     #[global_allocator]
