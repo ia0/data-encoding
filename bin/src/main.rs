@@ -31,13 +31,13 @@ impl std::fmt::Display for Error {
         use self::Error::*;
         match self {
             ParseOpts(ref e) => e.fmt(f),
-            ExtraArgs(ref a) => write!(f, "Unexpected arguments {:?}", a),
-            Cmdline(ref m) => write!(f, "{}", m),
+            ExtraArgs(ref a) => write!(f, "Unexpected arguments {a:?}"),
+            Cmdline(ref m) => write!(f, "{m}"),
             Decode(ref e) => e.fmt(f),
             Builder(ref e) => e.fmt(f),
-            IO(ref p, ref e) => write!(f, "{}: {}", p, e),
-            Read(ref e) => write!(f, "Read error: {}", e),
-            Write(ref e) => write!(f, "Write error: {}", e),
+            IO(ref p, ref e) => write!(f, "{p}: {e}"),
+            Read(ref e) => write!(f, "Read error: {e}"),
+            Write(ref e) => write!(f, "Write error: {e}"),
         }
     }
 }
@@ -155,7 +155,7 @@ fn main() {
     let program = program.rsplit('/').next().unwrap_or(&program);
 
     if let Err(e) = wrapped_main(program, args) {
-        let _ = writeln!(&mut std::io::stderr(), "{}: {}", program, e);
+        let _ = writeln!(&mut std::io::stderr(), "{program}: {e}");
         std::process::exit(1)
     }
 }
@@ -180,8 +180,7 @@ fn wrapped_main(program: &str, args: Vec<String>) -> Result<()> {
     if args.len() == 1 && (args[0] == "--help" || args[0] == "-h") {
         let brief = format!(
             r"Usage: {program} --mode=<mode> --base=<base> [<options>]
-Usage: {program} --mode=<mode> --symbols=<symbols> [<options>]",
-            program = program
+Usage: {program} --mode=<mode> --symbols=<symbols> [<options>]"
         );
         print!(
             "{0}
