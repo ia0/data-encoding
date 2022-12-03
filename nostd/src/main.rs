@@ -23,7 +23,7 @@ impl core::fmt::Write for Fd {
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
     unsafe {
-        let _ = writeln!(Fd(2), "{}", info);
+        let _ = writeln!(Fd(2), "{info}");
         libc::exit(1);
     }
 }
