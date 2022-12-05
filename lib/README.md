@@ -1,4 +1,4 @@
-[![Build Status][build_badge]][build]
+[![CI Status][ci_badge]][ci]
 [![Coverage Status][coveralls_badge]][coveralls]
 
 This library provides the following common encodings:
@@ -27,8 +27,8 @@ all above use-cases are particular instances).
 
 See the [documentation] for more details.
 
-[build]: https://github.com/ia0/data-encoding/actions/workflows/build.yml
-[build_badge]: https://github.com/ia0/data-encoding/actions/workflows/build.yml/badge.svg?event=schedule
+[ci]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml
+[ci_badge]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml/badge.svg
 [coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
 [coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
 [documentation]: https://docs.rs/data-encoding

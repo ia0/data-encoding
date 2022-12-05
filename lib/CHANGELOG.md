@@ -3,6 +3,7 @@
 ### Patch
 
 - Specify MSRV to minimum that passes the tests
+- Update CI badge in readme
 
 ## 2.3.2
 

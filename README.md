@@ -17,7 +17,7 @@ This repository provides the following Rust crates for data-encoding:
 
 [binary]: https://crates.io/crates/data-encoding-bin
 [ci]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml
-[ci_badge]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml/badge.svg?event=schedule
+[ci_badge]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml/badge.svg
 [coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
 [coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
 [documentation]: https://docs.rs/data-encoding
