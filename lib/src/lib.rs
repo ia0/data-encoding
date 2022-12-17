@@ -84,7 +84,8 @@
 //! choice and this crate has made the choice to let the user choose. Support for canonical encoding
 //! as described by the [RFC][canonical] is provided. But it is also possible to disable checking
 //! trailing bits, to add characters translation, to decode concatenated padded inputs, and to
-//! ignore some characters.
+//! ignore some characters. Note that non-canonical encodings may be an attack vector as described
+//! in [Base64 Malleability in Practice](https://eprint.iacr.org/2022/361.pdf).
 //!
 //! Since the RFC specifies the encoding function on all inputs and the decoding function on all
 //! possible encoded outputs, the differences between implementations come from the decoding

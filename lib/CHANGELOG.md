@@ -1,5 +1,9 @@
 # Changelog
 
+### Patch
+
+- Update documentation with reference to attack vectors
+
 ## 2.3.3
 
 ### Patch
