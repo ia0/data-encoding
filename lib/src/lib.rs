@@ -97,8 +97,8 @@
 //! | ---------- | --------------- | --------- | ------------- |
 //! | `AAB=`     | `Trailing(2)`   | `Last(2)` | `\x00\x00`    |
 //! | `AA\nB=`   | `Length(4)`     | `Length`  | `\x00\x00`    |
-//! | `AAB`      | `Length(0)`     | `Last(2)` | Invalid input |
-//! | `AAA`      | `Length(0)`     | `[0, 0]`  | Invalid input |
+//! | `AAB`      | `Length(0)`     | `Padding` | Invalid input |
+//! | `AAA`      | `Length(0)`     | `Padding` | Invalid input |
 //! | `A\rA\nB=` | `Length(4)`     | `Byte(1)` | Invalid input |
 //! | `-_\r\n`   | `Symbol(0)`     | `Byte(0)` | Invalid input |
 //! | `AA==AA==` | `[0, 0]`        | `Byte(2)` | `\x00\x00`    |

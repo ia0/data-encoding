@@ -36,10 +36,10 @@ fn difference() {
     assert_eq!(base64::decode(x).err().unwrap(), InvalidLength);
     let x = b"AAB";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Length });
-    assert_eq!(base64::decode(x).err().unwrap(), InvalidLastSymbol(2, b'B'));
+    assert_eq!(base64::decode(x).err().unwrap(), InvalidPadding);
     let x = b"AAA";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Length });
-    assert_eq!(base64::decode(x).unwrap(), vec![0, 0]);
+    assert_eq!(base64::decode(x).err().unwrap(), InvalidPadding);
     let x = b"A\rA\nB=";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 4, kind: Length });
     assert_eq!(base64::decode(x).err().unwrap(), InvalidByte(1, b'\r'));
