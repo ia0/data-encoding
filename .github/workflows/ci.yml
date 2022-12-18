@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          components: "clippy,rustfmt"
+          components: "clippy,miri,rustfmt"
           toolchain: nightly
       - uses: actions-rs/cargo@v1
         with:
@@ -211,6 +211,11 @@ jobs:
           toolchain: nightly
       - uses: actions-rs/cargo@v1
         with:
+          args: test --manifest-path=lib/Cargo.toml
+          command: miri
+          toolchain: nightly
+      - uses: actions-rs/cargo@v1
+        with:
           args: "--manifest-path=lib/Cargo.toml"
           command: bench
           toolchain: nightly
@@ -320,57 +325,57 @@ jobs:
           toolchain: stable
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml --release"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml --no-default-features"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/macro/internal/Cargo.toml"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/macro/Cargo.toml"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/macro/Cargo.toml --release"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
   windows:
     runs-on: windows-latest
     steps:
@@ -503,54 +508,54 @@ jobs:
           toolchain: stable
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml --release"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml --no-default-features"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/macro/internal/Cargo.toml"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/macro/Cargo.toml"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
       - uses: actions-rs/cargo@v1
         with:
           args: "--manifest-path=lib/macro/Cargo.toml --release"
           command: build
-          toolchain: "1.46"
+          toolchain: "1.47"
