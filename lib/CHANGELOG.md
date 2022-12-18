@@ -1,7 +1,12 @@
 # Changelog
 
+### Minor
+
+- Bump MSRV from 1.46 to 1.47
+
 ### Patch
 
+- Use TryInto for slice to array conversion
 - Update documentation with reference to attack vectors
 
 ## 2.3.3

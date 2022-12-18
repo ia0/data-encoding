@@ -310,17 +310,16 @@ fn ignore() {
     let no_pad = spec.encoding().unwrap();
     spec.padding = Some('=');
     let padded = spec.encoding().unwrap();
-    if cfg!(debug_assertions) {
-        forall(&no_pad, b"0 ", 14);
-        forall(&no_pad, b"0 .", 9);
-        forall(&padded, b"0= ", 9);
-        forall(&padded, b"0= .", 7);
-    } else {
-        forall(&no_pad, b"0 ", 18);
-        forall(&no_pad, b"0 .", 11);
-        forall(&padded, b"0= ", 11);
-        forall(&padded, b"0= .", 9);
-    }
+    #[cfg(miri)]
+    const MAX: [usize; 4] = [4, 3, 3, 2];
+    #[cfg(all(not(miri), debug_assertions))]
+    const MAX: [usize; 4] = [14, 9, 9, 7];
+    #[cfg(all(not(miri), not(debug_assertions)))]
+    const MAX: [usize; 4] = [18, 11, 11, 9];
+    forall(&no_pad, b"0 ", MAX[0]);
+    forall(&no_pad, b"0 .", MAX[1]);
+    forall(&padded, b"0= ", MAX[2]);
+    forall(&padded, b"0= .", MAX[3]);
     assert_eq!(padded.decode(b"000=====").unwrap(), [0]);
     assert_eq!(padded.decode(b"000   =====").unwrap(), [0]);
     assert_eq!(padded.decode(b"000000==").unwrap(), [0, 0]);

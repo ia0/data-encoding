@@ -32,7 +32,7 @@ enum Toolchain {
     #[strum(serialize = "stable")]
     Stable,
 
-    #[strum(serialize = "1.46")]
+    #[strum(serialize = "1.47")]
     Msrv,
 }
 
@@ -87,6 +87,9 @@ enum Task {
     #[strum(serialize = "test")]
     Test,
 
+    #[strum(serialize = "miri")]
+    Miri,
+
     #[strum(serialize = "bench")]
     Bench,
 
@@ -108,8 +111,9 @@ impl Action {
         let default_args: &[&str] = match (self.task, self.dir) {
             (Task::Format, _) => &["--", "--check"],
             (Task::Clippy, _) => &["--", "--deny=warnings"],
-            (Task::Audit, _) => &["--deny=warnings"],
             (Task::Build, Dir::Nostd) => &["--release"],
+            (Task::Miri, _) => &["test"],
+            (Task::Audit, _) => &["--deny=warnings"],
             _ => &[],
         };
         instructions += Instruction {
@@ -199,12 +203,14 @@ impl Instruction {
                 step.uses = Some("actions-rs/cargo@v1".to_owned());
                 step.with.insert("toolchain".to_owned(), toolchain.to_string());
                 step.with.insert("command".to_owned(), self.cmd.to_owned());
-                let mut args = format!("--manifest-path={dir}/Cargo.toml");
-                for arg in &self.args {
-                    args.push(' ');
-                    args.push_str(&shell_escape::escape(arg.into()));
+                let mut args: Vec<Cow<str>> =
+                    vec![format!("--manifest-path={dir}/Cargo.toml").into()];
+                args.extend(self.args.iter().map(|x| shell_escape::escape(x.into())));
+                if self.cmd == "miri" {
+                    // Miri expects the sub-command before the cargo options.
+                    args.rotate_left(1);
                 }
-                step.with.insert("args".to_owned(), args);
+                step.with.insert("args".to_owned(), args.join(" "));
             }
             Executor::Shell => {
                 let mut cmd = format!("cd {} && ", shell_escape::escape(dir.to_string().into()));
@@ -367,6 +373,7 @@ impl Flags {
                             .filter_map(|x| match x.task {
                                 Task::Format => Some("rustfmt"),
                                 Task::Clippy => Some("clippy"),
+                                Task::Miri => Some("miri"),
                                 _ => None,
                             })
                             .collect();
@@ -427,6 +434,10 @@ impl Actions {
             for dir in Dir::iter() {
                 if task == Task::Clippy && matches!(dir, Dir::Cmp | Dir::Www) {
                     // Clippy is currently broken on cmp and www.
+                    continue;
+                }
+                if task == Task::Miri && !matches!(dir, Dir::Lib) {
+                    // Miri is slow, so only run where it matters.
                     continue;
                 }
                 if task == Task::Bench && !matches!(dir, Dir::Lib | Dir::Bin) {
