@@ -1,4 +1,4 @@
-fn_args_layout = "Compressed"
+fn_params_layout = "Compressed"
 format_strings = true
 group_imports = "StdExternalCrate"
 imports_granularity = "Module"
