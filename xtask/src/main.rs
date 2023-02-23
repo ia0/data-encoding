@@ -358,7 +358,7 @@ impl Flags {
                     let mut job =
                         WorkflowJob { runs_on: format!("{}-latest", actions[0].os), steps: vec![] };
                     job.steps.push(WorkflowStep {
-                        uses: Some("actions/checkout@v2".to_owned()),
+                        uses: Some("actions/checkout@v3".to_owned()),
                         ..Default::default()
                     });
                     for actions in actions.group_by(|x, y| x.toolchain == y.toolchain) {
