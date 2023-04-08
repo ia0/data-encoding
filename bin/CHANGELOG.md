@@ -1,5 +1,9 @@
 # Changelog
 
+### Patch
+
+- Fix crash with invalid length for base16
+
 ## 0.3.1
 
 ### Minor
