@@ -124,11 +124,10 @@ where
         let (next, olen) = match base.decode_mut(&input[0 .. next], &mut output[0 .. mlen]) {
             Ok(olen) => (next, olen),
             Err(mut partial) => {
-                if partial.error.kind != DecodeKind::Length {
+                if partial.error.kind != DecodeKind::Length || ilen == 0 {
                     partial.error.position += pos;
                     return Err(Error::Decode(partial.error));
                 }
-                assert_ne!(ilen, 0);
                 (partial.read, partial.written)
             }
         };

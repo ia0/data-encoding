@@ -69,6 +69,7 @@ unit "-md -b64 -p= -g'$LF'" \
   "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" 'ffo' 'invalid symbol at 19'
 unit "-md -b64 -p= -g'$LF' --block=8" \
   "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" ffo 'invalid symbol at 19'
+unit '-md -b16 -gx' 6474y dt 'invalid length at 4'
 echo
 echo -n 'symbol:'
 unit '-md -b64 -p=' Zg==Zm8=Zg-= '' 'invalid symbol at 10'
