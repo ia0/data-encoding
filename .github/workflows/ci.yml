@@ -14,548 +14,328 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          components: "clippy,miri,rustfmt"
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml -- --check"
-          command: fmt
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml -- --check"
-          command: fmt
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml -- --check"
-          command: fmt
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=bin/Cargo.toml -- --check"
-          command: fmt
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=nostd/Cargo.toml -- --check"
-          command: fmt
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/fuzz/Cargo.toml -- --check"
-          command: fmt
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=cmp/Cargo.toml -- --check"
-          command: fmt
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=www/Cargo.toml -- --check"
-          command: fmt
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml -- --deny=warnings"
-          command: clippy
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml -- --deny=warnings"
-          command: clippy
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml -- --deny=warnings"
-          command: clippy
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=bin/Cargo.toml -- --deny=warnings"
-          command: clippy
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=nostd/Cargo.toml -- --deny=warnings"
-          command: clippy
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/fuzz/Cargo.toml -- --deny=warnings"
-          command: clippy
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml --release"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=bin/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=bin/Cargo.toml --release"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=nostd/Cargo.toml --release"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/fuzz/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=cmp/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=www/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml"
-          command: test
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml"
-          command: test
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml"
-          command: test
-          toolchain: nightly
+      - run: rustup install nightly
+      - run: rustup component add --toolchain=nightly clippy miri rustfmt
+      - name: cd lib && cargo +nightly fmt -- --check
+        run: cargo +nightly fmt -- --check
+        working-directory: lib
+      - name: cd lib/macro/internal && cargo +nightly fmt -- --check
+        run: cargo +nightly fmt -- --check
+        working-directory: lib/macro/internal
+      - name: cd lib/macro && cargo +nightly fmt -- --check
+        run: cargo +nightly fmt -- --check
+        working-directory: lib/macro
+      - name: cd bin && cargo +nightly fmt -- --check
+        run: cargo +nightly fmt -- --check
+        working-directory: bin
+      - name: cd nostd && cargo +nightly fmt -- --check
+        run: cargo +nightly fmt -- --check
+        working-directory: nostd
+      - name: cd lib/fuzz && cargo +nightly fmt -- --check
+        run: cargo +nightly fmt -- --check
+        working-directory: lib/fuzz
+      - name: cd cmp && cargo +nightly fmt -- --check
+        run: cargo +nightly fmt -- --check
+        working-directory: cmp
+      - name: cd www && cargo +nightly fmt -- --check
+        run: cargo +nightly fmt -- --check
+        working-directory: www
+      - name: cd lib && cargo +nightly clippy -- --deny=warnings
+        run: cargo +nightly clippy -- --deny=warnings
+        working-directory: lib
+      - name: cd lib/macro/internal && cargo +nightly clippy -- --deny=warnings
+        run: cargo +nightly clippy -- --deny=warnings
+        working-directory: lib/macro/internal
+      - name: cd lib/macro && cargo +nightly clippy -- --deny=warnings
+        run: cargo +nightly clippy -- --deny=warnings
+        working-directory: lib/macro
+      - name: cd bin && cargo +nightly clippy -- --deny=warnings
+        run: cargo +nightly clippy -- --deny=warnings
+        working-directory: bin
+      - name: cd nostd && cargo +nightly clippy -- --deny=warnings
+        run: cargo +nightly clippy -- --deny=warnings
+        working-directory: nostd
+      - name: cd lib/fuzz && cargo +nightly clippy -- --deny=warnings
+        run: cargo +nightly clippy -- --deny=warnings
+        working-directory: lib/fuzz
+      - name: cd lib && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: lib
+      - name: cd lib && cargo +nightly build --release
+        run: cargo +nightly build --release
+        working-directory: lib
+      - name: cd lib && cargo +nightly build --no-default-features --features=alloc
+        run: cargo +nightly build --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +nightly build --release --no-default-features --features=alloc
+        run: cargo +nightly build --release --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +nightly build --no-default-features
+        run: cargo +nightly build --no-default-features
+        working-directory: lib
+      - name: cd lib && cargo +nightly build --release --no-default-features
+        run: cargo +nightly build --release --no-default-features
+        working-directory: lib
+      - name: cd lib/macro/internal && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: lib/macro/internal
+      - name: cd lib/macro/internal && cargo +nightly build --release
+        run: cargo +nightly build --release
+        working-directory: lib/macro/internal
+      - name: cd lib/macro && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: lib/macro
+      - name: cd lib/macro && cargo +nightly build --release
+        run: cargo +nightly build --release
+        working-directory: lib/macro
+      - name: cd bin && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: bin
+      - name: cd bin && cargo +nightly build --release
+        run: cargo +nightly build --release
+        working-directory: bin
+      - name: cd nostd && cargo +nightly build --release
+        run: cargo +nightly build --release
+        working-directory: nostd
+      - name: cd lib/fuzz && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: lib/fuzz
+      - name: cd cmp && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: cmp
+      - name: cd www && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: www
+      - name: cd lib && cargo +nightly test
+        run: cargo +nightly test
+        working-directory: lib
+      - name: cd lib/macro/internal && cargo +nightly test
+        run: cargo +nightly test
+        working-directory: lib/macro/internal
+      - name: cd lib/macro && cargo +nightly test
+        run: cargo +nightly test
+        working-directory: lib/macro
       - run: cd bin && ./test.sh +nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=nostd/Cargo.toml --release"
-          command: run
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=nostd/Cargo.toml --release --features=alloc"
-          command: run
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/fuzz/Cargo.toml"
-          command: test
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=cmp/Cargo.toml"
-          command: test
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=www/Cargo.toml"
-          command: test
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: test --manifest-path=lib/Cargo.toml
-          command: miri
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml"
-          command: bench
-          toolchain: nightly
+      - name: cd nostd && cargo +nightly run --release
+        run: cargo +nightly run --release
+        working-directory: nostd
+      - name: cd nostd && cargo +nightly run --release --features=alloc
+        run: cargo +nightly run --release --features=alloc
+        working-directory: nostd
+      - name: cd lib/fuzz && cargo +nightly test
+        run: cargo +nightly test
+        working-directory: lib/fuzz
+      - name: cd cmp && cargo +nightly test
+        run: cargo +nightly test
+        working-directory: cmp
+      - name: cd www && cargo +nightly test
+        run: cargo +nightly test
+        working-directory: www
+      - name: cd lib && cargo +nightly miri test
+        run: cargo +nightly miri test
+        working-directory: lib
+      - name: cd lib && cargo +nightly bench
+        run: cargo +nightly bench
+        working-directory: lib
       - run: cd bin && ./bench.sh +nightly
-      - run: "echo 'workspace.members = [\"lib\"]' > Cargo.toml"
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-      - run: rm Cargo.toml
-      - run: "echo 'workspace.members = [\"lib/macro/internal\"]' > Cargo.toml"
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-      - run: rm Cargo.toml
-      - run: "echo 'workspace.members = [\"lib/macro\"]' > Cargo.toml"
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-      - run: rm Cargo.toml
-      - run: "echo 'workspace.members = [\"bin\"]' > Cargo.toml"
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-      - run: rm Cargo.toml
-      - run: "echo 'workspace.members = [\"nostd\"]' > Cargo.toml"
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-      - run: rm Cargo.toml
-      - run: "echo 'workspace.members = [\"lib/fuzz\"]' > Cargo.toml"
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-      - run: rm Cargo.toml
-      - run: "echo 'workspace.members = [\"cmp\"]' > Cargo.toml"
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-      - run: rm Cargo.toml
-      - run: "echo 'workspace.members = [\"www\"]' > Cargo.toml"
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-      - run: rm Cargo.toml
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml --release"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=bin/Cargo.toml"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=bin/Cargo.toml --release"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml --release"
-          command: build
-          toolchain: "1.47"
+      - name: cd lib && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: lib
+      - name: cd lib/macro/internal && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: lib/macro/internal
+      - name: cd lib/macro && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: lib/macro
+      - name: cd bin && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: bin
+      - name: cd nostd && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: nostd
+      - name: cd lib/fuzz && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: lib/fuzz
+      - name: cd cmp && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: cmp
+      - name: cd www && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: www
+      - run: rustup install stable
+      - name: cd lib && cargo +stable build
+        run: cargo +stable build
+        working-directory: lib
+      - name: cd lib && cargo +stable build --release
+        run: cargo +stable build --release
+        working-directory: lib
+      - name: cd lib && cargo +stable build --no-default-features --features=alloc
+        run: cargo +stable build --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +stable build --release --no-default-features --features=alloc
+        run: cargo +stable build --release --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +stable build --no-default-features
+        run: cargo +stable build --no-default-features
+        working-directory: lib
+      - name: cd lib && cargo +stable build --release --no-default-features
+        run: cargo +stable build --release --no-default-features
+        working-directory: lib
+      - name: cd lib/macro/internal && cargo +stable build
+        run: cargo +stable build
+        working-directory: lib/macro/internal
+      - name: cd lib/macro/internal && cargo +stable build --release
+        run: cargo +stable build --release
+        working-directory: lib/macro/internal
+      - name: cd lib/macro && cargo +stable build
+        run: cargo +stable build
+        working-directory: lib/macro
+      - name: cd lib/macro && cargo +stable build --release
+        run: cargo +stable build --release
+        working-directory: lib/macro
+      - name: cd bin && cargo +stable build
+        run: cargo +stable build
+        working-directory: bin
+      - name: cd bin && cargo +stable build --release
+        run: cargo +stable build --release
+        working-directory: bin
+      - run: rustup install 1.47
+      - name: cd lib && cargo +1.47 build
+        run: cargo +1.47 build
+        working-directory: lib
+      - name: cd lib && cargo +1.47 build --release
+        run: cargo +1.47 build --release
+        working-directory: lib
+      - name: cd lib && cargo +1.47 build --no-default-features --features=alloc
+        run: cargo +1.47 build --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +1.47 build --release --no-default-features --features=alloc
+        run: cargo +1.47 build --release --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +1.47 build --no-default-features
+        run: cargo +1.47 build --no-default-features
+        working-directory: lib
+      - name: cd lib && cargo +1.47 build --release --no-default-features
+        run: cargo +1.47 build --release --no-default-features
+        working-directory: lib
+      - name: cd lib/macro/internal && cargo +1.47 build
+        run: cargo +1.47 build
+        working-directory: lib/macro/internal
+      - name: cd lib/macro/internal && cargo +1.47 build --release
+        run: cargo +1.47 build --release
+        working-directory: lib/macro/internal
+      - name: cd lib/macro && cargo +1.47 build
+        run: cargo +1.47 build
+        working-directory: lib/macro
+      - name: cd lib/macro && cargo +1.47 build --release
+        run: cargo +1.47 build --release
+        working-directory: lib/macro
   windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml --release"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=bin/Cargo.toml"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=bin/Cargo.toml --release"
-          command: build
-          toolchain: nightly
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml --release"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=bin/Cargo.toml"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=bin/Cargo.toml --release"
-          command: build
-          toolchain: stable
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features --features=alloc"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features --features=alloc"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --no-default-features"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/Cargo.toml --release --no-default-features"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/internal/Cargo.toml --release"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml"
-          command: build
-          toolchain: "1.47"
-      - uses: actions-rs/cargo@v1
-        with:
-          args: "--manifest-path=lib/macro/Cargo.toml --release"
-          command: build
-          toolchain: "1.47"
+      - run: rustup install nightly
+      - name: cd lib && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: lib
+      - name: cd lib && cargo +nightly build --release
+        run: cargo +nightly build --release
+        working-directory: lib
+      - name: cd lib && cargo +nightly build --no-default-features --features=alloc
+        run: cargo +nightly build --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +nightly build --release --no-default-features --features=alloc
+        run: cargo +nightly build --release --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +nightly build --no-default-features
+        run: cargo +nightly build --no-default-features
+        working-directory: lib
+      - name: cd lib && cargo +nightly build --release --no-default-features
+        run: cargo +nightly build --release --no-default-features
+        working-directory: lib
+      - name: cd lib/macro/internal && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: lib/macro/internal
+      - name: cd lib/macro/internal && cargo +nightly build --release
+        run: cargo +nightly build --release
+        working-directory: lib/macro/internal
+      - name: cd lib/macro && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: lib/macro
+      - name: cd lib/macro && cargo +nightly build --release
+        run: cargo +nightly build --release
+        working-directory: lib/macro
+      - name: cd bin && cargo +nightly build
+        run: cargo +nightly build
+        working-directory: bin
+      - name: cd bin && cargo +nightly build --release
+        run: cargo +nightly build --release
+        working-directory: bin
+      - run: rustup install stable
+      - name: cd lib && cargo +stable build
+        run: cargo +stable build
+        working-directory: lib
+      - name: cd lib && cargo +stable build --release
+        run: cargo +stable build --release
+        working-directory: lib
+      - name: cd lib && cargo +stable build --no-default-features --features=alloc
+        run: cargo +stable build --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +stable build --release --no-default-features --features=alloc
+        run: cargo +stable build --release --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +stable build --no-default-features
+        run: cargo +stable build --no-default-features
+        working-directory: lib
+      - name: cd lib && cargo +stable build --release --no-default-features
+        run: cargo +stable build --release --no-default-features
+        working-directory: lib
+      - name: cd lib/macro/internal && cargo +stable build
+        run: cargo +stable build
+        working-directory: lib/macro/internal
+      - name: cd lib/macro/internal && cargo +stable build --release
+        run: cargo +stable build --release
+        working-directory: lib/macro/internal
+      - name: cd lib/macro && cargo +stable build
+        run: cargo +stable build
+        working-directory: lib/macro
+      - name: cd lib/macro && cargo +stable build --release
+        run: cargo +stable build --release
+        working-directory: lib/macro
+      - name: cd bin && cargo +stable build
+        run: cargo +stable build
+        working-directory: bin
+      - name: cd bin && cargo +stable build --release
+        run: cargo +stable build --release
+        working-directory: bin
+      - run: rustup install 1.47
+      - name: cd lib && cargo +1.47 build
+        run: cargo +1.47 build
+        working-directory: lib
+      - name: cd lib && cargo +1.47 build --release
+        run: cargo +1.47 build --release
+        working-directory: lib
+      - name: cd lib && cargo +1.47 build --no-default-features --features=alloc
+        run: cargo +1.47 build --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +1.47 build --release --no-default-features --features=alloc
+        run: cargo +1.47 build --release --no-default-features --features=alloc
+        working-directory: lib
+      - name: cd lib && cargo +1.47 build --no-default-features
+        run: cargo +1.47 build --no-default-features
+        working-directory: lib
+      - name: cd lib && cargo +1.47 build --release --no-default-features
+        run: cargo +1.47 build --release --no-default-features
+        working-directory: lib
+      - name: cd lib/macro/internal && cargo +1.47 build
+        run: cargo +1.47 build
+        working-directory: lib/macro/internal
+      - name: cd lib/macro/internal && cargo +1.47 build --release
+        run: cargo +1.47 build --release
+        working-directory: lib/macro/internal
+      - name: cd lib/macro && cargo +1.47 build
+        run: cargo +1.47 build
+        working-directory: lib/macro
+      - name: cd lib/macro && cargo +1.47 build --release
+        run: cargo +1.47 build --release
+        working-directory: lib/macro
