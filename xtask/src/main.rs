@@ -186,40 +186,24 @@ impl Instruction {
     fn generate(&self, toolchain: Toolchain, dir: Dir) -> Vec<WorkflowStep> {
         let mut step = WorkflowStep::default();
         match self.executor {
-            Executor::Cargo if self.cmd == "audit" => {
-                step.uses = Some("actions-rs/audit-check@v1".to_owned());
-                step.with.insert("token".to_owned(), "${{ secrets.GITHUB_TOKEN }}".to_string());
-                // Work around https://github.com/actions-rs/audit-check/issues/194
-                return vec![
-                    WorkflowStep {
-                        run: Some(format!(r#"echo 'workspace.members = ["{dir}"]' > Cargo.toml"#,)),
-                        ..Default::default()
-                    },
-                    step,
-                    WorkflowStep { run: Some("rm Cargo.toml".to_owned()), ..Default::default() },
-                ];
-            }
             Executor::Cargo => {
-                step.uses = Some("actions-rs/cargo@v1".to_owned());
-                step.with.insert("toolchain".to_owned(), toolchain.to_string());
-                step.with.insert("command".to_owned(), self.cmd.to_owned());
-                let mut args: Vec<Cow<str>> =
-                    vec![format!("--manifest-path={dir}/Cargo.toml").into()];
-                args.extend(self.args.iter().map(|x| shell_escape::escape(x.into())));
-                if self.cmd == "miri" {
-                    // Miri expects the sub-command before the cargo options.
-                    args.rotate_left(1);
+                let mut run = format!("cargo +{toolchain} {}", self.cmd);
+                for arg in &self.args {
+                    run.push(' ');
+                    run.push_str(&shell_escape::escape(arg.into()));
                 }
-                step.with.insert("args".to_owned(), args.join(" "));
+                step.name = Some(format!("cd {dir} && {run}"));
+                step.run = Some(run);
+                step.working_directory = Some(dir.to_string());
             }
             Executor::Shell => {
-                let mut cmd = format!("cd {} && ", shell_escape::escape(dir.to_string().into()));
-                cmd.push_str(&shell_escape::escape(Cow::Borrowed(&self.cmd)));
+                let mut run = format!("cd {} && ", shell_escape::escape(dir.to_string().into()));
+                run.push_str(&shell_escape::escape(Cow::Borrowed(&self.cmd)));
                 for arg in &self.args {
-                    cmd.push(' ');
-                    cmd.push_str(&shell_escape::escape(arg.into()));
+                    run.push(' ');
+                    run.push_str(&shell_escape::escape(arg.into()));
                 }
-                step.run = Some(cmd);
+                step.run = Some(run);
             }
         }
         vec![step]
@@ -333,11 +317,13 @@ struct WorkflowJob {
 #[derive(Default, Serialize)]
 struct WorkflowStep {
     #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     uses: Option<String>,
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    with: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     run: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "working-directory")]
+    working_directory: Option<String>,
 }
 
 impl Flags {
@@ -362,12 +348,10 @@ impl Flags {
                         ..Default::default()
                     });
                     for actions in actions.group_by(|x, y| x.toolchain == y.toolchain) {
-                        let mut step = WorkflowStep {
-                            uses: Some("actions-rs/toolchain@v1".to_owned()),
-                            with: [("toolchain".to_owned(), actions[0].toolchain.to_string())]
-                                .into(),
+                        job.steps.push(WorkflowStep {
+                            run: Some(format!("rustup install {}", actions[0].toolchain)),
                             ..Default::default()
-                        };
+                        });
                         let components: BTreeSet<_> = actions
                             .iter()
                             .filter_map(|x| match x.task {
@@ -378,12 +362,16 @@ impl Flags {
                             })
                             .collect();
                         if !components.is_empty() {
-                            step.with.insert(
-                                "components".to_owned(),
-                                components.into_iter().intersperse(",").collect(),
+                            let mut run = format!(
+                                "rustup component add --toolchain={}",
+                                actions[0].toolchain
                             );
+                            for component in components {
+                                run.push(' ');
+                                run.push_str(component);
+                            }
+                            job.steps.push(WorkflowStep { run: Some(run), ..Default::default() });
                         }
-                        job.steps.push(step);
                         for action in actions {
                             for instruction in action.interpret().0 {
                                 job.steps
