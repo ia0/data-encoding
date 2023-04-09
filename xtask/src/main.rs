@@ -93,6 +93,9 @@ enum Task {
     #[strum(serialize = "bench")]
     Bench,
 
+    #[strum(serialize = "semver-checks")]
+    SemverChecks,
+
     #[strum(serialize = "audit")]
     Audit,
 }
@@ -113,6 +116,7 @@ impl Action {
             (Task::Clippy, _) => &["--", "--deny=warnings"],
             (Task::Build, Dir::Nostd) => &["--release"],
             (Task::Miri, _) => &["test"],
+            (Task::SemverChecks, _) => &["check-release"],
             (Task::Audit, _) => &["--deny=warnings"],
             _ => &[],
         };
@@ -372,6 +376,15 @@ impl Flags {
                             }
                             job.steps.push(WorkflowStep { run: Some(run), ..Default::default() });
                         }
+                        if actions.iter().find(|x| matches!(x.task, Task::SemverChecks)).is_some() {
+                            job.steps.push(WorkflowStep {
+                                run: Some(format!(
+                                    "cargo +{} install cargo-semver-checks",
+                                    actions[0].toolchain
+                                )),
+                                ..Default::default()
+                            });
+                        }
                         for action in actions {
                             for instruction in action.interpret().0 {
                                 job.steps
@@ -430,6 +443,10 @@ impl Actions {
                 }
                 if task == Task::Bench && !matches!(dir, Dir::Lib | Dir::Bin) {
                     // Bench is only supported for lib and bin.
+                    continue;
+                }
+                if task == Task::SemverChecks && (!dir.is_published() || matches!(dir, Dir::Bin)) {
+                    // SemverChecks only makes sense for published library crates.
                     continue;
                 }
                 let os = Os::Ubuntu;
