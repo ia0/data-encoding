@@ -376,6 +376,15 @@ impl Flags {
                             }
                             job.steps.push(WorkflowStep { run: Some(run), ..Default::default() });
                         }
+                        if actions.iter().find(|x| matches!(x.task, Task::SemverChecks)).is_some() {
+                            job.steps.push(WorkflowStep {
+                                run: Some(format!(
+                                    "cargo +{} install cargo-semver-checks",
+                                    actions[0].toolchain
+                                )),
+                                ..Default::default()
+                            });
+                        }
                         for action in actions {
                             for instruction in action.interpret().0 {
                                 job.steps
