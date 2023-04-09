@@ -93,6 +93,9 @@ enum Task {
     #[strum(serialize = "bench")]
     Bench,
 
+    #[strum(serialize = "semver-checks")]
+    SemverChecks,
+
     #[strum(serialize = "audit")]
     Audit,
 }
@@ -113,6 +116,7 @@ impl Action {
             (Task::Clippy, _) => &["--", "--deny=warnings"],
             (Task::Build, Dir::Nostd) => &["--release"],
             (Task::Miri, _) => &["test"],
+            (Task::SemverChecks, _) => &["check-release"],
             (Task::Audit, _) => &["--deny=warnings"],
             _ => &[],
         };
@@ -430,6 +434,10 @@ impl Actions {
                 }
                 if task == Task::Bench && !matches!(dir, Dir::Lib | Dir::Bin) {
                     // Bench is only supported for lib and bin.
+                    continue;
+                }
+                if task == Task::SemverChecks && (!dir.is_published() || matches!(dir, Dir::Bin)) {
+                    // SemverChecks only makes sense for published library crates.
                     continue;
                 }
                 let os = Os::Ubuntu;
