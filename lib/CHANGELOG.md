@@ -8,6 +8,7 @@
 
 - Use TryInto for slice to array conversion
 - Update documentation with reference to attack vectors
+- Fix English in documentation
 
 ## 2.3.3
 
