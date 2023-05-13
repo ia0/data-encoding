@@ -433,6 +433,8 @@ impl Actions {
         // Check everything on ubuntu nightly.
         for task in Task::iter() {
             for dir in Dir::iter() {
+                let os = Os::Ubuntu;
+                let mut toolchain = Toolchain::Nightly;
                 if task == Task::Clippy && matches!(dir, Dir::Cmp | Dir::Www) {
                     // Clippy is currently broken on cmp and www.
                     continue;
@@ -445,12 +447,14 @@ impl Actions {
                     // Bench is only supported for lib and bin.
                     continue;
                 }
-                if task == Task::SemverChecks && (!dir.is_published() || matches!(dir, Dir::Bin)) {
-                    // SemverChecks only makes sense for published library crates.
-                    continue;
+                if task == Task::SemverChecks {
+                    if !dir.is_published() || matches!(dir, Dir::Bin) {
+                        // SemverChecks only makes sense for published library crates.
+                        continue;
+                    }
+                    // SemverChecks only guarantees support for stable.
+                    toolchain = Toolchain::Stable;
                 }
-                let os = Os::Ubuntu;
-                let toolchain = Toolchain::Nightly;
                 actions.insert(Action { os, toolchain, task, dir });
             }
         }
