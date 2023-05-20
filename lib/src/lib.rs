@@ -70,14 +70,14 @@
 //! # Properties
 //!
 //! The [`HEXUPPER`], [`BASE32`], [`BASE32HEX`], [`BASE64`], and [`BASE64URL`] predefined encodings
-//! are conform to [RFC4648].
+//! conform to [RFC4648].
 //!
 //! In general, the encoding and decoding functions satisfy the following properties:
 //!
 //! - They are deterministic: their output only depends on their input
-//! - They have no side-effects: they do not modify a hidden mutable state
-//! - They are correct: encoding then decoding gives the initial data
-//! - They are canonical (unless [`is_canonical`] returns false): decoding then encoding gives the
+//! - They have no side-effects: they do not modify any hidden mutable state
+//! - They are correct: encoding followed by decoding gives the initial data
+//! - They are canonical (unless [`is_canonical`] returns false): decoding followed by encoding gives the
 //!   initial data
 //!
 //! This last property is usually not satisfied by base64 implementations. This is a matter of
@@ -1930,7 +1930,7 @@ const HEXUPPER_PERMISSIVE_IMPL: &[u8] = &[
 /// assert_eq!(BASE32, spec.encoding().unwrap());
 /// ```
 ///
-/// It is conform to [RFC4648].
+/// It conforms to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-6
 pub const BASE32: Encoding = Encoding::internal_new(BASE32_IMPL);
@@ -2011,7 +2011,7 @@ const BASE32_NOPAD_IMPL: &[u8] = &[
 /// assert_eq!(BASE32HEX, spec.encoding().unwrap());
 /// ```
 ///
-/// It is conform to [RFC4648].
+/// It conforms to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-7
 pub const BASE32HEX: Encoding = Encoding::internal_new(BASE32HEX_IMPL);
@@ -2093,7 +2093,7 @@ const BASE32HEX_NOPAD_IMPL: &[u8] = &[
 /// assert_eq!(BASE32_DNSSEC, spec.encoding().unwrap());
 /// ```
 ///
-/// It is conform to [RFC5155]:
+/// It conforms to [RFC5155]:
 ///
 /// - It uses a base32 extended hex alphabet.
 /// - It is case-insensitive when decoding and uses lowercase when encoding.
@@ -2144,7 +2144,7 @@ const BASE32_DNSSEC_IMPL: &[u8] = &[
 /// assert_eq!(BASE32_DNSCURVE, spec.encoding().unwrap());
 /// ```
 ///
-/// It is conform to [DNSCurve].
+/// It conforms to [DNSCurve].
 ///
 /// [DNSCurve]: https://dnscurve.org/in-implement.html
 pub const BASE32_DNSCURVE: Encoding = Encoding::internal_new(BASE32_DNSCURVE_IMPL);
@@ -2189,7 +2189,7 @@ const BASE32_DNSCURVE_IMPL: &[u8] = &[
 /// assert_eq!(BASE64, spec.encoding().unwrap());
 /// ```
 ///
-/// It is conform to [RFC4648].
+/// It conforms to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-4
 pub const BASE64: Encoding = Encoding::internal_new(BASE64_IMPL);
@@ -2274,7 +2274,7 @@ const BASE64_NOPAD_IMPL: &[u8] = &[
 /// assert_eq!(BASE64_MIME, spec.encoding().unwrap());
 /// ```
 ///
-/// It is not exactly conform to [RFC2045] because it does not print the header
+/// It does not exactly conform to [RFC2045] because it does not print the header
 /// and does not ignore all characters.
 ///
 /// [RFC2045]: https://tools.ietf.org/html/rfc2045
@@ -2319,7 +2319,7 @@ const BASE64_MIME_IMPL: &[u8] = &[
 /// assert_eq!(BASE64URL, spec.encoding().unwrap());
 /// ```
 ///
-/// It is conform to [RFC4648].
+/// It conforms to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-5
 pub const BASE64URL: Encoding = Encoding::internal_new(BASE64URL_IMPL);
