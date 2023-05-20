@@ -1,5 +1,7 @@
 # Changelog
 
+## 2.4.0
+
 ### Minor
 
 - Bump MSRV from 1.46 to 1.47
