@@ -170,3 +170,25 @@ pub fn internal_decode_slice(input: TokenStream) -> TokenStream {
     check_empty(hash_map);
     format!("{:?}", encoding.decode(input.as_bytes()).unwrap()).parse().unwrap()
 }
+
+#[proc_macro]
+#[doc(hidden)]
+pub fn internal_encode_len(input: TokenStream) -> TokenStream {
+    let mut hash_map = parse_map(input.into_iter());
+    let encoding = get_encoding(&mut hash_map);
+    check_present(&hash_map, "input");
+    let input = get_usize(&mut hash_map, "input");
+    check_empty(hash_map);
+    format!("{}", encoding.encode_len(input)).parse().unwrap()
+}
+
+#[proc_macro]
+#[doc(hidden)]
+pub fn internal_decode_len(input: TokenStream) -> TokenStream {
+    let mut hash_map = parse_map(input.into_iter());
+    let encoding = get_encoding(&mut hash_map);
+    check_present(&hash_map, "input");
+    let input = get_usize(&mut hash_map, "input");
+    check_empty(hash_map);
+    format!("{}", encoding.decode_len(input).unwrap()).parse().unwrap()
+}
