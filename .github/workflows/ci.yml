@@ -203,9 +203,6 @@ jobs:
       - name: cd lib && cargo +stable semver-checks check-release
         run: cargo +stable semver-checks check-release
         working-directory: lib
-      - name: cd lib/macro/internal && cargo +stable semver-checks check-release
-        run: cargo +stable semver-checks check-release
-        working-directory: lib/macro/internal
       - name: cd lib/macro && cargo +stable semver-checks check-release
         run: cargo +stable semver-checks check-release
         working-directory: lib/macro
