@@ -871,7 +871,7 @@ pub type InternalEncoding = &'static [u8];
 // - width % dec(bit) == 0
 // - for all x in separator values[x] is IGNORE
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Encoding(pub InternalEncoding);
+pub struct Encoding(#[doc(hidden)] pub InternalEncoding);
 
 /// How to translate characters when decoding
 ///
