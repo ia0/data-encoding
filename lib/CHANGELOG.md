@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.1-git
+
+### Patch
+
+- Hide the documentation of the `Encoding` implementation (fixes #75)
+
 ## 2.4.0
 
 ### Minor
