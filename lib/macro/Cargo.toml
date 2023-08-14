@@ -4,7 +4,7 @@ version = "0.1.14-git"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "MIT"
 edition = "2018"
-rust-version = "1.47"
+rust-version = "1.70"
 keywords = ["no_std", "base64", "base32", "hex", "macro"]
 categories = ["encoding", "no-std"]
 readme = "README.md"
@@ -14,5 +14,5 @@ description = "Macros for data-encoding"
 include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 
 [dependencies]
-data-encoding = { version = "2.4.1-git", path = "..", default-features = false }
+data-encoding = { version = "2.5.0-git", path = "..", default-features = false }
 data-encoding-macro-internal = { version = "0.1.12-git", path = "internal" }
