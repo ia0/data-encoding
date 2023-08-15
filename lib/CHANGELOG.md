@@ -1,6 +1,10 @@
 # Changelog
 
-## 2.4.1-git
+## 2.5.0-git
+
+### Minor
+
+- Bump MSRV from 1.47 to 1.70
 
 ### Patch
 

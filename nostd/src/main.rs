@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![allow(internal_features)]
 #![feature(lang_items)]
 
 use core::fmt::Write;

@@ -32,7 +32,7 @@ enum Toolchain {
     #[strum(serialize = "stable")]
     Stable,
 
-    #[strum(serialize = "1.47")]
+    #[strum(serialize = "1.70")]
     Msrv,
 }
 

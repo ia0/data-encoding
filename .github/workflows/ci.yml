@@ -206,36 +206,36 @@ jobs:
       - name: cd lib/macro && cargo +stable semver-checks check-release
         run: cargo +stable semver-checks check-release
         working-directory: lib/macro
-      - run: rustup install 1.47
-      - name: cd lib && cargo +1.47 build
-        run: cargo +1.47 build
+      - run: rustup install 1.70
+      - name: cd lib && cargo +1.70 build
+        run: cargo +1.70 build
         working-directory: lib
-      - name: cd lib && cargo +1.47 build --release
-        run: cargo +1.47 build --release
+      - name: cd lib && cargo +1.70 build --release
+        run: cargo +1.70 build --release
         working-directory: lib
-      - name: cd lib && cargo +1.47 build --no-default-features --features=alloc
-        run: cargo +1.47 build --no-default-features --features=alloc
+      - name: cd lib && cargo +1.70 build --no-default-features --features=alloc
+        run: cargo +1.70 build --no-default-features --features=alloc
         working-directory: lib
-      - name: cd lib && cargo +1.47 build --release --no-default-features --features=alloc
-        run: cargo +1.47 build --release --no-default-features --features=alloc
+      - name: cd lib && cargo +1.70 build --release --no-default-features --features=alloc
+        run: cargo +1.70 build --release --no-default-features --features=alloc
         working-directory: lib
-      - name: cd lib && cargo +1.47 build --no-default-features
-        run: cargo +1.47 build --no-default-features
+      - name: cd lib && cargo +1.70 build --no-default-features
+        run: cargo +1.70 build --no-default-features
         working-directory: lib
-      - name: cd lib && cargo +1.47 build --release --no-default-features
-        run: cargo +1.47 build --release --no-default-features
+      - name: cd lib && cargo +1.70 build --release --no-default-features
+        run: cargo +1.70 build --release --no-default-features
         working-directory: lib
-      - name: cd lib/macro/internal && cargo +1.47 build
-        run: cargo +1.47 build
+      - name: cd lib/macro/internal && cargo +1.70 build
+        run: cargo +1.70 build
         working-directory: lib/macro/internal
-      - name: cd lib/macro/internal && cargo +1.47 build --release
-        run: cargo +1.47 build --release
+      - name: cd lib/macro/internal && cargo +1.70 build --release
+        run: cargo +1.70 build --release
         working-directory: lib/macro/internal
-      - name: cd lib/macro && cargo +1.47 build
-        run: cargo +1.47 build
+      - name: cd lib/macro && cargo +1.70 build
+        run: cargo +1.70 build
         working-directory: lib/macro
-      - name: cd lib/macro && cargo +1.47 build --release
-        run: cargo +1.47 build --release
+      - name: cd lib/macro && cargo +1.70 build --release
+        run: cargo +1.70 build --release
         working-directory: lib/macro
   windows:
     runs-on: windows-latest
@@ -315,34 +315,34 @@ jobs:
       - name: cd bin && cargo +stable build --release
         run: cargo +stable build --release
         working-directory: bin
-      - run: rustup install 1.47
-      - name: cd lib && cargo +1.47 build
-        run: cargo +1.47 build
+      - run: rustup install 1.70
+      - name: cd lib && cargo +1.70 build
+        run: cargo +1.70 build
         working-directory: lib
-      - name: cd lib && cargo +1.47 build --release
-        run: cargo +1.47 build --release
+      - name: cd lib && cargo +1.70 build --release
+        run: cargo +1.70 build --release
         working-directory: lib
-      - name: cd lib && cargo +1.47 build --no-default-features --features=alloc
-        run: cargo +1.47 build --no-default-features --features=alloc
+      - name: cd lib && cargo +1.70 build --no-default-features --features=alloc
+        run: cargo +1.70 build --no-default-features --features=alloc
         working-directory: lib
-      - name: cd lib && cargo +1.47 build --release --no-default-features --features=alloc
-        run: cargo +1.47 build --release --no-default-features --features=alloc
+      - name: cd lib && cargo +1.70 build --release --no-default-features --features=alloc
+        run: cargo +1.70 build --release --no-default-features --features=alloc
         working-directory: lib
-      - name: cd lib && cargo +1.47 build --no-default-features
-        run: cargo +1.47 build --no-default-features
+      - name: cd lib && cargo +1.70 build --no-default-features
+        run: cargo +1.70 build --no-default-features
         working-directory: lib
-      - name: cd lib && cargo +1.47 build --release --no-default-features
-        run: cargo +1.47 build --release --no-default-features
+      - name: cd lib && cargo +1.70 build --release --no-default-features
+        run: cargo +1.70 build --release --no-default-features
         working-directory: lib
-      - name: cd lib/macro/internal && cargo +1.47 build
-        run: cargo +1.47 build
+      - name: cd lib/macro/internal && cargo +1.70 build
+        run: cargo +1.70 build
         working-directory: lib/macro/internal
-      - name: cd lib/macro/internal && cargo +1.47 build --release
-        run: cargo +1.47 build --release
+      - name: cd lib/macro/internal && cargo +1.70 build --release
+        run: cargo +1.70 build --release
         working-directory: lib/macro/internal
-      - name: cd lib/macro && cargo +1.47 build
-        run: cargo +1.47 build
+      - name: cd lib/macro && cargo +1.70 build
+        run: cargo +1.70 build
         working-directory: lib/macro
-      - name: cd lib/macro && cargo +1.47 build --release
-        run: cargo +1.47 build --release
+      - name: cd lib/macro && cargo +1.70 build --release
+        run: cargo +1.70 build --release
         working-directory: lib/macro
