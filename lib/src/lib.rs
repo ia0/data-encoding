@@ -154,8 +154,6 @@
 #![warn(rust_2021_compatibility)]
 #![warn(unreachable_pub)]
 #![warn(unused)]
-// Rustdoc lints
-#![warn(rustdoc::broken_intra_doc_links)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
