@@ -1,2 +1,5 @@
 Cargo.lock
-/target/
+
+# Build directories
+# Without a trailing slash to include symbolic links.
+/target
