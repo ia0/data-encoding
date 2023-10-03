@@ -144,7 +144,8 @@
 //! [wrapping]: struct.Specification.html#structfield.wrap
 
 #![no_std]
-// Opt-in for allowed-by-default lints (in alphabetical order)
+// Opt-in for helpful allowed-by-default lints (in alphabetical order).
+// This list has to be maintained manually.
 // See also: <https://doc.rust-lang.org/rustc/lints>
 #![warn(future_incompatible)]
 #![warn(let_underscore)]
