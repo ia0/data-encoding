@@ -144,7 +144,18 @@
 //! [wrapping]: struct.Specification.html#structfield.wrap
 
 #![no_std]
-#![warn(unused_results, missing_docs)]
+// Opt-in for allowed-by-default lints (in alphabetical order)
+// See also: <https://doc.rust-lang.org/rustc/lints>
+#![warn(future_incompatible)]
+#![warn(let_underscore)]
+#![warn(missing_debug_implementations)]
+#![warn(missing_docs)]
+#![warn(rust_2018_idioms)]
+#![warn(rust_2021_compatibility)]
+#![warn(unreachable_pub)]
+#![warn(unused)]
+// Rustdoc lints
+#![warn(rustdoc::broken_intra_doc_links)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -288,7 +299,7 @@ pub enum DecodeKind {
 }
 
 impl core::fmt::Display for DecodeKind {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let description = match self {
             DecodeKind::Length => "invalid length",
             DecodeKind::Symbol => "invalid symbol",
@@ -315,7 +326,7 @@ pub struct DecodeError {
 impl std::error::Error for DecodeError {}
 
 impl core::fmt::Display for DecodeError {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{} at {}", self.kind, self.position)
     }
 }
@@ -1577,7 +1588,7 @@ pub struct SpecificationError(SpecificationErrorImpl);
 
 #[cfg(feature = "alloc")]
 impl core::fmt::Display for SpecificationError {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self.0 {
             BadSize => write!(f, "invalid number of symbols"),
             NotAscii => write!(f, "non-ascii character"),
