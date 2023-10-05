@@ -87,6 +87,9 @@ enum Task {
     #[strum(serialize = "test")]
     Test,
 
+    #[strum(serialize = "doc")]
+    Doc,
+
     #[strum(serialize = "miri")]
     Miri,
 
@@ -111,6 +114,10 @@ struct Action {
 impl Action {
     fn interpret(&self) -> Instructions {
         let mut instructions = Instructions::default();
+        let default_env: &[(&str, &str)] = match self.task {
+            Task::Doc => &[("RUSTDOCFLAGS", "--deny=warnings")],
+            _ => &[],
+        };
         let default_args: &[&str] = match (self.task, self.dir) {
             (Task::Format, _) => &["--", "--check"],
             (Task::Clippy, _) => &["--", "--deny=warnings"],
@@ -122,6 +129,7 @@ impl Action {
         };
         instructions += Instruction {
             executor: Executor::Cargo,
+            env: default_env.iter().map(|(x, y)| (x.to_string(), y.to_string())).collect(),
             cmd: self.task.to_string(),
             args: default_args.iter().map(|x| x.to_string()).collect(),
         };
@@ -141,6 +149,7 @@ impl Action {
             instructions = Instructions::default();
             instructions += Instruction {
                 executor: Executor::Cargo,
+                env: vec![],
                 cmd: "run".to_string(),
                 args: vec!["--release".to_string()],
             };
@@ -150,6 +159,7 @@ impl Action {
             instructions = Instructions::default();
             instructions += Instruction {
                 executor: Executor::Shell,
+                env: vec![],
                 cmd: format!("./{}.sh", self.task),
                 args: vec![format!("+{}", self.toolchain)],
             };
@@ -167,6 +177,7 @@ enum Executor {
 #[derive(Clone, Debug)]
 struct Instruction {
     executor: Executor,
+    env: Vec<(String, String)>,
     cmd: String,
     args: Vec<String>,
 }
@@ -183,12 +194,14 @@ impl Instruction {
             Executor::Shell => Command::new(&self.cmd),
         };
         command.current_dir(format!("{dir}"));
+        command.envs(self.env.iter().map(|(x, y)| (x, y)));
         command.args(&self.args);
         execute_command(command);
     }
 
     fn generate(&self, toolchain: Toolchain, dir: Dir) -> Vec<WorkflowStep> {
         let mut step = WorkflowStep::default();
+        step.env = self.env.iter().cloned().collect();
         match self.executor {
             Executor::Cargo => {
                 let mut run = format!("cargo +{toolchain} {}", self.cmd);
@@ -324,6 +337,8 @@ struct WorkflowStep {
     name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     uses: Option<String>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    env: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     run: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "working-directory")]
@@ -435,6 +450,10 @@ impl Actions {
             for dir in Dir::iter() {
                 let os = Os::Ubuntu;
                 let mut toolchain = Toolchain::Nightly;
+                if task == Task::Doc && !matches!(dir, Dir::Lib) {
+                    // Documentation only matters for the library.
+                    continue;
+                }
                 if task == Task::Clippy && matches!(dir, Dir::Cmp | Dir::Www) {
                     // Clippy is currently broken on cmp and www.
                     continue;
