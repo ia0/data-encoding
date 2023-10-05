@@ -13,6 +13,10 @@ documentation = "https://docs.rs/data-encoding"
 description = "Efficient and customizable data-encoding functions like base64, base32, and hex"
 include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 
+# TODO: Remove this once doc_auto_cfg is in the MSRV.
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg=docsrs"]
+
 [features]
 default = ["std"]
 alloc = []
