@@ -8,6 +8,7 @@
 
 ### Patch
 
+- Use `doc_auto_cfg` to show gating features (fixes #73)
 - Hide the documentation of the `Encoding` implementation (fixes #75)
 
 ## 2.4.0

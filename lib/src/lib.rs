@@ -144,6 +144,7 @@
 //! [wrapping]: struct.Specification.html#structfield.wrap
 
 #![no_std]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![warn(unused_results, missing_docs)]
 
 #[cfg(feature = "alloc")]
@@ -805,10 +806,6 @@ fn decode_wrap_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>, I: Static
 /// assert_eq!(msb.encode(&[0b01010011]), "01010011");
 /// assert_eq!(lsb.encode(&[0b01010011]), "11001010");
 /// ```
-///
-/// # Features
-///
-/// Requires the `alloc` feature.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg(feature = "alloc")]
 pub enum BitOrder {
@@ -879,10 +876,6 @@ pub struct Encoding(#[doc(hidden)] pub InternalEncoding);
 /// of the `to` field. The second to the second. Etc.
 ///
 /// See [Specification](struct.Specification.html) for more information.
-///
-/// # Features
-///
-/// Requires the `alloc` feature.
 #[derive(Debug, Clone)]
 #[cfg(feature = "alloc")]
 pub struct Translate {
@@ -896,10 +889,6 @@ pub struct Translate {
 /// How to wrap the output when encoding
 ///
 /// See [Specification](struct.Specification.html) for more information.
-///
-/// # Features
-///
-/// Requires the `alloc` feature.
 #[derive(Debug, Clone)]
 #[cfg(feature = "alloc")]
 pub struct Wrap {
@@ -1154,10 +1143,6 @@ pub struct Wrap {
 /// assert_eq!(base.decode(b"BOIl"), base.decode(b"b011"));
 /// ```
 ///
-/// # Features
-///
-/// Requires the `alloc` feature.
-///
 /// [base-conversion]: https://en.wikipedia.org/wiki/Positional_notation#Base_conversion
 /// [canonical]: https://tools.ietf.org/html/rfc4648#section-3.5
 #[derive(Debug, Clone)]
@@ -1311,10 +1296,6 @@ impl Encoding {
     /// BASE64.encode_append(input, &mut output);
     /// assert_eq!(output, "Result: SGVsbG8gd29ybGQ=");
     /// ```
-    ///
-    /// # Features
-    ///
-    /// Requires the `alloc` feature.
     #[cfg(feature = "alloc")]
     pub fn encode_append(&self, input: &[u8], output: &mut String) {
         let output = unsafe { output.as_mut_vec() };
@@ -1331,10 +1312,6 @@ impl Encoding {
     /// use data_encoding::BASE64;
     /// assert_eq!(BASE64.encode(b"Hello world"), "SGVsbG8gd29ybGQ=");
     /// ```
-    ///
-    /// # Features
-    ///
-    /// Requires the `alloc` feature.
     #[cfg(feature = "alloc")]
     pub fn encode(&self, input: &[u8]) -> String {
         let mut output = vec![0u8; self.encode_len(input.len())];
@@ -1441,10 +1418,6 @@ impl Encoding {
     /// assert_eq!(BASE64.decode(b"SGVsbA==byB3b3JsZA==").unwrap(), b"Hello world");
     /// ```
     ///
-    /// # Features
-    ///
-    /// Requires the `alloc` feature.
-    ///
     /// [`Length`]: enum.DecodeKind.html#variant.Length
     /// [`Symbol`]: enum.DecodeKind.html#variant.Symbol
     /// [`Trailing`]: enum.DecodeKind.html#variant.Trailing
@@ -1493,10 +1466,6 @@ impl Encoding {
     }
 
     /// Returns the encoding specification
-    ///
-    /// # Features
-    ///
-    /// Requires the `alloc` feature.
     #[cfg(feature = "alloc")]
     pub fn specification(&self) -> Specification {
         let mut specification = Specification::new();
@@ -1567,10 +1536,6 @@ enum SpecificationErrorImpl {
 use crate::SpecificationErrorImpl::*;
 
 /// Specification error
-///
-/// # Features
-///
-/// Requires the `alloc` feature.
 #[derive(Debug, Copy, Clone)]
 #[cfg(feature = "alloc")]
 pub struct SpecificationError(SpecificationErrorImpl);
