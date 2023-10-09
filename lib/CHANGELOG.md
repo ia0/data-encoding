@@ -4,10 +4,12 @@
 
 ### Minor
 
+- Make some functions `must_use`
 - Bump MSRV from 1.47 to 1.70
 
 ### Patch
 
+- Use clippy pedantic and add more lints
 - Use `doc_auto_cfg` to show gating features (fixes #73)
 - Hide the documentation of the `Encoding` implementation (fixes #75)
 
