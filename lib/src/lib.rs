@@ -151,7 +151,6 @@
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
 #![warn(unreachable_pub)]
-#![warn(unsafe_op_in_unsafe_fn)]
 #![warn(unused_results)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::enum_glob_use)]
@@ -304,7 +303,7 @@ impl core::fmt::Display for DecodeKind {
             DecodeKind::Trailing => "non-zero trailing bits",
             DecodeKind::Padding => "invalid padding length",
         };
-        write!(f, "{description}")
+        write!(f, "{}", description)
     }
 }
 
@@ -1565,7 +1564,7 @@ impl core::fmt::Display for SpecificationError {
             Duplicate(c) => write!(f, "{:?} has conflicting definitions", c as char),
             ExtraPadding => write!(f, "unnecessary padding"),
             WrapLength => write!(f, "invalid wrap width or separator length"),
-            WrapWidth(x) => write!(f, "wrap width not a multiple of {x}"),
+            WrapWidth(x) => write!(f, "wrap width not a multiple of {}", x),
             FromTo => write!(f, "translate from/to length mismatch"),
             Undefined(c) => write!(f, "{:?} is undefined", c as char),
         }

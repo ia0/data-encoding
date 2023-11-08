@@ -32,7 +32,7 @@ enum Toolchain {
     #[strum(serialize = "stable")]
     Stable,
 
-    #[strum(serialize = "1.70")]
+    #[strum(serialize = "1.48")]
     Msrv,
 }
 
@@ -371,6 +371,19 @@ impl Flags {
                             run: Some(format!("rustup install {}", actions[0].toolchain)),
                             ..Default::default()
                         });
+
+                        if actions[0].toolchain == Toolchain::Msrv {
+                            for dir in Dir::iter().filter(|x| x.is_published() && x != &Dir::Bin) {
+                                job.steps.push(WorkflowStep {
+                                    run: Some(format!(
+                                        "mv {}/Cargo.lock.msrv {}/Cargo.lock",
+                                        dir, dir
+                                    )),
+                                    ..Default::default()
+                                });
+                            }
+                        }
+
                         let components: BTreeSet<_> = actions
                             .iter()
                             .filter_map(|x| match x.task {
