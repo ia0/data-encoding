@@ -147,14 +147,17 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 // TODO: This list up to warn(clippy::pedantic) should ideally use a lint group.
 #![warn(elided_lifetimes_in_paths)]
-#![warn(let_underscore_drop)]
+// TODO(msrv): #![warn(let_underscore_drop)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
 #![warn(unreachable_pub)]
+// TODO(msrv): #![warn(unsafe_op_in_unsafe_fn)]
 #![warn(unused_results)]
+#![allow(unused_unsafe)] // TODO(msrv)
 #![warn(clippy::pedantic)]
 #![allow(clippy::enum_glob_use)]
 #![allow(clippy::similar_names)]
+#![allow(clippy::uninlined_format_args)] // TODO(msrv)
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

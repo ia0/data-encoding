@@ -5,7 +5,7 @@
 ### Minor
 
 - Make some functions `must_use`
-- Bump MSRV from 1.47 to 1.70
+- Bump MSRV from 1.47 to 1.48
 
 ### Patch
 

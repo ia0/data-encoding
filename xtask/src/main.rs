@@ -164,6 +164,18 @@ impl Action {
                 args: vec![format!("+{}", self.toolchain)],
             };
         }
+        if self.toolchain == Toolchain::Msrv {
+            let lock = "Cargo.lock";
+            let backup = "Cargo.lock.backup";
+            let msrv = "Cargo.lock.msrv";
+            // We assume a lock file already exists, which should often by the case.
+            instructions += Instruction::shell("mv", &[lock, backup]);
+            instructions += Instruction::shell("cp", &[msrv, lock]);
+            instructions.0.rotate_right(2);
+            // We have to remove first because Windows cannot move on an existing file.
+            instructions += Instruction::shell("rm", &[lock]);
+            instructions += Instruction::shell("mv", &[backup, lock]);
+        }
         instructions
     }
 }
@@ -183,6 +195,15 @@ struct Instruction {
 }
 
 impl Instruction {
+    fn shell(cmd: &str, args: &[&str]) -> Self {
+        Instruction {
+            executor: Executor::Shell,
+            env: vec![],
+            cmd: cmd.to_string(),
+            args: args.iter().map(|x| x.to_string()).collect(),
+        }
+    }
+
     fn execute(&self, toolchain: Toolchain, dir: Dir) {
         let mut command = match self.executor {
             Executor::Cargo => {
@@ -371,19 +392,6 @@ impl Flags {
                             run: Some(format!("rustup install {}", actions[0].toolchain)),
                             ..Default::default()
                         });
-
-                        if actions[0].toolchain == Toolchain::Msrv {
-                            for dir in Dir::iter().filter(|x| x.is_published() && x != &Dir::Bin) {
-                                job.steps.push(WorkflowStep {
-                                    run: Some(format!(
-                                        "mv {}/Cargo.lock.msrv {}/Cargo.lock",
-                                        dir, dir
-                                    )),
-                                    ..Default::default()
-                                });
-                            }
-                        }
-
                         let components: BTreeSet<_> = actions
                             .iter()
                             .filter_map(|x| match x.task {

@@ -212,9 +212,8 @@ jobs:
         run: cargo +stable semver-checks check-release
         working-directory: lib/macro
       - run: rustup install 1.48
-      - run: mv lib/Cargo.lock.msrv lib/Cargo.lock
-      - run: mv lib/macro/internal/Cargo.lock.msrv lib/macro/internal/Cargo.lock
-      - run: mv lib/macro/Cargo.lock.msrv lib/macro/Cargo.lock
+      - run: cd lib && mv Cargo.lock Cargo.lock.backup
+      - run: cd lib && cp Cargo.lock.msrv Cargo.lock
       - name: cd lib && cargo +1.48 build
         run: cargo +1.48 build
         working-directory: lib
@@ -233,18 +232,28 @@ jobs:
       - name: cd lib && cargo +1.48 build --release --no-default-features
         run: cargo +1.48 build --release --no-default-features
         working-directory: lib
+      - run: cd lib && rm Cargo.lock
+      - run: cd lib && mv Cargo.lock.backup Cargo.lock
+      - run: cd lib/macro/internal && mv Cargo.lock Cargo.lock.backup
+      - run: cd lib/macro/internal && cp Cargo.lock.msrv Cargo.lock
       - name: cd lib/macro/internal && cargo +1.48 build
         run: cargo +1.48 build
         working-directory: lib/macro/internal
       - name: cd lib/macro/internal && cargo +1.48 build --release
         run: cargo +1.48 build --release
         working-directory: lib/macro/internal
+      - run: cd lib/macro/internal && rm Cargo.lock
+      - run: cd lib/macro/internal && mv Cargo.lock.backup Cargo.lock
+      - run: cd lib/macro && mv Cargo.lock Cargo.lock.backup
+      - run: cd lib/macro && cp Cargo.lock.msrv Cargo.lock
       - name: cd lib/macro && cargo +1.48 build
         run: cargo +1.48 build
         working-directory: lib/macro
       - name: cd lib/macro && cargo +1.48 build --release
         run: cargo +1.48 build --release
         working-directory: lib/macro
+      - run: cd lib/macro && rm Cargo.lock
+      - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock
   windows:
     runs-on: windows-latest
     steps:
@@ -324,9 +333,8 @@ jobs:
         run: cargo +stable build --release
         working-directory: bin
       - run: rustup install 1.48
-      - run: mv lib/Cargo.lock.msrv lib/Cargo.lock
-      - run: mv lib/macro/internal/Cargo.lock.msrv lib/macro/internal/Cargo.lock
-      - run: mv lib/macro/Cargo.lock.msrv lib/macro/Cargo.lock
+      - run: cd lib && mv Cargo.lock Cargo.lock.backup
+      - run: cd lib && cp Cargo.lock.msrv Cargo.lock
       - name: cd lib && cargo +1.48 build
         run: cargo +1.48 build
         working-directory: lib
@@ -345,15 +353,25 @@ jobs:
       - name: cd lib && cargo +1.48 build --release --no-default-features
         run: cargo +1.48 build --release --no-default-features
         working-directory: lib
+      - run: cd lib && rm Cargo.lock
+      - run: cd lib && mv Cargo.lock.backup Cargo.lock
+      - run: cd lib/macro/internal && mv Cargo.lock Cargo.lock.backup
+      - run: cd lib/macro/internal && cp Cargo.lock.msrv Cargo.lock
       - name: cd lib/macro/internal && cargo +1.48 build
         run: cargo +1.48 build
         working-directory: lib/macro/internal
       - name: cd lib/macro/internal && cargo +1.48 build --release
         run: cargo +1.48 build --release
         working-directory: lib/macro/internal
+      - run: cd lib/macro/internal && rm Cargo.lock
+      - run: cd lib/macro/internal && mv Cargo.lock.backup Cargo.lock
+      - run: cd lib/macro && mv Cargo.lock Cargo.lock.backup
+      - run: cd lib/macro && cp Cargo.lock.msrv Cargo.lock
       - name: cd lib/macro && cargo +1.48 build
         run: cargo +1.48 build
         working-directory: lib/macro
       - name: cd lib/macro && cargo +1.48 build --release
         run: cargo +1.48 build --release
         working-directory: lib/macro
+      - run: cd lib/macro && rm Cargo.lock
+      - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock
