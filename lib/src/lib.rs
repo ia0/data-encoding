@@ -147,15 +147,17 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 // TODO: This list up to warn(clippy::pedantic) should ideally use a lint group.
 #![warn(elided_lifetimes_in_paths)]
-#![warn(let_underscore_drop)]
+// TODO(msrv): #![warn(let_underscore_drop)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
 #![warn(unreachable_pub)]
-#![warn(unsafe_op_in_unsafe_fn)]
+// TODO(msrv): #![warn(unsafe_op_in_unsafe_fn)]
 #![warn(unused_results)]
+#![allow(unused_unsafe)] // TODO(msrv)
 #![warn(clippy::pedantic)]
 #![allow(clippy::enum_glob_use)]
 #![allow(clippy::similar_names)]
+#![allow(clippy::uninlined_format_args)] // TODO(msrv)
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -304,7 +306,7 @@ impl core::fmt::Display for DecodeKind {
             DecodeKind::Trailing => "non-zero trailing bits",
             DecodeKind::Padding => "invalid padding length",
         };
-        write!(f, "{description}")
+        write!(f, "{}", description)
     }
 }
 
@@ -1565,7 +1567,7 @@ impl core::fmt::Display for SpecificationError {
             Duplicate(c) => write!(f, "{:?} has conflicting definitions", c as char),
             ExtraPadding => write!(f, "unnecessary padding"),
             WrapLength => write!(f, "invalid wrap width or separator length"),
-            WrapWidth(x) => write!(f, "wrap width not a multiple of {x}"),
+            WrapWidth(x) => write!(f, "wrap width not a multiple of {}", x),
             FromTo => write!(f, "translate from/to length mismatch"),
             Undefined(c) => write!(f, "{:?} is undefined", c as char),
         }
