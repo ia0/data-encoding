@@ -77,8 +77,8 @@
 //! - They are deterministic: their output only depends on their input
 //! - They have no side-effects: they do not modify any hidden mutable state
 //! - They are correct: encoding followed by decoding gives the initial data
-//! - They are canonical (unless [`is_canonical`] returns false): decoding followed by encoding gives the
-//!   initial data
+//! - They are canonical (unless [`is_canonical`] returns false): decoding followed by encoding
+//!   gives the initial data
 //!
 //! This last property is usually not satisfied by base64 implementations. This is a matter of
 //! choice and this crate has made the choice to let the user choose. Support for canonical encoding
@@ -1315,6 +1315,14 @@ impl Encoding {
         self.encode_mut(input, &mut output[output_len ..]);
     }
 
+    /// Returns an object to encode a fragmented input and append it to `output`
+    ///
+    /// See the documentation of [`Encoder`] for more details and examples.
+    #[cfg(feature = "alloc")]
+    pub fn new_encoder<'a>(&'a self, output: &'a mut String) -> Encoder<'a> {
+        Encoder::new(self, output)
+    }
+
     /// Returns encoded `input`
     ///
     /// # Examples
@@ -1536,6 +1544,87 @@ impl Encoding {
     pub fn internal_implementation(&self) -> &[u8] {
         &self.0
     }
+}
+
+/// Encodes fragmented input to an output
+///
+/// It is equivalent to use an [`Encoder`] with multiple calls to [`Encoder::append()`] than to
+/// first concatenate all the input and then use [`Encoding::encode_append()`]. In particular, this
+/// function will not introduce padding or wrapping between inputs.
+///
+/// # Examples
+///
+/// ```rust
+/// // This is a bit inconvenient but we can't take a long-term reference to data_encoding::BASE64
+/// // because it's a constant. We need to use a static which has an address instead. This will be
+/// // fixed in version 3 of the library.
+/// static BASE64: data_encoding::Encoding = data_encoding::BASE64;
+/// let mut output = String::new();
+/// let mut encoder = BASE64.new_encoder(&mut output);
+/// encoder.append(b"hello");
+/// encoder.append(b"world");
+/// encoder.finalize();
+/// assert_eq!(output, BASE64.encode(b"helloworld"));
+/// ```
+#[derive(Debug)]
+#[cfg(feature = "alloc")]
+pub struct Encoder<'a> {
+    encoding: &'a Encoding,
+    output: &'a mut String,
+    buffer: [u8; 255],
+    length: u8,
+}
+
+#[cfg(feature = "alloc")]
+impl<'a> Drop for Encoder<'a> {
+    fn drop(&mut self) {
+        self.encoding.encode_append(&self.buffer[.. self.length as usize], self.output);
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'a> Encoder<'a> {
+    fn new(encoding: &'a Encoding, output: &'a mut String) -> Self {
+        Encoder { encoding, output, buffer: [0; 255], length: 0 }
+    }
+
+    /// Encodes the provided input fragment and appends the result to the output
+    pub fn append(&mut self, mut input: &[u8]) {
+        let bit = self.encoding.bit();
+        #[allow(clippy::cast_possible_truncation)] // no truncation
+        let max = match self.encoding.wrap() {
+            Some((x, _)) => (x / dec(bit) * enc(bit)) as u8,
+            None => enc(bit) as u8,
+        };
+        if self.length != 0 {
+            let len = self.length;
+            #[allow(clippy::cast_possible_truncation)] // no truncation
+            let add = core::cmp::min((max - len) as usize, input.len()) as u8;
+            self.buffer[len as usize ..][.. add as usize].copy_from_slice(&input[.. add as usize]);
+            self.length += add;
+            input = &input[add as usize ..];
+            if self.length != max {
+                debug_assert!(self.length < max);
+                debug_assert!(input.is_empty());
+                return;
+            }
+            self.encoding.encode_append(&self.buffer[.. max as usize], self.output);
+            self.length = 0;
+        }
+        let len = floor(input.len(), max as usize);
+        self.encoding.encode_append(&input[.. len], self.output);
+        input = &input[len ..];
+        #[allow(clippy::cast_possible_truncation)] // no truncation
+        let len = input.len() as u8;
+        self.buffer[.. len as usize].copy_from_slice(input);
+        self.length = len;
+    }
+
+    /// Makes sure all inputs have been encoded and appended to the output
+    ///
+    /// This is equivalent to dropping the encoder and required for correctness, otherwise some
+    /// encoded data may be missing at the end.
+    pub fn finalize(self) {}
 }
 
 #[derive(Debug, Copy, Clone)]

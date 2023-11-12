@@ -1,10 +1,7 @@
 #![no_main]
 
-#[macro_use]
-extern crate libfuzzer_sys;
-extern crate data_encoding_fuzz;
-
 use data_encoding_fuzz::{decode_prefix, generate_encoding};
+use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
     let mut data = data;

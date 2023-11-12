@@ -670,3 +670,28 @@ fn encode_append() {
     test(b"fo", "", "Zm8=");
     test(b"fo", "ba", "baZm8=");
 }
+
+#[test]
+fn encoder() {
+    #[track_caller]
+    fn test(inputs: &[&[u8]], expected: &str) {
+        let mut output = String::new();
+        static BASE: Encoding = data_encoding::BASE64;
+        let mut encoder = BASE.new_encoder(&mut output);
+        for input in inputs {
+            encoder.append(input);
+        }
+        encoder.finalize();
+        assert_eq!(output, expected);
+    }
+    test(&[], "");
+    test(&[b""], "");
+    test(&[b"", b""], "");
+    test(&[b"f", b""], "Zg==");
+    test(&[b"", b"f"], "Zg==");
+    test(&[b"f", b"o"], "Zm8=");
+    test(&[b"fo", b"o"], "Zm9v");
+    test(&[b"fo", b"ob"], "Zm9vYg==");
+    test(&[b"foob", b"a"], "Zm9vYmE=");
+    test(&[b"foob", b"ar"], "Zm9vYmFy");
+}
