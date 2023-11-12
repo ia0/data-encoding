@@ -78,6 +78,38 @@ fn base64_decode() {
 }
 
 #[test]
+fn hexlower_decode_len() {
+    let input: [u8; 8] = *b"deadbeef";
+    let mut output = [0; data_encoding_macro::hexlower_decode_len!(8)];
+    assert_eq!(data_encoding::HEXLOWER.decode_mut(&input, &mut output).unwrap(), output.len());
+    assert_eq!(output[..], data_encoding::HEXLOWER.decode(&input).unwrap());
+}
+
+#[test]
+fn base64_decode_len() {
+    let input: [u8; 8] = *b"deadbeef";
+    let mut output = [0; data_encoding_macro::base64_decode_len!(8)];
+    assert_eq!(data_encoding::BASE64.decode_mut(&input, &mut output).unwrap(), output.len());
+    assert_eq!(output[..], data_encoding::BASE64.decode(&input).unwrap());
+}
+
+#[test]
+fn hexlower_encode_len() {
+    let input: [u8; 8] = *b"deadbeef";
+    let mut output = [0; data_encoding_macro::hexlower_encode_len!(8)];
+    data_encoding::HEXLOWER.encode_mut(&input, &mut output);
+    assert_eq!(&output, data_encoding::HEXLOWER.encode(&input).as_bytes());
+}
+
+#[test]
+fn base64_encode_len() {
+    let input: [u8; 8] = *b"deadbeef";
+    let mut output = [0; data_encoding_macro::base64_encode_len!(8)];
+    data_encoding::BASE64.encode_mut(&input, &mut output);
+    assert_eq!(&output, data_encoding::BASE64.encode(&input).as_bytes());
+}
+
+#[test]
 fn escaped_symbols() {
     const BASE: data_encoding::Encoding = data_encoding_macro::new_encoding! {
         symbols: "\x00\n\"\\",
