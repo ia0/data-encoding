@@ -18,12 +18,12 @@ This repository provides the following Rust crates for data-encoding:
 [binary]: https://crates.io/crates/data-encoding-bin
 [ci]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml
 [ci_badge]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml/badge.svg
-[coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
-[coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
+[coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=main
+[coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=main
 [documentation]: https://docs.rs/data-encoding
 [documentation_badge]: https://docs.rs/data-encoding/badge.svg
 [library]: https://crates.io/crates/data-encoding
-[license]: https://github.com/ia0/data-encoding/blob/master/LICENSE
+[license]: https://github.com/ia0/data-encoding/blob/main/LICENSE
 [license_badge]: https://img.shields.io/crates/l/data-encoding.svg
 [macro]: https://docs.rs/data-encoding-macro
 [version_badge]: https://img.shields.io/crates/v/data-encoding.svg

@@ -9,8 +9,8 @@ CUR_STATUS="$(git status --porcelain)"
 [ -z "$CUR_STATUS" ] || fail "Working directory is dirty."
 
 CUR_BRANCH="$(git symbolic-ref -q HEAD)"
-[ "$CUR_BRANCH" = refs/heads/master ] ||
-fail "Current branch is not master"
+[ "$CUR_BRANCH" = refs/heads/main ] ||
+fail "Current branch is not main"
 
 CUR_COMMIT="$(git rev-parse -q --verify HEAD)"
 DOC_BRANCH=gh-pages
@@ -24,4 +24,4 @@ rm -r www
 echo -n 'data-encoding.rs' > CNAME
 git add .
 git commit -qm"$CUR_COMMIT"
-git checkout -q master
+git checkout -q main

@@ -29,6 +29,6 @@ See the [documentation] for more details.
 
 [ci]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml
 [ci_badge]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml/badge.svg
-[coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=master
-[coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=master
+[coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=main
+[coveralls_badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=main
 [documentation]: https://docs.rs/data-encoding

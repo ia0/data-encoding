@@ -374,8 +374,8 @@ impl Flags {
                 let mut ci = Workflow {
                     name: "Continuous Integration".to_owned(),
                     on: WorkflowOn {
-                        push: WorkflowEvents { branches: vec!["master".to_owned()] },
-                        pull_request: WorkflowEvents { branches: vec!["master".to_owned()] },
+                        push: WorkflowEvents { branches: vec!["main".to_owned()] },
+                        pull_request: WorkflowEvents { branches: vec!["main".to_owned()] },
                         schedule: vec![WorkflowSchedule { cron: "38 11 * * 6".to_owned() }],
                     },
                     jobs: BTreeMap::new(),
