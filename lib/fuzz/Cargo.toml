@@ -17,3 +17,9 @@ name = "round_trip"
 path = "fuzz_targets/round_trip.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "encoder"
+path = "fuzz_targets/encoder.rs"
+test = false
+doc = false

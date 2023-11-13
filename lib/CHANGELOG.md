@@ -4,6 +4,7 @@
 
 ### Minor
 
+- Add `Encoder` and `Encoding::new_encoder()` for fragmented inputs (fixes #81)
 - Make some functions `must_use`
 - Bump MSRV from 1.47 to 1.48
 
