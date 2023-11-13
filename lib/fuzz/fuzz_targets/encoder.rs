@@ -1,6 +1,6 @@
 #![no_main]
 
-use data_encoding_fuzz::generate_encoding;
+use data_encoding_fuzz::{generate_bytes, generate_encoding, generate_usize};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
@@ -10,11 +10,10 @@ fuzz_target!(|data: &[u8]| {
     let mut input = Vec::new();
     let mut encoder = encoding.new_encoder(&mut output);
     while !data.is_empty() {
-        let len = std::cmp::min(data[0] as usize, data.len() - 1);
-        let chunk = &data[1 ..][.. len];
+        let len = generate_usize(&mut data, 0, 3 * 256 - 1);
+        let chunk = generate_bytes(&mut data, len);
         input.extend_from_slice(chunk);
         encoder.append(chunk);
-        data = &data[1 + len ..];
     }
     encoder.finalize();
     let expected = encoding.encode(&input);

@@ -80,7 +80,29 @@ pub fn generate_specification(data: &mut &[u8]) -> Specification {
     spec
 }
 
-fn generate(data: &mut &[u8], min: u8, max: u8) -> u8 {
+pub fn generate_bytes<'a>(data: &'_ mut &'a [u8], len: usize) -> &'a [u8] {
+    let len = std::cmp::min(len, data.len());
+    let res = &data[.. len];
+    *data = &data[len ..];
+    res
+}
+
+pub fn generate_usize(data: &mut &[u8], min: usize, max: usize) -> usize {
+    let log = match (max - min).checked_ilog2() {
+        None => return min,
+        Some(x) => x,
+    };
+    let mut res = 0;
+    for _ in 0 .. log / 8 + 1 {
+        res = res << 8 | generate(data, 0, 255) as usize;
+    }
+    if usize::MIN < min || max < usize::MAX {
+        res = min + res % (max - min + 1);
+    }
+    res
+}
+
+pub fn generate(data: &mut &[u8], min: u8, max: u8) -> u8 {
     if data.is_empty() {
         return min;
     }
@@ -105,4 +127,27 @@ pub fn decode_prefix(encoding: &Encoding, input: &mut &[u8]) -> Vec<u8> {
         }
     }
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generate_usize_ok() {
+        #[track_caller]
+        fn test(mut data: &[u8], min: usize, max: usize, expected: usize) {
+            assert_eq!(generate_usize(&mut data, min, max), expected);
+            assert_eq!(data, &[]);
+        }
+        test(&[], 0, 0, 0);
+        test(&[], 0, 0xffff, 0);
+        test(&[0], 0, 0xffff, 0);
+        test(&[0x23], 0, 0xffff, 0x2300);
+        test(&[0x23, 0x58], 0, 0xffff, 0x2358);
+        test(&[0x23, 0x58], 0x10000, 0x1ffff, 0x12358);
+        test(&[0], 0, 1, 0);
+        test(&[1], 0, 1, 1);
+        test(&[2], 0, 1, 0);
+    }
 }
