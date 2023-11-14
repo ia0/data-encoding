@@ -23,3 +23,9 @@ name = "encoder"
 path = "fuzz_targets/encoder.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "encode_write"
+path = "fuzz_targets/encode_write.rs"
+test = false
+doc = false
