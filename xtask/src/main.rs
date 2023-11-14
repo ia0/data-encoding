@@ -119,6 +119,7 @@ impl Action {
             (Task::Format, _) => &["--", "--check"],
             (Task::Clippy, _) => &["--", "--deny=warnings"],
             (Task::Build, Dir::Nostd) => &["--release"],
+            (Task::Test, Dir::Fuzz) => &["--lib"],
             (Task::Miri, _) => &["test"],
             (Task::SemverChecks, _) => &["check-release"],
             (Task::Audit, _) => &["--deny=warnings"],
@@ -148,6 +149,12 @@ impl Action {
                 args: vec!["--release".to_string()],
             };
             instructions *= &[&["--features=alloc"]];
+        }
+        if self.dir == Dir::Fuzz && matches!(self.task, Task::Clippy | Task::Build) {
+            let mut instruction = instructions.0[0].clone();
+            instructions.0[0].args.splice(0 .. 0, ["--lib", "--examples"].map(|x| x.to_string()));
+            instruction.env.push(("RUSTFLAGS".to_string(), "--cfg=fuzzing".to_string()));
+            instructions += instruction;
         }
         if self.dir == Dir::Bin && matches!(self.task, Task::Test | Task::Bench) {
             instructions = Instructions::default();
