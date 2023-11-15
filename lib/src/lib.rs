@@ -1348,12 +1348,17 @@ impl Encoding {
 
     /// Writes the encoding of `input` to `output` using a temporary `buffer`
     ///
+    /// # Panics
+    ///
+    /// Panics if the buffer is shorter than 510 bytes.
+    ///
     /// # Errors
     ///
     /// Returns an error when writing to the output fails.
     pub fn encode_write_buffer(
         &self, input: &[u8], output: &mut impl core::fmt::Write, buffer: &mut [u8],
     ) -> core::fmt::Result {
+        assert!(510 <= buffer.len());
         let (enc, dec) = self.block_len();
         for input in input.chunks(buffer.len() / dec * enc) {
             let buffer = &mut buffer[.. self.encode_len(input.len())];
