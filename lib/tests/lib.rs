@@ -672,6 +672,20 @@ fn encode_append() {
 }
 
 #[test]
+fn encode_write() {
+    fn test(input: &[u8], output: &str, expected: &str) {
+        let mut output = output.to_string();
+        data_encoding::BASE64.encode_write(input, &mut output).unwrap();
+        assert_eq!(output, expected);
+    }
+    test(b"", "", "");
+    test(b"foo", "", "Zm9v");
+    test(b"foo", "bar", "barZm9v");
+    test(b"fo", "", "Zm8=");
+    test(b"fo", "ba", "baZm8=");
+}
+
+#[test]
 fn encoder() {
     #[track_caller]
     fn test(inputs: &[&[u8]], expected: &str) {

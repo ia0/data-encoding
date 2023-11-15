@@ -1238,6 +1238,15 @@ impl Encoding {
         (self.0[513] & 0x7) as usize
     }
 
+    /// Minimum number of input and output blocks when encoding
+    fn block_len(&self) -> (usize, usize) {
+        let bit = self.bit();
+        match self.wrap() {
+            Some((col, end)) => (col / dec(bit) * enc(bit), col + end.len()),
+            None => (enc(bit), dec(bit)),
+        }
+    }
+
     fn wrap(&self) -> Option<(usize, &[u8])> {
         if self.0.len() <= 515 {
             return None;
@@ -1321,6 +1330,42 @@ impl Encoding {
     #[cfg(feature = "alloc")]
     pub fn new_encoder<'a>(&'a self, output: &'a mut String) -> Encoder<'a> {
         Encoder::new(self, output)
+    }
+
+    /// Writes the encoding of `input` to `output`
+    ///
+    /// This allocates a buffer of 1024 bytes on the stack. If you want to control the buffer size
+    /// and location, use [`Encoding::encode_write_buffer()`] instead.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when writing to the output fails.
+    pub fn encode_write(
+        &self, input: &[u8], output: &mut impl core::fmt::Write,
+    ) -> core::fmt::Result {
+        self.encode_write_buffer(input, output, &mut [0; 1024])
+    }
+
+    /// Writes the encoding of `input` to `output` using a temporary `buffer`
+    ///
+    /// # Panics
+    ///
+    /// Panics if the buffer is shorter than 510 bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when writing to the output fails.
+    pub fn encode_write_buffer(
+        &self, input: &[u8], output: &mut impl core::fmt::Write, buffer: &mut [u8],
+    ) -> core::fmt::Result {
+        assert!(510 <= buffer.len());
+        let (enc, dec) = self.block_len();
+        for input in input.chunks(buffer.len() / dec * enc) {
+            let buffer = &mut buffer[.. self.encode_len(input.len())];
+            self.encode_mut(input, buffer);
+            output.write_str(unsafe { core::str::from_utf8_unchecked(buffer) })?;
+        }
+        Ok(())
     }
 
     /// Returns encoded `input`
@@ -1590,12 +1635,8 @@ impl<'a> Encoder<'a> {
 
     /// Encodes the provided input fragment and appends the result to the output
     pub fn append(&mut self, mut input: &[u8]) {
-        let bit = self.encoding.bit();
         #[allow(clippy::cast_possible_truncation)] // no truncation
-        let max = match self.encoding.wrap() {
-            Some((x, _)) => (x / dec(bit) * enc(bit)) as u8,
-            None => enc(bit) as u8,
-        };
+        let max = self.encoding.block_len().0 as u8;
         if self.length != 0 {
             let len = self.length;
             #[allow(clippy::cast_possible_truncation)] // no truncation
