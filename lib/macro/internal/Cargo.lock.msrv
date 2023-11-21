@@ -4,11 +4,11 @@ version = 3
 
 [[package]]
 name = "data-encoding"
-version = "2.4.1-git"
+version = "2.4.1"
 
 [[package]]
 name = "data-encoding-macro-internal"
-version = "0.1.12-git"
+version = "0.1.12"
 dependencies = [
  "data-encoding",
  "syn",

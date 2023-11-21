@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3
+
+### Patch
+
+- Update `data-encoding` version
+
 ## 0.3.2
 
 ### Patch
