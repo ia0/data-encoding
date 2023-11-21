@@ -1,10 +1,10 @@
 [package]
 name = "data-encoding-macro-internal"
-version = "0.1.12-git"
+version = "0.1.12"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "MIT"
 edition = "2018"
-rust-version = "1.70"
+rust-version = "1.48"
 description = "Internal library for data-encoding-macro"
 readme = "README.md"
 repository = "https://github.com/ia0/data-encoding"
@@ -14,7 +14,7 @@ include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 proc-macro = true
 
 [dependencies.data-encoding]
-version = "2.5.0-git"
+version = "2.5.0"
 path = "../.."
 default-features = false
 features = ["alloc"]

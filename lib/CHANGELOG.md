@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.5.0-git
+## 2.5.0
 
 ### Minor
 
