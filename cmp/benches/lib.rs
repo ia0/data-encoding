@@ -64,42 +64,54 @@ fn b05_encode_crate(b: &mut Bencher) {
 
 #[bench]
 fn b06_encode_base64(b: &mut Bencher) {
-    encode(b, |x| base64::encode(x));
+    use base64::Engine;
+    encode(b, |x| base64::engine::general_purpose::STANDARD.encode(x));
 }
 
 #[bench]
-fn b07_decode_mut_seq_gcc(b: &mut Bencher) {
+fn b07_encode_vb64(b: &mut Bencher) {
+    encode(b, |x| vb64::encode(x));
+}
+
+#[bench]
+fn b08_decode_mut_seq_gcc(b: &mut Bencher) {
     decode_mut(b, cmp::base64_decode_seq_gcc);
 }
 
 #[bench]
-fn b08_decode_mut_seq_clang(b: &mut Bencher) {
+fn b09_decode_mut_seq_clang(b: &mut Bencher) {
     decode_mut(b, cmp::base64_decode_seq_clang);
 }
 
 #[bench]
-fn b09_decode_mut_par_clang(b: &mut Bencher) {
+fn b10_decode_mut_par_clang(b: &mut Bencher) {
     decode_mut(b, cmp::base64_decode_par_clang);
 }
 
 #[bench]
-fn b10_decode_mut_par_gcc(b: &mut Bencher) {
+fn b11_decode_mut_par_gcc(b: &mut Bencher) {
     decode_mut(b, cmp::base64_decode_par_gcc);
 }
 
 #[bench]
-fn b11_decode_mut_crate(b: &mut Bencher) {
+fn b12_decode_mut_crate(b: &mut Bencher) {
     let base64_decode = |input: &[u8], output: &mut [u8]| BASE64.decode_mut(input, output);
     decode_mut(b, base64_decode);
 }
 
 #[bench]
-fn b12_decode_crate(b: &mut Bencher) {
+fn b13_decode_crate(b: &mut Bencher) {
     let base64_decode = |input: &[u8]| BASE64.decode(input);
     decode(b, base64_decode);
 }
 
 #[bench]
-fn b13_decode_base64(b: &mut Bencher) {
-    decode(b, |x| base64::decode(x));
+fn b14_decode_base64(b: &mut Bencher) {
+    use base64::Engine;
+    decode(b, |x| base64::engine::general_purpose::STANDARD.decode(x));
+}
+
+#[bench]
+fn b15_decode_vb64(b: &mut Bencher) {
+    decode(b, |x| vb64::decode(x));
 }
