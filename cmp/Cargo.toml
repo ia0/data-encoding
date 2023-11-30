@@ -8,9 +8,10 @@ build = "build.rs"
 publish = false
 
 [dependencies]
-base64 = { git = "https://github.com/alicemaz/rust-base64" }
+base64 = { git = "https://github.com/marshallpierce/rust-base64" }
 data-encoding = { path = "../lib" }
 libc = "0.2"
+vb64 = { git = "https://github.com/mcy/vb64" }
 
 [build-dependencies]
 cc = "1"
