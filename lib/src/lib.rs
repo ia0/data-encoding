@@ -987,7 +987,7 @@ pub struct Wrap {
 /// ### Ignore characters when decoding
 ///
 /// Ignoring characters when decoding is useful if after encoding some characters are added for
-/// convenience or any other reason (like wrapping). In that case we want to first ignore thoses
+/// convenience or any other reason (like wrapping). In that case we want to first ignore those
 /// characters before decoding.
 ///
 /// To preserve correctness, ignored characters must not contain symbols or the padding character.
