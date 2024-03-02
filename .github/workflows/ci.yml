@@ -13,7 +13,7 @@ jobs:
   ubuntu:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: rustup install nightly
       - run: rustup component add --toolchain=nightly clippy miri rustfmt
       - name: cd lib && cargo +nightly fmt -- --check
@@ -257,7 +257,7 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: rustup install nightly
       - name: cd lib && cargo +nightly build
         run: cargo +nightly build

@@ -155,6 +155,7 @@
 #![warn(unused_results)]
 #![allow(unused_unsafe)] // TODO(msrv)
 #![warn(clippy::pedantic)]
+#![allow(clippy::doc_markdown)]
 #![allow(clippy::enum_glob_use)]
 #![allow(clippy::similar_names)]
 #![allow(clippy::uninlined_format_args)] // TODO(msrv)
