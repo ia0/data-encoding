@@ -12,7 +12,7 @@ html:
 	cargo build --target wasm32-unknown-unknown --release
 	rsync -a --delete static/ html
 	wasm-bindgen --no-typescript --no-modules \
-	  target/wasm32-unknown-unknown/release/data_encoding_www.wasm \
+	  ../target/wasm32-unknown-unknown/release/data_encoding_www.wasm \
 	  --out-dir html
 
 .PHONY: clean

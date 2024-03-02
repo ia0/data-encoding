@@ -34,7 +34,7 @@ fn difference() {
     assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidLastSymbol(2, b'B'));
     let x = b"AA\nB=";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 4, kind: Length });
-    assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidLength);
+    assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidByte(2, b'\n'));
     let x = b"AAB";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Length });
     assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidPadding);
