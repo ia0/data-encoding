@@ -1,3 +1,4 @@
+use base64::prelude::{Engine, BASE64_STANDARD};
 use base64::DecodeError::*;
 use data_encoding::DecodeKind::*;
 use data_encoding::{DecodeError, BASE64};
@@ -30,23 +31,23 @@ fn encode_exact() {
 fn difference() {
     let x = b"AAB=";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 2, kind: Trailing });
-    assert_eq!(base64::decode(x).err().unwrap(), InvalidLastSymbol(2, b'B'));
+    assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidLastSymbol(2, b'B'));
     let x = b"AA\nB=";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 4, kind: Length });
-    assert_eq!(base64::decode(x).err().unwrap(), InvalidLength);
+    assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidByte(2, b'\n'));
     let x = b"AAB";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Length });
-    assert_eq!(base64::decode(x).err().unwrap(), InvalidPadding);
+    assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidPadding);
     let x = b"AAA";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Length });
-    assert_eq!(base64::decode(x).err().unwrap(), InvalidPadding);
+    assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidPadding);
     let x = b"A\rA\nB=";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 4, kind: Length });
-    assert_eq!(base64::decode(x).err().unwrap(), InvalidByte(1, b'\r'));
+    assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidByte(1, b'\r'));
     let x = b"-_\r\n";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 0, kind: Symbol });
-    assert_eq!(base64::decode(x).err().unwrap(), InvalidByte(0, b'-'));
+    assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidByte(0, b'-'));
     let x = b"AA==AA==";
     assert_eq!(BASE64.decode(x).unwrap(), vec![0, 0]);
-    assert_eq!(base64::decode(x).err().unwrap(), InvalidByte(2, b'='));
+    assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidByte(2, b'='));
 }

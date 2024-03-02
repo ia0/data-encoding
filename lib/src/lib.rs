@@ -97,7 +97,7 @@
 //! | Input      | `data-encoding` | `base64`  | GNU `base64`  |
 //! | ---------- | --------------- | --------- | ------------- |
 //! | `AAB=`     | `Trailing(2)`   | `Last(2)` | `\x00\x00`    |
-//! | `AA\nB=`   | `Length(4)`     | `Length`  | `\x00\x00`    |
+//! | `AA\nB=`   | `Length(4)`     | `Byte(2)` | `\x00\x00`    |
 //! | `AAB`      | `Length(0)`     | `Padding` | Invalid input |
 //! | `AAA`      | `Length(0)`     | `Padding` | Invalid input |
 //! | `A\rA\nB=` | `Length(4)`     | `Byte(1)` | Invalid input |
@@ -155,6 +155,7 @@
 #![warn(unused_results)]
 #![allow(unused_unsafe)] // TODO(msrv)
 #![warn(clippy::pedantic)]
+#![allow(clippy::doc_markdown)]
 #![allow(clippy::enum_glob_use)]
 #![allow(clippy::similar_names)]
 #![allow(clippy::uninlined_format_args)] // TODO(msrv)

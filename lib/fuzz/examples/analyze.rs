@@ -1,5 +1,3 @@
-#![feature(core_intrinsics)]
-
 extern crate data_encoding;
 extern crate data_encoding_fuzz;
 
@@ -77,7 +75,7 @@ impl Stat<usize> {
         let encoding = generate_specification(&mut data).encoding().unwrap();
         let spec = encoding.specification();
         let mut stat = HashMap::new();
-        assert!(stat.insert(Key::Bit, std::intrinsics::cttz(spec.symbols.len())).is_none());
+        assert!(stat.insert(Key::Bit, spec.symbols.len().trailing_zeros() as usize).is_none());
         assert!(stat
             .insert(Key::Msb, (spec.bit_order == BitOrder::MostSignificantFirst) as usize)
             .is_none());

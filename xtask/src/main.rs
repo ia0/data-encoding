@@ -1,4 +1,3 @@
-#![feature(slice_group_by)]
 #![feature(iter_intersperse)]
 
 use std::borrow::Cow;
@@ -380,14 +379,14 @@ impl Flags {
                     },
                     jobs: BTreeMap::new(),
                 };
-                for actions in actions.group_by(|x, y| x.os == y.os) {
+                for actions in actions.chunk_by(|x, y| x.os == y.os) {
                     let mut job =
                         WorkflowJob { runs_on: format!("{}-latest", actions[0].os), steps: vec![] };
                     job.steps.push(WorkflowStep {
-                        uses: Some("actions/checkout@v3".to_owned()),
+                        uses: Some("actions/checkout@v4".to_owned()),
                         ..Default::default()
                     });
-                    for actions in actions.group_by(|x, y| x.toolchain == y.toolchain) {
+                    for actions in actions.chunk_by(|x, y| x.toolchain == y.toolchain) {
                         job.steps.push(WorkflowStep {
                             run: Some(format!("rustup install {}", actions[0].toolchain)),
                             ..Default::default()
