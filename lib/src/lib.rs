@@ -202,11 +202,17 @@ macro_rules! define {
 
 define!(Bf: bool = false);
 define!(Bt: bool = true);
+#[cfg(feature = "base2")]
 define!(N1: usize = 1);
+#[cfg(feature = "base4")]
 define!(N2: usize = 2);
+#[cfg(feature = "base8")]
 define!(N3: usize = 3);
+#[cfg(feature = "base16")]
 define!(N4: usize = 4);
+#[cfg(feature = "base32")]
 define!(N5: usize = 5);
+#[cfg(feature = "base64")]
 define!(N6: usize = 6);
 
 #[derive(Copy, Clone)]
@@ -237,13 +243,19 @@ macro_rules! dispatch {
     };
     (let $var: ident: usize = $val: expr; $($body: tt)*) => {
         match $val {
+            #[cfg(feature = "base2")]
             1 => { let $var = N1; dispatch!($($body)*) },
+            #[cfg(feature = "base4")]
             2 => { let $var = N2; dispatch!($($body)*) },
+            #[cfg(feature = "base8")]
             3 => { let $var = N3; dispatch!($($body)*) },
+            #[cfg(feature = "base16")]
             4 => { let $var = N4; dispatch!($($body)*) },
+            #[cfg(feature = "base32")]
             5 => { let $var = N5; dispatch!($($body)*) },
+            #[cfg(feature = "base64")]
             6 => { let $var = N6; dispatch!($($body)*) },
-            _ => panic!(),
+            x => panic!("feature base{} is disabled", 1 << x),
         }
     };
     (let $var: ident: Option<$type: ty> = $val: expr; $($body: tt)*) => {

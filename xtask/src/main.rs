@@ -137,9 +137,16 @@ impl Action {
                 instructions *= &[&["--release"]];
             }
             let features: &[&[&str]] = match self.dir {
-                Dir::Lib => {
-                    &[&["--no-default-features", "--features=alloc"], &["--no-default-features"]]
-                }
+                Dir::Lib => &[
+                    &["--no-default-features", "--features=alloc,all"],
+                    &["--no-default-features", "--features=all"],
+                    &["--no-default-features", "--features=base2"],
+                    &["--no-default-features", "--features=base4"],
+                    &["--no-default-features", "--features=base8"],
+                    &["--no-default-features", "--features=base16"],
+                    &["--no-default-features", "--features=base32"],
+                    &["--no-default-features", "--features=base64"],
+                ],
                 _ => &[],
             };
             instructions *= features;

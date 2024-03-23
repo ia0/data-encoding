@@ -1,6 +1,6 @@
 [package]
 name = "data-encoding"
-version = "2.5.0"
+version = "2.6.0"
 authors = ["Julien Cretin <git@ia0.eu>"]
 license = "MIT"
 edition = "2018"
@@ -18,6 +18,17 @@ include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 rustdoc-args = ["--cfg=docsrs"]
 
 [features]
-default = ["std"]
+# All features are enabled by default. Because of how cargo works, if you want to disable features,
+# you have to disable all of them, then enable back those you need. For example:
+# - To disable "std", you need to enable ["alloc", "all"].
+# - To disable all bases but base32 and base64, you need to enable ["std", "base32", "base64"].
+default = ["std", "all"]
 alloc = []
 std = ["alloc"]
+all = ["base2", "base4", "base8", "base16", "base32", "base64"]
+base2 = []
+base4 = []
+base8 = []
+base16 = []
+base32 = []
+base64 = []

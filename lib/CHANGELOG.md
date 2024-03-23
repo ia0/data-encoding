@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0
+
+### Minor
+
+- Add `base2`, `base4`, `base8`, `base16`, `base32`, and `base64` features
+
 ## 2.5.0
 
 ### Minor
