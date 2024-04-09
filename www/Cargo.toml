@@ -12,7 +12,7 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-data-encoding = "2"
+data-encoding = { path = "../lib" }
 lazy_static = "1"
 wasm-bindgen = "0.2"
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0-git
+
+### Minor
+
+- Add `BASE64_MIME_PERMISSIVE` constant to ignore trailing bits (fixes #102)
+
 ## 2.5.0
 
 ### Minor
