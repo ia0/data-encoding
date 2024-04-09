@@ -2387,7 +2387,7 @@ const BASE64_NOPAD_IMPL: &[u8] = &[
 /// This encoding is a static version of:
 ///
 /// ```rust
-/// # use data_encoding::{Specification, Wrap, BASE64_MIME};
+/// # use data_encoding::{Specification, BASE64_MIME};
 /// let mut spec = Specification::new();
 /// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 /// spec.padding = Some('=');
@@ -2429,12 +2429,12 @@ const BASE64_MIME_IMPL: &[u8] = &[
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 61, 30, 76, 13, 10,
 ];
 
-/// Permissive MIME base64 encoding, it is like BASE64_MIME but allows trailing bits
+/// MIME base64 encoding without trailing bits check
 ///
 /// This encoding is a static version of:
 ///
 /// ```rust
-/// # use data_encoding::{Specification, Wrap, BASE64_MIME_PERMISSIVE};
+/// # use data_encoding::{Specification, BASE64_MIME_PERMISSIVE};
 /// let mut spec = Specification::new();
 /// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 /// spec.padding = Some('=');
