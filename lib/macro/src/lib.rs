@@ -247,6 +247,14 @@ make! {
     wrap_separator: "\r\n",
 }
 make! {
+    base64_mime_permissive base64_mime_permissive_array = BASE64_MIME_PERMISSIVE;
+    symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+    padding: '=',
+    wrap_width: 76,
+    wrap_separator: "\r\n",
+    check_trailing_bits: false,
+}
+make! {
     base64url base64url_array = BASE64URL;
     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
     padding: '=',

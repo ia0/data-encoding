@@ -63,6 +63,7 @@ lazy_static! {
         add!(BASE64URL);
         add!(BASE64URL_NOPAD);
         add!(BASE64_MIME);
+        add!(BASE64_MIME_PERMISSIVE);
         add!(BASE64_NOPAD);
         add!(HEXLOWER);
         add!(HEXLOWER_PERMISSIVE);

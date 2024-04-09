@@ -412,6 +412,7 @@ fn round_trip() {
     test(data_encoding::BASE64);
     test(data_encoding::BASE64_NOPAD);
     test(data_encoding::BASE64_MIME);
+    test(data_encoding::BASE64_MIME_PERMISSIVE);
     test(data_encoding::BASE64URL);
     test(data_encoding::BASE64URL_NOPAD);
 }
