@@ -29,3 +29,10 @@ name = "encode_write"
 path = "fuzz_targets/encode_write.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "v3-preview"
+path = "fuzz_targets/v3-preview.rs"
+test = false
+doc = false
+required-features = ["data-encoding/v3-preview"]
