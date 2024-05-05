@@ -1,5 +1,3 @@
-extern crate data_encoding;
-
 use data_encoding::{DecodePartial, Encoding, Specification};
 
 pub fn generate_encoding(data: &mut &[u8]) -> Encoding {

@@ -184,6 +184,9 @@ macro_rules! check {
     };
 }
 
+#[cfg(feature = "v3-preview")]
+pub mod v3_preview;
+
 trait Static<T: Copy>: Copy {
     fn val(self) -> T;
 }
@@ -255,12 +258,12 @@ macro_rules! dispatch {
     ($body: expr) => { $body };
 }
 
-unsafe fn chunk_unchecked(x: &[u8], n: usize, i: usize) -> &[u8] {
+unsafe fn chunk_unchecked<T>(x: &[T], n: usize, i: usize) -> &[T] {
     debug_assert!((i + 1) * n <= x.len());
     unsafe { core::slice::from_raw_parts(x.as_ptr().add(n * i), n) }
 }
 
-unsafe fn chunk_mut_unchecked(x: &mut [u8], n: usize, i: usize) -> &mut [u8] {
+unsafe fn chunk_mut_unchecked<T>(x: &mut [T], n: usize, i: usize) -> &mut [T] {
     debug_assert!((i + 1) * n <= x.len());
     unsafe { core::slice::from_raw_parts_mut(x.as_mut_ptr().add(n * i), n) }
 }
@@ -273,6 +276,7 @@ fn floor(x: usize, m: usize) -> usize {
     x / m * m
 }
 
+#[inline]
 fn vectorize<F: FnMut(usize)>(n: usize, bs: usize, mut f: F) {
     for k in 0 .. n / bs {
         for i in k * bs .. (k + 1) * bs {
@@ -362,6 +366,7 @@ fn order(msb: bool, n: usize, i: usize) -> usize {
     }
 }
 
+#[inline]
 fn enc(bit: usize) -> usize {
     match bit {
         1 | 2 | 4 => 1,
@@ -371,6 +376,7 @@ fn enc(bit: usize) -> usize {
     }
 }
 
+#[inline]
 fn dec(bit: usize) -> usize {
     enc(bit) * 8 / bit
 }
@@ -880,6 +886,7 @@ pub type InternalEncoding = &'static [u8];
 // - width % dec(bit) == 0
 // - for all x in separator values[x] is IGNORE
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct Encoding(#[doc(hidden)] pub InternalEncoding);
 
 /// How to translate characters when decoding

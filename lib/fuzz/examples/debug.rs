@@ -1,5 +1,3 @@
-extern crate data_encoding_fuzz;
-
 use std::io::Read;
 
 use data_encoding_fuzz::generate_specification;

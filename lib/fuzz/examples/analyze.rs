@@ -1,6 +1,3 @@
-extern crate data_encoding;
-extern crate data_encoding_fuzz;
-
 use std::collections::HashMap;
 use std::ops::AddAssign;
 
