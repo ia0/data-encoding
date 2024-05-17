@@ -3,6 +3,7 @@
 [![Latest Version][version_badge]][library]
 [![Documentation][documentation_badge]][documentation]
 [![Latest License][license_badge]][license]
+![MSRV](https://img.shields.io/crates/msrv/data-encoding.svg)
 [![Continuous Integration][ci_badge]][ci]
 [![Coverage Status][coveralls_badge]][coveralls]
 
