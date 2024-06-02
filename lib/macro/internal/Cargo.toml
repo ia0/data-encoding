@@ -20,6 +20,6 @@ default-features = false
 features = ["alloc"]
 
 [dependencies.syn]
-version = "1"
+version = "2"
 default-features = false
 features = ["parsing", "proc-macro"]
