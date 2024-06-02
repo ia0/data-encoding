@@ -1,5 +1,3 @@
-#![feature(iter_intersperse)]
-
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::ffi::OsStr;
