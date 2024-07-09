@@ -9,7 +9,7 @@
 
 #![warn(unused_results)]
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use data_encoding::{BitOrder, Encoding, Specification, Translate, Wrap};
 use proc_macro::token_stream::IntoIter;
@@ -22,8 +22,8 @@ fn parse_op(tokens: &mut IntoIter, op: char, key: &str) {
     }
 }
 
-fn parse_map(mut tokens: IntoIter) -> HashMap<String, TokenTree> {
-    let mut map = HashMap::new();
+fn parse_map(mut tokens: IntoIter) -> BTreeMap<String, TokenTree> {
+    let mut map = BTreeMap::new();
     while let Some(key) = tokens.next() {
         let key = match key {
             TokenTree::Ident(ident) => format!("{}", ident),
@@ -40,7 +40,7 @@ fn parse_map(mut tokens: IntoIter) -> HashMap<String, TokenTree> {
     map
 }
 
-fn get_string(map: &mut HashMap<String, TokenTree>, key: &str) -> String {
+fn get_string(map: &mut BTreeMap<String, TokenTree>, key: &str) -> String {
     let node = match map.remove(key) {
         None => return String::new(),
         Some(node) => node,
@@ -51,7 +51,7 @@ fn get_string(map: &mut HashMap<String, TokenTree>, key: &str) -> String {
     }
 }
 
-fn get_usize(map: &mut HashMap<String, TokenTree>, key: &str) -> usize {
+fn get_usize(map: &mut BTreeMap<String, TokenTree>, key: &str) -> usize {
     let node = match map.remove(key) {
         None => return 0,
         Some(node) => node,
@@ -66,7 +66,7 @@ fn get_usize(map: &mut HashMap<String, TokenTree>, key: &str) -> usize {
     }
 }
 
-fn get_padding(map: &mut HashMap<String, TokenTree>) -> Option<char> {
+fn get_padding(map: &mut BTreeMap<String, TokenTree>) -> Option<char> {
     let node = match map.remove("padding") {
         None => return None,
         Some(node) => node,
@@ -80,7 +80,7 @@ fn get_padding(map: &mut HashMap<String, TokenTree>) -> Option<char> {
     }
 }
 
-fn get_bool(map: &mut HashMap<String, TokenTree>, key: &str) -> Option<bool> {
+fn get_bool(map: &mut BTreeMap<String, TokenTree>, key: &str) -> Option<bool> {
     let node = match map.remove(key) {
         None => return None,
         Some(node) => node,
@@ -91,7 +91,7 @@ fn get_bool(map: &mut HashMap<String, TokenTree>, key: &str) -> Option<bool> {
     }
 }
 
-fn get_bit_order(map: &mut HashMap<String, TokenTree>) -> BitOrder {
+fn get_bit_order(map: &mut BTreeMap<String, TokenTree>) -> BitOrder {
     let node = match map.remove("bit_order") {
         None => return BitOrder::MostSignificantFirst,
         Some(node) => node,
@@ -109,11 +109,11 @@ fn get_bit_order(map: &mut HashMap<String, TokenTree>) -> BitOrder {
     }
 }
 
-fn check_present<T>(hash_map: &HashMap<String, T>, key: &str) {
+fn check_present<T>(hash_map: &BTreeMap<String, T>, key: &str) {
     assert!(hash_map.contains_key(key), "{} is required", key);
 }
 
-fn get_encoding(hash_map: &mut HashMap<String, TokenTree>) -> Encoding {
+fn get_encoding(hash_map: &mut BTreeMap<String, TokenTree>) -> Encoding {
     check_present(hash_map, "symbols");
     let spec = Specification {
         symbols: get_string(hash_map, "symbols"),
@@ -133,7 +133,7 @@ fn get_encoding(hash_map: &mut HashMap<String, TokenTree>) -> Encoding {
     spec.encoding().unwrap()
 }
 
-fn check_empty<T>(hash_map: HashMap<String, T>) {
+fn check_empty<T>(hash_map: BTreeMap<String, T>) {
     assert!(hash_map.is_empty(), "Unexpected keys {:?}", hash_map.keys());
 }
 
