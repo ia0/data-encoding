@@ -1393,9 +1393,10 @@ impl Encoding {
         unsafe { String::from_utf8_unchecked(output) }
     }
 
-    /// Returns the decoded length of an input of length `len`
+    /// Returns the maximum decoded length of an input of length `len`
     ///
-    /// See [`decode_mut`] for when to use it.
+    /// See [`decode_mut`] for when to use it. In particular, the actual decoded length might be
+    /// smaller if the actual input contains padding or ignored characters.
     ///
     /// # Errors
     ///

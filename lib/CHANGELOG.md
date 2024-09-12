@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.1-git
+
+### Patch
+
+- Improve documentation of `Encoding::decode_len()` (fixes #111)
+
 ## 2.6.0
 
 ### Minor
