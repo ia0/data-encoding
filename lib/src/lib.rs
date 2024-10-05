@@ -1631,7 +1631,7 @@ pub struct Encoder<'a> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a> Drop for Encoder<'a> {
+impl Drop for Encoder<'_> {
     fn drop(&mut self) {
         self.encoding.encode_append(&self.buffer[.. self.length as usize], self.output);
     }

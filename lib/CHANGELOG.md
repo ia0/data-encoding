@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Fix `needless-lifetimes` clippy lint
 - Improve documentation of `Encoding::decode_len()` (fixes #111)
 
 ## 2.6.0
