@@ -4,6 +4,7 @@ version = "0.3.4"
 authors = ["Julien Cretin <git@ia0.eu>"]
 license = "MIT"
 edition = "2021"
+rust-version = "1.81"
 keywords = ["base-conversion", "encoding", "base64", "base32", "hex"]
 categories = ["command-line-utilities", "encoding"]
 readme = "README.md"

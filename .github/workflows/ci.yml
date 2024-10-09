@@ -179,6 +179,21 @@ jobs:
       - name: cd lib/macro && cargo +nightly audit --deny=warnings
         run: cargo +nightly audit --deny=warnings
         working-directory: lib/macro
+      - name: cd bin && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: bin
+      - name: cd nostd && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: nostd
+      - name: cd lib/fuzz && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: lib/fuzz
+      - name: cd cmp && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: cmp
+      - name: cd www && cargo +nightly audit --deny=warnings
+        run: cargo +nightly audit --deny=warnings
+        working-directory: www
       - run: rustup install stable
       - run: cargo +stable install cargo-semver-checks
       - name: cd lib && cargo +stable build

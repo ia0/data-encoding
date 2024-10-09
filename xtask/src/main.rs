@@ -496,11 +496,6 @@ impl Actions {
                     // SemverChecks only guarantees support for stable.
                     toolchain = Toolchain::Stable;
                 }
-                // TODO(https://github.com/rustsec/rustsec/pull/1206): Remove when released.
-                if task == Task::Audit && !matches!(dir, Dir::Lib | Dir::MacroInternal | Dir::Macro)
-                {
-                    continue;
-                }
                 actions.insert(Action { os, toolchain, task, dir });
             }
         }
