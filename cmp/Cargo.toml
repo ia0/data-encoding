@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["ia0 <git@ia0.eu>"]
 license = "MIT"
 edition = "2021"
+rust-version = "1.81"
 build = "build.rs"
 publish = false
 
