@@ -438,7 +438,7 @@ fn decode_block<B: Static<usize>, M: Static<bool>>(
         x |= u64::from(y) << (bit * order(msb, dec(bit), j));
     }
     for (j, output) in output.iter_mut().enumerate() {
-        *output = (x >> (8 * order(msb, enc(bit), j)) & 0xff) as u8;
+        *output = ((x >> (8 * order(msb, enc(bit), j))) & 0xff) as u8;
     }
     Ok(())
 }

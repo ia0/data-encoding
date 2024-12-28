@@ -92,7 +92,7 @@ pub fn generate_usize(data: &mut &[u8], min: usize, max: usize) -> usize {
     };
     let mut res = 0;
     for _ in 0 .. log / 8 + 1 {
-        res = res << 8 | generate(data, 0, 255) as usize;
+        res = (res << 8) | generate(data, 0, 255) as usize;
     }
     if usize::MIN < min || max < usize::MAX {
         res = min + res % (max - min + 1);
