@@ -1377,6 +1377,22 @@ impl Encoding {
         Ok(())
     }
 
+    /// Returns an object to display the encoding of `input`
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use data_encoding::BASE64;
+    /// assert_eq!(
+    ///     format!("Payload: {}", BASE64.encode_display(b"Hello world")),
+    ///     "Payload: SGVsbG8gd29ybGQ=",
+    /// );
+    /// ```
+    #[must_use]
+    pub fn encode_display<'a>(&'a self, input: &'a [u8]) -> Display<'a> {
+        Display { encoding: self, input }
+    }
+
     /// Returns encoded `input`
     ///
     /// # Examples
@@ -1676,6 +1692,19 @@ impl<'a> Encoder<'a> {
     /// This is equivalent to dropping the encoder and required for correctness, otherwise some
     /// encoded data may be missing at the end.
     pub fn finalize(self) {}
+}
+
+/// Wraps an encoding and input for display purposes.
+#[derive(Debug)]
+pub struct Display<'a> {
+    encoding: &'a Encoding,
+    input: &'a [u8],
+}
+
+impl core::fmt::Display for Display<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.encoding.encode_write(self.input, f)
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
