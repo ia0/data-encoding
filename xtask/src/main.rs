@@ -139,12 +139,6 @@ impl Action {
                     &[&["--no-default-features", "--features=alloc"], &["--no-default-features"]];
             }
         }
-        if self.dir == Dir::Lib
-            && matches!(self.task, Task::Build | Task::Test | Task::Miri | Task::Bench)
-            && !matches!(self.toolchain, Toolchain::Msrv)
-        {
-            instructions *= &[&["--features=v3-preview"]];
-        }
         if self.dir == Dir::Nostd && self.task == Task::Test {
             instructions = Instructions::default();
             instructions += Instruction {

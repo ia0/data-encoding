@@ -14,5 +14,5 @@ description = "Macros for data-encoding"
 include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 
 [dependencies]
-data-encoding = { version = "2.6.1-git", path = "..", default-features = false }
+data-encoding = { version = "2.7.0-git", path = "..", default-features = false }
 data-encoding-macro-internal = { version = "0.1.14-git", path = "internal" }

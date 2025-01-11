@@ -1,41 +1,13 @@
-#[cfg(feature = "v3-preview")]
-use core::convert::TryFrom as _;
-
-#[cfg(not(feature = "v3-preview"))]
-use data_encoding as constants;
-#[cfg(feature = "v3-preview")]
-use data_encoding::v3_preview as constants;
-#[cfg(feature = "v3-preview")]
-use data_encoding::v3_preview::{
-    Bit1, Bit2, Bit3, Bit4, Bit6, BitWidth, Bool, Encoding, False, True,
-};
 use data_encoding::DecodeKind::*;
-#[cfg(not(feature = "v3-preview"))]
-use data_encoding::Encoding;
-use data_encoding::{DecodeError, Specification};
-
-macro_rules! split_v3 {
-    (fn $name:ident[$($g:tt)*]($base:ident: &Encoding[$($i:tt)*]
-                    $(, $x:ident: $t:ty)* $(,)?) $(-> $r:ty)? { $($body:tt)* }
-    ) => {
-        #[cfg(feature = "v3-preview")]
-        fn $name<$($g)*>($base: &Encoding<$($i)*> $(, $x: $t)*) $(-> $r)? { $($body)* }
-        #[cfg(not(feature = "v3-preview"))]
-        fn $name($base: &Encoding $(, $x: $t)*) $(-> $r)? { $($body)* }
-    };
-}
+use data_encoding::{DecodeError, Encoding, Specification};
 
 macro_rules! test {
     (fn $t: ident; $($s: stmt);*;) => {
         #[test]
         fn $t() {
-            split_v3! {
-                fn test[Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool](
-                    b: &Encoding[Bit, Msb, Pad, Wrap, Ignore], x: &[u8], y: &[u8],
-                ) {
-                    assert_eq!(&b.encode(x).into_bytes() as &[u8], y);
-                    assert_eq!(&b.decode(y).unwrap() as &[u8], x);
-                }
+            fn test(b: &Encoding, x: &[u8], y: &[u8]) {
+                assert_eq!(&b.encode(x).into_bytes() as &[u8], y);
+                assert_eq!(&b.decode(y).unwrap() as &[u8], x);
             }
             $($s)*
         }
@@ -51,8 +23,6 @@ test! {
     let mut s = Specification::new();
     s.symbols.push_str("01");
     let b = s.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let b = Encoding::<Bit1, True, False, False, False>::try_from(b).unwrap();
     test(&b, b"", b"");
     test(&b, b"f", b"01100110");
     test(&b, b"fo", b"0110011001101111");
@@ -64,8 +34,6 @@ test! {
     let mut s = Specification::new();
     s.symbols.push_str("0123");
     let b = s.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let b = Encoding::<Bit2, True, False, False, False>::try_from(b).unwrap();
     test(&b, b"", b"");
     test(&b, b"f", b"1212");
     test(&b, b"fo", b"12121233");
@@ -81,8 +49,6 @@ test! {
     s.symbols.push_str("01234567");
     s.padding = Some('=');
     let b = s.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let b = Encoding::<Bit3, True, True, False, False>::try_from(b).unwrap();
     test(&b, b"", b"");
     test(&b, b"f", b"314=====");
     test(&b, b"fo", b"314674==");
@@ -94,7 +60,7 @@ test! {
 
 test! {
     fn hexlower;
-    let b = &constants::HEXLOWER;
+    let b = &data_encoding::HEXLOWER;
     test(b, b"", b"");
     test(b, b"f", b"66");
     test(b, b"fo", b"666f");
@@ -102,14 +68,14 @@ test! {
     test(b, b"foob", b"666f6f62");
     test(b, b"fooba", b"666f6f6261");
     test(b, b"foobar", b"666f6f626172");
-    assert_eq!(constants::HEXLOWER.decode(b"6f").unwrap(), b"o");
-    assert!(constants::HEXLOWER.decode(b"6F").is_err());
-    assert_eq!(constants::HEXLOWER_PERMISSIVE.decode(b"6F").unwrap(), b"o");
+    assert_eq!(data_encoding::HEXLOWER.decode(b"6f").unwrap(), b"o");
+    assert!(data_encoding::HEXLOWER.decode(b"6F").is_err());
+    assert_eq!(data_encoding::HEXLOWER_PERMISSIVE.decode(b"6F").unwrap(), b"o");
 }
 
 test! {
     fn hexupper;
-    let b = &constants::HEXUPPER;
+    let b = &data_encoding::HEXUPPER;
     test(b, b"", b"");
     test(b, b"f", b"66");
     test(b, b"fo", b"666F");
@@ -117,14 +83,14 @@ test! {
     test(b, b"foob", b"666F6F62");
     test(b, b"fooba", b"666F6F6261");
     test(b, b"foobar", b"666F6F626172");
-    assert_eq!(constants::HEXUPPER.decode(b"6F").unwrap(), b"o");
-    assert!(constants::HEXUPPER.decode(b"6f").is_err());
-    assert_eq!(constants::HEXUPPER_PERMISSIVE.decode(b"6f").unwrap(), b"o");
+    assert_eq!(data_encoding::HEXUPPER.decode(b"6F").unwrap(), b"o");
+    assert!(data_encoding::HEXUPPER.decode(b"6f").is_err());
+    assert_eq!(data_encoding::HEXUPPER_PERMISSIVE.decode(b"6f").unwrap(), b"o");
 }
 
 test! {
     fn base32;
-    let b = &constants::BASE32;
+    let b = &data_encoding::BASE32;
     test(b, b"", b"");
     test(b, b"f", b"MY======");
     test(b, b"fo", b"MZXQ====");
@@ -136,7 +102,7 @@ test! {
 
 test! {
     fn base32hex;
-    let b = &constants::BASE32HEX;
+    let b = &data_encoding::BASE32HEX;
     test(b, b"", b"");
     test(b, b"f", b"CO======");
     test(b, b"fo", b"CPNG====");
@@ -148,7 +114,7 @@ test! {
 
 test! {
     fn base32_dnscurve;
-    let b = &constants::BASE32_DNSCURVE;
+    let b = &data_encoding::BASE32_DNSCURVE;
     test(b, &[0x64, 0x88], b"4321");
     test(b, b"f", b"63");
     test(b, b"fo", b"6vv0");
@@ -168,7 +134,7 @@ test! {
 
 test! {
     fn base64;
-    let b = &constants::BASE64;
+    let b = &data_encoding::BASE64;
     test(b, b"", b"");
     test(b, b"f", b"Zg==");
     test(b, b"fo", b"Zm8=");
@@ -181,7 +147,7 @@ test! {
 
 test! {
     fn base64url;
-    let b = &constants::BASE64URL;
+    let b = &data_encoding::BASE64URL;
     test(b, b"", b"");
     test(b, b"f", b"Zg==");
     test(b, b"fo", b"Zm8=");
@@ -194,7 +160,7 @@ test! {
 
 test! {
     fn base64_no_pad;
-    let b = &constants::BASE64_NOPAD;
+    let b = &data_encoding::BASE64_NOPAD;
     test(&b, b"", b"");
     test(&b, b"f", b"Zg");
     test(&b, b"fo", b"Zm8");
@@ -206,7 +172,7 @@ test! {
 
 #[test]
 fn base32_error() {
-    let b = &constants::BASE32;
+    let b = &data_encoding::BASE32;
     assert_eq!(b.decode(b"ABC").err().unwrap(), DecodeError { position: 0, kind: Length });
     assert_eq!(b.decode(b"========").err().unwrap(), DecodeError { position: 0, kind: Padding });
     assert_eq!(b.decode(b"MB======").err().unwrap(), DecodeError { position: 1, kind: Trailing });
@@ -217,7 +183,7 @@ fn base32_error() {
 
 #[test]
 fn base64_error() {
-    let b = &constants::BASE64;
+    let b = &data_encoding::BASE64;
     assert_eq!(b.decode(b"====").err().unwrap(), DecodeError { position: 0, kind: Padding });
     assert_eq!(b.decode(b"====").err().unwrap(), DecodeError { position: 0, kind: Padding });
     assert_eq!(
@@ -250,7 +216,7 @@ fn base64_error() {
 
 #[test]
 fn base64_nopad_error() {
-    let b = &constants::BASE64_NOPAD;
+    let b = &data_encoding::BASE64_NOPAD;
     assert_eq!(b.decode(b"Z").err().unwrap(), DecodeError { position: 0, kind: Length });
     assert_eq!(b.decode(b"Zh").err().unwrap(), DecodeError { position: 1, kind: Trailing });
     assert_eq!(b.decode(b"Zg==").err().unwrap(), DecodeError { position: 2, kind: Symbol });
@@ -267,10 +233,6 @@ fn bit_order() {
     let msb = spec.encoding().unwrap();
     spec.bit_order = data_encoding::BitOrder::LeastSignificantFirst;
     let lsb = spec.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let msb = Encoding::<Bit4, True, False, False, False>::try_from(msb).unwrap();
-    #[cfg(feature = "v3-preview")]
-    let lsb = Encoding::<Bit4, False, False, False, False>::try_from(lsb).unwrap();
     assert_eq!(msb.encode(b"ABC"), "414243");
     assert_eq!(lsb.encode(b"ABC"), "142434");
 }
@@ -282,10 +244,6 @@ fn trailing_bits() {
     let strict = spec.encoding().unwrap();
     spec.check_trailing_bits = false;
     let permissive = spec.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let strict = Encoding::<Bit3, True, False, False, False>::try_from(strict).unwrap();
-    #[cfg(feature = "v3-preview")]
-    let permissive = Encoding::<Bit3, True, False, False, False>::try_from(permissive).unwrap();
     assert!(strict.decode(b"001").is_err());
     assert!(permissive.decode(b"001").is_ok());
 }
@@ -304,17 +262,13 @@ fn ignore() {
         }
         j
     }
-    split_v3! {
-        fn check[Pad: Bool](
-            base: &Encoding[Bit3, True, Pad, False, True], buf: &[u8], cmp: &[u8], shift: &[usize]
-        ) {
-            let res = base.decode(buf);
-            match base.decode(cmp) {
-                Ok(x) => assert_eq!(Ok(x), res),
-                Err(mut x) => {
-                    x.position = shift[x.position];
-                    assert_eq!(Err(x), res);
-                }
+    fn check(base: &Encoding, buf: &[u8], cmp: &[u8], shift: &[usize]) {
+        let res = base.decode(buf);
+        match base.decode(cmp) {
+            Ok(x) => assert_eq!(Ok(x), res),
+            Err(mut x) => {
+                x.position = shift[x.position];
+                assert_eq!(Err(x), res);
             }
         }
     }
@@ -331,21 +285,17 @@ fn ignore() {
         }
         false
     }
-    split_v3! {
-        fn forall[Pad: Bool](
-            base: &Encoding[Bit3, True, Pad, False, True], chars: &[u8], max: usize
-        ) {
-            let mut idx = vec![0; max];
-            let mut buf = vec![0; max];
-            let mut cmp = vec![0; max];
-            let mut shift = vec![0; max];
-            for size in 0 .. (max + 1) {
-                loop {
-                    let len = skip(&buf[.. size], &mut cmp, &mut shift);
-                    check(base, &buf[.. size], &cmp[.. len], &shift[.. len]);
-                    if !incr(chars, &mut idx[.. size], &mut buf[.. size]) {
-                        break;
-                    }
+    fn forall(base: &Encoding, chars: &[u8], max: usize) {
+        let mut idx = vec![0; max];
+        let mut buf = vec![0; max];
+        let mut cmp = vec![0; max];
+        let mut shift = vec![0; max];
+        for size in 0 .. (max + 1) {
+            loop {
+                let len = skip(&buf[.. size], &mut cmp, &mut shift);
+                check(base, &buf[.. size], &cmp[.. len], &shift[.. len]);
+                if !incr(chars, &mut idx[.. size], &mut buf[.. size]) {
+                    break;
                 }
             }
         }
@@ -356,10 +306,6 @@ fn ignore() {
     let no_pad = spec.encoding().unwrap();
     spec.padding = Some('=');
     let padded = spec.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let no_pad = Encoding::<Bit3, True, False, False, True>::try_from(no_pad).unwrap();
-    #[cfg(feature = "v3-preview")]
-    let padded = Encoding::<Bit3, True, True, False, True>::try_from(padded).unwrap();
     #[cfg(miri)]
     const MAX: [usize; 4] = [4, 3, 3, 2];
     #[cfg(all(not(miri), debug_assertions))]
@@ -388,8 +334,6 @@ fn translate() {
     spec.translate.from.push_str("-_O");
     spec.translate.to.push_str("=.0");
     let base = spec.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let base = Encoding::<Bit3, True, True, False, True>::try_from(base).unwrap();
     assert_eq!(base.decode(b" O OO= =  = == ").unwrap(), [0]);
     assert_eq!(base.decode(b"O__OO__--_--.-").unwrap(), [0]);
     assert_eq!(base.decode(b"_____.  . . ...   ..").unwrap(), []);
@@ -446,7 +390,6 @@ fn specification() {
     assert_eq!(errmsg(spec.encoding()), "invalid wrap width or separator length");
 }
 
-#[cfg(not(feature = "v3-preview"))]
 #[test]
 fn round_trip() {
     let test = |e: Encoding| {
@@ -496,7 +439,7 @@ fn is_canonical() {
 
 #[test]
 fn decode_error() {
-    let b = &constants::BASE64;
+    let b = &data_encoding::BASE64;
     assert_eq!(errmsg(b.decode(b"A")), "invalid length at 0");
     assert_eq!(errmsg(b.decode(b"A.AA")), "invalid symbol at 1");
     assert_eq!(errmsg(b.decode(b"AAB=")), "non-zero trailing bits at 2");
@@ -505,7 +448,7 @@ fn decode_error() {
 
 #[test]
 fn encode_base() {
-    let b = &constants::BASE64_NOPAD;
+    let b = &data_encoding::BASE64_NOPAD;
     assert_eq!(b.encode(b""), "");
     assert_eq!(b.encode(b"h"), "aA");
     assert_eq!(b.encode(b"he"), "aGU");
@@ -516,7 +459,7 @@ fn encode_base() {
 
 #[test]
 fn decode_base() {
-    let b = &constants::BASE64_NOPAD;
+    let b = &data_encoding::BASE64_NOPAD;
     let err_length = |pos| Err(DecodeError { position: pos, kind: Length });
     let err_symbol = |pos| Err(DecodeError { position: pos, kind: Symbol });
     let err_trailing = |pos| Err(DecodeError { position: pos, kind: Trailing });
@@ -544,7 +487,7 @@ fn decode_base() {
 
 #[test]
 fn encode_pad() {
-    let b = &constants::BASE64;
+    let b = &data_encoding::BASE64;
     assert_eq!(b.encode(b""), "");
     assert_eq!(b.encode(b"h"), "aA==");
     assert_eq!(b.encode(b"he"), "aGU=");
@@ -555,7 +498,7 @@ fn encode_pad() {
 
 #[test]
 fn decode_pad() {
-    let b = &constants::BASE64;
+    let b = &data_encoding::BASE64;
     let err_length = |pos| Err(DecodeError { position: pos, kind: Length });
     let err_symbol = |pos| Err(DecodeError { position: pos, kind: Symbol });
     let err_trailing = |pos| Err(DecodeError { position: pos, kind: Trailing });
@@ -605,8 +548,6 @@ fn encode_wrap() {
     spec.wrap.width = 4;
     spec.wrap.separator.push_str(":");
     let b = spec.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let b = Encoding::<Bit6, True, False, True, True>::try_from(b).unwrap();
     assert_eq!(b.encode(b""), "");
     assert_eq!(b.encode(b"h"), "aA:");
     assert_eq!(b.encode(b"he"), "aGU:");
@@ -620,8 +561,6 @@ fn decode_wrap() {
     let mut spec = data_encoding::BASE64_NOPAD.specification();
     spec.ignore.push_str(":");
     let b = spec.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let b = Encoding::<Bit6, True, False, False, True>::try_from(b).unwrap();
     let err_length = |pos| Err(DecodeError { position: pos, kind: Length });
     let err_symbol = |pos| Err(DecodeError { position: pos, kind: Symbol });
     let err_trailing = |pos| Err(DecodeError { position: pos, kind: Trailing });
@@ -653,8 +592,6 @@ fn encode_pad_wrap() {
     spec.wrap.width = 4;
     spec.wrap.separator.push_str(":");
     let b = spec.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let b = Encoding::<Bit6, True, True, True, True>::try_from(b).unwrap();
     assert_eq!(b.encode(b""), "");
     assert_eq!(b.encode(b"h"), "aA==:");
     assert_eq!(b.encode(b"he"), "aGU=:");
@@ -668,8 +605,6 @@ fn decode_pad_wrap() {
     let mut spec = data_encoding::BASE64.specification();
     spec.ignore.push_str(":");
     let b = spec.encoding().unwrap();
-    #[cfg(feature = "v3-preview")]
-    let b = Encoding::<Bit6, True, True, False, True>::try_from(b).unwrap();
     let err_length = |pos| Err(DecodeError { position: pos, kind: Length });
     let err_symbol = |pos| Err(DecodeError { position: pos, kind: Symbol });
     let err_trailing = |pos| Err(DecodeError { position: pos, kind: Trailing });
@@ -717,7 +652,7 @@ fn decode_pad_wrap() {
 fn encode_append() {
     fn test(input: &[u8], output: &str, expected: &str) {
         let mut output = output.to_string();
-        constants::BASE64.encode_append(input, &mut output);
+        data_encoding::BASE64.encode_append(input, &mut output);
         assert_eq!(output, expected);
     }
     test(b"", "", "");
@@ -731,7 +666,7 @@ fn encode_append() {
 fn encode_write() {
     fn test(input: &[u8], output: &str, expected: &str) {
         let mut output = output.to_string();
-        constants::BASE64.encode_write(input, &mut output).unwrap();
+        data_encoding::BASE64.encode_write(input, &mut output).unwrap();
         assert_eq!(output, expected);
     }
     test(b"", "", "");
@@ -746,9 +681,6 @@ fn encoder() {
     #[track_caller]
     fn test(inputs: &[&[u8]], expected: &str) {
         let mut output = String::new();
-        #[cfg(feature = "v3-preview")]
-        use constants::BASE64;
-        #[cfg(not(feature = "v3-preview"))]
         static BASE64: Encoding = data_encoding::BASE64;
         let mut encoder = BASE64.new_encoder(&mut output);
         for input in inputs {

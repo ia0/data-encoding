@@ -1,6 +1,6 @@
 [package]
 name = "data-encoding"
-version = "2.6.1-git"
+version = "2.7.0-git"
 authors = ["Julien Cretin <git@ia0.eu>"]
 license = "MIT"
 edition = "2018"
@@ -21,4 +21,3 @@ rustdoc-args = ["--cfg=docsrs"]
 default = ["std"]
 alloc = []
 std = ["alloc"]
-v3-preview = []
