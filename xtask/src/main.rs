@@ -139,12 +139,6 @@ impl Action {
                     &[&["--no-default-features", "--features=alloc"], &["--no-default-features"]];
             }
         }
-        if self.dir == Dir::Lib
-            && matches!(self.task, Task::Build | Task::Test | Task::Miri | Task::Bench)
-            && !matches!(self.toolchain, Toolchain::Msrv)
-        {
-            instructions *= &[&["--features=v3-preview"]];
-        }
         if self.dir == Dir::Nostd && self.task == Task::Test {
             instructions = Instructions::default();
             instructions += Instruction {
@@ -412,14 +406,16 @@ impl Flags {
                             }
                             job.steps.push(WorkflowStep { run: Some(run), ..Default::default() });
                         }
-                        if actions.iter().find(|x| matches!(x.task, Task::SemverChecks)).is_some() {
-                            job.steps.push(WorkflowStep {
-                                run: Some(format!(
-                                    "cargo +{} install cargo-semver-checks",
-                                    actions[0].toolchain
-                                )),
-                                ..Default::default()
-                            });
+                        for task in [Task::Audit, Task::SemverChecks] {
+                            if actions.iter().any(|x| x.task == task) {
+                                job.steps.push(WorkflowStep {
+                                    run: Some(format!(
+                                        "cargo +{} install cargo-{task} --locked",
+                                        actions[0].toolchain
+                                    )),
+                                    ..Default::default()
+                                });
+                            }
                         }
                         for action in actions {
                             for instruction in action.interpret().0 {

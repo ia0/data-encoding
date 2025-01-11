@@ -184,9 +184,6 @@ macro_rules! check {
     };
 }
 
-#[cfg(feature = "v3-preview")]
-pub mod v3_preview;
-
 trait Static<T: Copy>: Copy {
     fn val(self) -> T;
 }

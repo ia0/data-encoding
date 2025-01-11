@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: rustup install nightly
       - run: rustup component add --toolchain=nightly clippy miri rustfmt
+      - run: cargo +nightly install cargo-audit --locked
       - name: cd lib && cargo +nightly fmt -- --check
         run: cargo +nightly fmt -- --check
         working-directory: lib
@@ -76,24 +77,6 @@ jobs:
       - name: cd lib && cargo +nightly build --release --no-default-features
         run: cargo +nightly build --release --no-default-features
         working-directory: lib
-      - name: cd lib && cargo +nightly build --features=v3-preview
-        run: cargo +nightly build --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release --features=v3-preview
-        run: cargo +nightly build --release --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --no-default-features --features=alloc --features=v3-preview
-        run: cargo +nightly build --no-default-features --features=alloc --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release --no-default-features --features=alloc --features=v3-preview
-        run: cargo +nightly build --release --no-default-features --features=alloc --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --no-default-features --features=v3-preview
-        run: cargo +nightly build --no-default-features --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release --no-default-features --features=v3-preview
-        run: cargo +nightly build --release --no-default-features --features=v3-preview
-        working-directory: lib
       - name: cd lib/macro/internal && cargo +nightly build
         run: cargo +nightly build
         working-directory: lib/macro/internal
@@ -127,9 +110,6 @@ jobs:
       - name: cd lib && cargo +nightly test
         run: cargo +nightly test
         working-directory: lib
-      - name: cd lib && cargo +nightly test --features=v3-preview
-        run: cargo +nightly test --features=v3-preview
-        working-directory: lib
       - name: cd lib/macro/internal && cargo +nightly test
         run: cargo +nightly test
         working-directory: lib/macro/internal
@@ -160,14 +140,8 @@ jobs:
       - name: cd lib && cargo +nightly miri test
         run: cargo +nightly miri test
         working-directory: lib
-      - name: cd lib && cargo +nightly miri test --features=v3-preview
-        run: cargo +nightly miri test --features=v3-preview
-        working-directory: lib
       - name: cd lib && cargo +nightly bench
         run: cargo +nightly bench
-        working-directory: lib
-      - name: cd lib && cargo +nightly bench --features=v3-preview
-        run: cargo +nightly bench --features=v3-preview
         working-directory: lib
       - run: cd bin && ./bench.sh +nightly
       - name: cd lib && cargo +nightly audit --deny=warnings
@@ -195,7 +169,7 @@ jobs:
         run: cargo +nightly audit --deny=warnings
         working-directory: www
       - run: rustup install stable
-      - run: cargo +stable install cargo-semver-checks
+      - run: cargo +stable install cargo-semver-checks --locked
       - name: cd lib && cargo +stable build
         run: cargo +stable build
         working-directory: lib
@@ -213,24 +187,6 @@ jobs:
         working-directory: lib
       - name: cd lib && cargo +stable build --release --no-default-features
         run: cargo +stable build --release --no-default-features
-        working-directory: lib
-      - name: cd lib && cargo +stable build --features=v3-preview
-        run: cargo +stable build --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release --features=v3-preview
-        run: cargo +stable build --release --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +stable build --no-default-features --features=alloc --features=v3-preview
-        run: cargo +stable build --no-default-features --features=alloc --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release --no-default-features --features=alloc --features=v3-preview
-        run: cargo +stable build --release --no-default-features --features=alloc --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +stable build --no-default-features --features=v3-preview
-        run: cargo +stable build --no-default-features --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release --no-default-features --features=v3-preview
-        run: cargo +stable build --release --no-default-features --features=v3-preview
         working-directory: lib
       - name: cd lib/macro/internal && cargo +stable build
         run: cargo +stable build
@@ -322,24 +278,6 @@ jobs:
       - name: cd lib && cargo +nightly build --release --no-default-features
         run: cargo +nightly build --release --no-default-features
         working-directory: lib
-      - name: cd lib && cargo +nightly build --features=v3-preview
-        run: cargo +nightly build --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release --features=v3-preview
-        run: cargo +nightly build --release --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --no-default-features --features=alloc --features=v3-preview
-        run: cargo +nightly build --no-default-features --features=alloc --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release --no-default-features --features=alloc --features=v3-preview
-        run: cargo +nightly build --release --no-default-features --features=alloc --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --no-default-features --features=v3-preview
-        run: cargo +nightly build --no-default-features --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release --no-default-features --features=v3-preview
-        run: cargo +nightly build --release --no-default-features --features=v3-preview
-        working-directory: lib
       - name: cd lib/macro/internal && cargo +nightly build
         run: cargo +nightly build
         working-directory: lib/macro/internal
@@ -376,24 +314,6 @@ jobs:
         working-directory: lib
       - name: cd lib && cargo +stable build --release --no-default-features
         run: cargo +stable build --release --no-default-features
-        working-directory: lib
-      - name: cd lib && cargo +stable build --features=v3-preview
-        run: cargo +stable build --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release --features=v3-preview
-        run: cargo +stable build --release --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +stable build --no-default-features --features=alloc --features=v3-preview
-        run: cargo +stable build --no-default-features --features=alloc --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release --no-default-features --features=alloc --features=v3-preview
-        run: cargo +stable build --release --no-default-features --features=alloc --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +stable build --no-default-features --features=v3-preview
-        run: cargo +stable build --no-default-features --features=v3-preview
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release --no-default-features --features=v3-preview
-        run: cargo +stable build --release --no-default-features --features=v3-preview
         working-directory: lib
       - name: cd lib/macro/internal && cargo +stable build
         run: cargo +stable build

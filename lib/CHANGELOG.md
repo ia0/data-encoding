@@ -1,6 +1,10 @@
 # Changelog
 
-## 2.6.1-git
+## 2.7.0-git
+
+### Minor
+
+- Add `Encoding::encode_display()` for easier formatting (fixes #118)
 
 ### Patch
 
