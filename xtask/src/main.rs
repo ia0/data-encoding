@@ -406,14 +406,16 @@ impl Flags {
                             }
                             job.steps.push(WorkflowStep { run: Some(run), ..Default::default() });
                         }
-                        if actions.iter().find(|x| matches!(x.task, Task::SemverChecks)).is_some() {
-                            job.steps.push(WorkflowStep {
-                                run: Some(format!(
-                                    "cargo +{} install cargo-semver-checks",
-                                    actions[0].toolchain
-                                )),
-                                ..Default::default()
-                            });
+                        for task in [Task::Audit, Task::SemverChecks] {
+                            if actions.iter().any(|x| x.task == task) {
+                                job.steps.push(WorkflowStep {
+                                    run: Some(format!(
+                                        "cargo +{} install cargo-{task} --locked",
+                                        actions[0].toolchain
+                                    )),
+                                    ..Default::default()
+                                });
+                            }
                         }
                         for action in actions {
                             for instruction in action.interpret().0 {

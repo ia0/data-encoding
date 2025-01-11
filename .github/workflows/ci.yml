@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: rustup install nightly
       - run: rustup component add --toolchain=nightly clippy miri rustfmt
+      - run: cargo +nightly install cargo-audit --locked
       - name: cd lib && cargo +nightly fmt -- --check
         run: cargo +nightly fmt -- --check
         working-directory: lib
@@ -168,7 +169,7 @@ jobs:
         run: cargo +nightly audit --deny=warnings
         working-directory: www
       - run: rustup install stable
-      - run: cargo +stable install cargo-semver-checks
+      - run: cargo +stable install cargo-semver-checks --locked
       - name: cd lib && cargo +stable build
         run: cargo +stable build
         working-directory: lib
