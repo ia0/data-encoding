@@ -1,6 +1,6 @@
 [package]
 name = "data-encoding-bin"
-version = "0.3.4"
+version = "0.3.5-git"
 authors = ["Julien Cretin <git@ia0.eu>"]
 license = "MIT"
 edition = "2021"

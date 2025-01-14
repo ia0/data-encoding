@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.5-git
+
+### Minor
+
+- Specify MSRV of 1.81
+
+### Patch
+
+- Update `data-encoding` version
+
+## 0.3.4
+
+### Patch
+
+- Update `data-encoding` version
+
 ## 0.3.3
 
 ### Patch
