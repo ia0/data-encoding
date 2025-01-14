@@ -1,378 +1,383 @@
----
 name: Continuous Integration
-"on":
+on:
   push:
     branches:
-      - main
+    - main
   pull_request:
     branches:
-      - main
+    - main
   schedule:
-    - cron: 38 11 * * 6
+  - cron: 38 11 * * 6
 jobs:
   ubuntu:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: rustup install nightly
-      - run: rustup component add --toolchain=nightly clippy miri rustfmt
-      - run: cargo +nightly install cargo-audit --locked
-      - name: cd lib && cargo +nightly fmt -- --check
-        run: cargo +nightly fmt -- --check
-        working-directory: lib
-      - name: cd lib/macro/internal && cargo +nightly fmt -- --check
-        run: cargo +nightly fmt -- --check
-        working-directory: lib/macro/internal
-      - name: cd lib/macro && cargo +nightly fmt -- --check
-        run: cargo +nightly fmt -- --check
-        working-directory: lib/macro
-      - name: cd bin && cargo +nightly fmt -- --check
-        run: cargo +nightly fmt -- --check
-        working-directory: bin
-      - name: cd nostd && cargo +nightly fmt -- --check
-        run: cargo +nightly fmt -- --check
-        working-directory: nostd
-      - name: cd lib/fuzz && cargo +nightly fmt -- --check
-        run: cargo +nightly fmt -- --check
-        working-directory: lib/fuzz
-      - name: cd cmp && cargo +nightly fmt -- --check
-        run: cargo +nightly fmt -- --check
-        working-directory: cmp
-      - name: cd www && cargo +nightly fmt -- --check
-        run: cargo +nightly fmt -- --check
-        working-directory: www
-      - name: cd lib && cargo +nightly clippy -- --deny=warnings
-        run: cargo +nightly clippy -- --deny=warnings
-        working-directory: lib
-      - name: cd lib/macro/internal && cargo +nightly clippy -- --deny=warnings
-        run: cargo +nightly clippy -- --deny=warnings
-        working-directory: lib/macro/internal
-      - name: cd lib/macro && cargo +nightly clippy -- --deny=warnings
-        run: cargo +nightly clippy -- --deny=warnings
-        working-directory: lib/macro
-      - name: cd bin && cargo +nightly clippy -- --deny=warnings
-        run: cargo +nightly clippy -- --deny=warnings
-        working-directory: bin
-      - name: cd nostd && cargo +nightly clippy -- --deny=warnings
-        run: cargo +nightly clippy -- --deny=warnings
-        working-directory: nostd
-      - name: cd lib/fuzz && cargo +nightly clippy -- --deny=warnings
-        run: cargo +nightly clippy -- --deny=warnings
-        working-directory: lib/fuzz
-      - name: cd lib && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release
-        run: cargo +nightly build --release
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --no-default-features --features=alloc
-        run: cargo +nightly build --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release --no-default-features --features=alloc
-        run: cargo +nightly build --release --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --no-default-features
-        run: cargo +nightly build --no-default-features
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release --no-default-features
-        run: cargo +nightly build --release --no-default-features
-        working-directory: lib
-      - name: cd lib/macro/internal && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: lib/macro/internal
-      - name: cd lib/macro/internal && cargo +nightly build --release
-        run: cargo +nightly build --release
-        working-directory: lib/macro/internal
-      - name: cd lib/macro && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: lib/macro
-      - name: cd lib/macro && cargo +nightly build --release
-        run: cargo +nightly build --release
-        working-directory: lib/macro
-      - name: cd bin && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: bin
-      - name: cd bin && cargo +nightly build --release
-        run: cargo +nightly build --release
-        working-directory: bin
-      - name: cd nostd && cargo +nightly build --release
-        run: cargo +nightly build --release
-        working-directory: nostd
-      - name: cd lib/fuzz && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: lib/fuzz
-      - name: cd cmp && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: cmp
-      - name: cd www && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: www
-      - name: cd lib && cargo +nightly test
-        run: cargo +nightly test
-        working-directory: lib
-      - name: cd lib/macro/internal && cargo +nightly test
-        run: cargo +nightly test
-        working-directory: lib/macro/internal
-      - name: cd lib/macro && cargo +nightly test
-        run: cargo +nightly test
-        working-directory: lib/macro
-      - run: cd bin && ./test.sh +nightly
-      - name: cd nostd && cargo +nightly run --release
-        run: cargo +nightly run --release
-        working-directory: nostd
-      - name: cd nostd && cargo +nightly run --release --features=alloc
-        run: cargo +nightly run --release --features=alloc
-        working-directory: nostd
-      - name: cd lib/fuzz && cargo +nightly test
-        run: cargo +nightly test
-        working-directory: lib/fuzz
-      - name: cd cmp && cargo +nightly test
-        run: cargo +nightly test
-        working-directory: cmp
-      - name: cd www && cargo +nightly test
-        run: cargo +nightly test
-        working-directory: www
-      - name: cd lib && cargo +nightly doc
-        env:
-          RUSTDOCFLAGS: "--deny=warnings"
-        run: cargo +nightly doc
-        working-directory: lib
-      - name: cd lib && cargo +nightly miri test
-        run: cargo +nightly miri test
-        working-directory: lib
-      - name: cd lib && cargo +nightly bench
-        run: cargo +nightly bench
-        working-directory: lib
-      - run: cd bin && ./bench.sh +nightly
-      - name: cd lib && cargo +nightly audit --deny=warnings
-        run: cargo +nightly audit --deny=warnings
-        working-directory: lib
-      - name: cd lib/macro/internal && cargo +nightly audit --deny=warnings
-        run: cargo +nightly audit --deny=warnings
-        working-directory: lib/macro/internal
-      - name: cd lib/macro && cargo +nightly audit --deny=warnings
-        run: cargo +nightly audit --deny=warnings
-        working-directory: lib/macro
-      - name: cd bin && cargo +nightly audit --deny=warnings
-        run: cargo +nightly audit --deny=warnings
-        working-directory: bin
-      - name: cd nostd && cargo +nightly audit --deny=warnings
-        run: cargo +nightly audit --deny=warnings
-        working-directory: nostd
-      - name: cd lib/fuzz && cargo +nightly audit --deny=warnings
-        run: cargo +nightly audit --deny=warnings
-        working-directory: lib/fuzz
-      - name: cd cmp && cargo +nightly audit --deny=warnings
-        run: cargo +nightly audit --deny=warnings
-        working-directory: cmp
-      - name: cd www && cargo +nightly audit --deny=warnings
-        run: cargo +nightly audit --deny=warnings
-        working-directory: www
-      - run: rustup install stable
-      - run: cargo +stable install cargo-semver-checks --locked
-      - name: cd lib && cargo +stable build
-        run: cargo +stable build
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release
-        run: cargo +stable build --release
-        working-directory: lib
-      - name: cd lib && cargo +stable build --no-default-features --features=alloc
-        run: cargo +stable build --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release --no-default-features --features=alloc
-        run: cargo +stable build --release --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +stable build --no-default-features
-        run: cargo +stable build --no-default-features
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release --no-default-features
-        run: cargo +stable build --release --no-default-features
-        working-directory: lib
-      - name: cd lib/macro/internal && cargo +stable build
-        run: cargo +stable build
-        working-directory: lib/macro/internal
-      - name: cd lib/macro/internal && cargo +stable build --release
-        run: cargo +stable build --release
-        working-directory: lib/macro/internal
-      - name: cd lib/macro && cargo +stable build
-        run: cargo +stable build
-        working-directory: lib/macro
-      - name: cd lib/macro && cargo +stable build --release
-        run: cargo +stable build --release
-        working-directory: lib/macro
-      - name: cd bin && cargo +stable build
-        run: cargo +stable build
-        working-directory: bin
-      - name: cd bin && cargo +stable build --release
-        run: cargo +stable build --release
-        working-directory: bin
-      - name: cd lib && cargo +stable semver-checks check-release
-        run: cargo +stable semver-checks check-release
-        working-directory: lib
-      - name: cd lib/macro && cargo +stable semver-checks check-release
-        run: cargo +stable semver-checks check-release
-        working-directory: lib/macro
-      - run: rustup install 1.48
-      - run: cd lib && mv Cargo.lock Cargo.lock.backup
-      - run: cd lib && cp Cargo.lock.msrv Cargo.lock
-      - name: cd lib && cargo +1.48 build
-        run: cargo +1.48 build
-        working-directory: lib
-      - name: cd lib && cargo +1.48 build --release
-        run: cargo +1.48 build --release
-        working-directory: lib
-      - name: cd lib && cargo +1.48 build --no-default-features --features=alloc
-        run: cargo +1.48 build --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +1.48 build --release --no-default-features --features=alloc
-        run: cargo +1.48 build --release --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +1.48 build --no-default-features
-        run: cargo +1.48 build --no-default-features
-        working-directory: lib
-      - name: cd lib && cargo +1.48 build --release --no-default-features
-        run: cargo +1.48 build --release --no-default-features
-        working-directory: lib
-      - run: cd lib && rm Cargo.lock
-      - run: cd lib && mv Cargo.lock.backup Cargo.lock
-      - run: cd lib/macro/internal && mv Cargo.lock Cargo.lock.backup
-      - run: cd lib/macro/internal && cp Cargo.lock.msrv Cargo.lock
-      - name: cd lib/macro/internal && cargo +1.48 build
-        run: cargo +1.48 build
-        working-directory: lib/macro/internal
-      - name: cd lib/macro/internal && cargo +1.48 build --release
-        run: cargo +1.48 build --release
-        working-directory: lib/macro/internal
-      - run: cd lib/macro/internal && rm Cargo.lock
-      - run: cd lib/macro/internal && mv Cargo.lock.backup Cargo.lock
-      - run: cd lib/macro && mv Cargo.lock Cargo.lock.backup
-      - run: cd lib/macro && cp Cargo.lock.msrv Cargo.lock
-      - name: cd lib/macro && cargo +1.48 build
-        run: cargo +1.48 build
-        working-directory: lib/macro
-      - name: cd lib/macro && cargo +1.48 build --release
-        run: cargo +1.48 build --release
-        working-directory: lib/macro
-      - run: cd lib/macro && rm Cargo.lock
-      - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock
+    - uses: actions/checkout@v4
+    - run: rustup install nightly
+    - run: rustup component add --toolchain=nightly clippy miri rustfmt
+    - uses: actions/cache@v4
+      with:
+        key: cargo-home-${{ runner.os }}
+        path: |
+          ~/.cargo/bin
+          ~/.cargo/.crates*
+    - run: cargo +nightly install cargo-audit --locked
+    - name: cd lib && cargo +nightly fmt -- --check
+      run: cargo +nightly fmt -- --check
+      working-directory: lib
+    - name: cd lib/macro/internal && cargo +nightly fmt -- --check
+      run: cargo +nightly fmt -- --check
+      working-directory: lib/macro/internal
+    - name: cd lib/macro && cargo +nightly fmt -- --check
+      run: cargo +nightly fmt -- --check
+      working-directory: lib/macro
+    - name: cd bin && cargo +nightly fmt -- --check
+      run: cargo +nightly fmt -- --check
+      working-directory: bin
+    - name: cd nostd && cargo +nightly fmt -- --check
+      run: cargo +nightly fmt -- --check
+      working-directory: nostd
+    - name: cd lib/fuzz && cargo +nightly fmt -- --check
+      run: cargo +nightly fmt -- --check
+      working-directory: lib/fuzz
+    - name: cd cmp && cargo +nightly fmt -- --check
+      run: cargo +nightly fmt -- --check
+      working-directory: cmp
+    - name: cd www && cargo +nightly fmt -- --check
+      run: cargo +nightly fmt -- --check
+      working-directory: www
+    - name: cd lib && cargo +nightly clippy -- --deny=warnings
+      run: cargo +nightly clippy -- --deny=warnings
+      working-directory: lib
+    - name: cd lib/macro/internal && cargo +nightly clippy -- --deny=warnings
+      run: cargo +nightly clippy -- --deny=warnings
+      working-directory: lib/macro/internal
+    - name: cd lib/macro && cargo +nightly clippy -- --deny=warnings
+      run: cargo +nightly clippy -- --deny=warnings
+      working-directory: lib/macro
+    - name: cd bin && cargo +nightly clippy -- --deny=warnings
+      run: cargo +nightly clippy -- --deny=warnings
+      working-directory: bin
+    - name: cd nostd && cargo +nightly clippy -- --deny=warnings
+      run: cargo +nightly clippy -- --deny=warnings
+      working-directory: nostd
+    - name: cd lib/fuzz && cargo +nightly clippy -- --deny=warnings
+      run: cargo +nightly clippy -- --deny=warnings
+      working-directory: lib/fuzz
+    - name: cd lib && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: lib
+    - name: cd lib && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: lib
+    - name: cd lib && cargo +nightly build --no-default-features --features=alloc
+      run: cargo +nightly build --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +nightly build --release --no-default-features --features=alloc
+      run: cargo +nightly build --release --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +nightly build --no-default-features
+      run: cargo +nightly build --no-default-features
+      working-directory: lib
+    - name: cd lib && cargo +nightly build --release --no-default-features
+      run: cargo +nightly build --release --no-default-features
+      working-directory: lib
+    - name: cd lib/macro/internal && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: lib/macro/internal
+    - name: cd lib/macro/internal && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: lib/macro/internal
+    - name: cd lib/macro && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: lib/macro
+    - name: cd lib/macro && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: lib/macro
+    - name: cd bin && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: bin
+    - name: cd bin && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: bin
+    - name: cd nostd && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: nostd
+    - name: cd lib/fuzz && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: lib/fuzz
+    - name: cd cmp && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: cmp
+    - name: cd www && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: www
+    - name: cd lib && cargo +nightly test
+      run: cargo +nightly test
+      working-directory: lib
+    - name: cd lib/macro/internal && cargo +nightly test
+      run: cargo +nightly test
+      working-directory: lib/macro/internal
+    - name: cd lib/macro && cargo +nightly test
+      run: cargo +nightly test
+      working-directory: lib/macro
+    - run: cd bin && ./test.sh +nightly
+    - name: cd nostd && cargo +nightly run --release
+      run: cargo +nightly run --release
+      working-directory: nostd
+    - name: cd nostd && cargo +nightly run --release --features=alloc
+      run: cargo +nightly run --release --features=alloc
+      working-directory: nostd
+    - name: cd lib/fuzz && cargo +nightly test
+      run: cargo +nightly test
+      working-directory: lib/fuzz
+    - name: cd cmp && cargo +nightly test
+      run: cargo +nightly test
+      working-directory: cmp
+    - name: cd www && cargo +nightly test
+      run: cargo +nightly test
+      working-directory: www
+    - name: cd lib && cargo +nightly doc
+      env:
+        RUSTDOCFLAGS: --deny=warnings
+      run: cargo +nightly doc
+      working-directory: lib
+    - name: cd lib && cargo +nightly miri test
+      run: cargo +nightly miri test
+      working-directory: lib
+    - name: cd lib && cargo +nightly bench
+      run: cargo +nightly bench
+      working-directory: lib
+    - run: cd bin && ./bench.sh +nightly
+    - name: cd lib && cargo +nightly audit --deny=warnings
+      run: cargo +nightly audit --deny=warnings
+      working-directory: lib
+    - name: cd lib/macro/internal && cargo +nightly audit --deny=warnings
+      run: cargo +nightly audit --deny=warnings
+      working-directory: lib/macro/internal
+    - name: cd lib/macro && cargo +nightly audit --deny=warnings
+      run: cargo +nightly audit --deny=warnings
+      working-directory: lib/macro
+    - name: cd bin && cargo +nightly audit --deny=warnings
+      run: cargo +nightly audit --deny=warnings
+      working-directory: bin
+    - name: cd nostd && cargo +nightly audit --deny=warnings
+      run: cargo +nightly audit --deny=warnings
+      working-directory: nostd
+    - name: cd lib/fuzz && cargo +nightly audit --deny=warnings
+      run: cargo +nightly audit --deny=warnings
+      working-directory: lib/fuzz
+    - name: cd cmp && cargo +nightly audit --deny=warnings
+      run: cargo +nightly audit --deny=warnings
+      working-directory: cmp
+    - name: cd www && cargo +nightly audit --deny=warnings
+      run: cargo +nightly audit --deny=warnings
+      working-directory: www
+    - run: rustup install stable
+    - run: cargo +stable install cargo-semver-checks --locked
+    - name: cd lib && cargo +stable build
+      run: cargo +stable build
+      working-directory: lib
+    - name: cd lib && cargo +stable build --release
+      run: cargo +stable build --release
+      working-directory: lib
+    - name: cd lib && cargo +stable build --no-default-features --features=alloc
+      run: cargo +stable build --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +stable build --release --no-default-features --features=alloc
+      run: cargo +stable build --release --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +stable build --no-default-features
+      run: cargo +stable build --no-default-features
+      working-directory: lib
+    - name: cd lib && cargo +stable build --release --no-default-features
+      run: cargo +stable build --release --no-default-features
+      working-directory: lib
+    - name: cd lib/macro/internal && cargo +stable build
+      run: cargo +stable build
+      working-directory: lib/macro/internal
+    - name: cd lib/macro/internal && cargo +stable build --release
+      run: cargo +stable build --release
+      working-directory: lib/macro/internal
+    - name: cd lib/macro && cargo +stable build
+      run: cargo +stable build
+      working-directory: lib/macro
+    - name: cd lib/macro && cargo +stable build --release
+      run: cargo +stable build --release
+      working-directory: lib/macro
+    - name: cd bin && cargo +stable build
+      run: cargo +stable build
+      working-directory: bin
+    - name: cd bin && cargo +stable build --release
+      run: cargo +stable build --release
+      working-directory: bin
+    - name: cd lib && cargo +stable semver-checks check-release
+      run: cargo +stable semver-checks check-release
+      working-directory: lib
+    - name: cd lib/macro && cargo +stable semver-checks check-release
+      run: cargo +stable semver-checks check-release
+      working-directory: lib/macro
+    - run: rustup install 1.48
+    - run: cd lib && mv Cargo.lock Cargo.lock.backup
+    - run: cd lib && cp Cargo.lock.msrv Cargo.lock
+    - name: cd lib && cargo +1.48 build
+      run: cargo +1.48 build
+      working-directory: lib
+    - name: cd lib && cargo +1.48 build --release
+      run: cargo +1.48 build --release
+      working-directory: lib
+    - name: cd lib && cargo +1.48 build --no-default-features --features=alloc
+      run: cargo +1.48 build --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +1.48 build --release --no-default-features --features=alloc
+      run: cargo +1.48 build --release --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +1.48 build --no-default-features
+      run: cargo +1.48 build --no-default-features
+      working-directory: lib
+    - name: cd lib && cargo +1.48 build --release --no-default-features
+      run: cargo +1.48 build --release --no-default-features
+      working-directory: lib
+    - run: cd lib && rm Cargo.lock
+    - run: cd lib && mv Cargo.lock.backup Cargo.lock
+    - run: cd lib/macro/internal && mv Cargo.lock Cargo.lock.backup
+    - run: cd lib/macro/internal && cp Cargo.lock.msrv Cargo.lock
+    - name: cd lib/macro/internal && cargo +1.48 build
+      run: cargo +1.48 build
+      working-directory: lib/macro/internal
+    - name: cd lib/macro/internal && cargo +1.48 build --release
+      run: cargo +1.48 build --release
+      working-directory: lib/macro/internal
+    - run: cd lib/macro/internal && rm Cargo.lock
+    - run: cd lib/macro/internal && mv Cargo.lock.backup Cargo.lock
+    - run: cd lib/macro && mv Cargo.lock Cargo.lock.backup
+    - run: cd lib/macro && cp Cargo.lock.msrv Cargo.lock
+    - name: cd lib/macro && cargo +1.48 build
+      run: cargo +1.48 build
+      working-directory: lib/macro
+    - name: cd lib/macro && cargo +1.48 build --release
+      run: cargo +1.48 build --release
+      working-directory: lib/macro
+    - run: cd lib/macro && rm Cargo.lock
+    - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: rustup install nightly
-      - name: cd lib && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release
-        run: cargo +nightly build --release
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --no-default-features --features=alloc
-        run: cargo +nightly build --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release --no-default-features --features=alloc
-        run: cargo +nightly build --release --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --no-default-features
-        run: cargo +nightly build --no-default-features
-        working-directory: lib
-      - name: cd lib && cargo +nightly build --release --no-default-features
-        run: cargo +nightly build --release --no-default-features
-        working-directory: lib
-      - name: cd lib/macro/internal && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: lib/macro/internal
-      - name: cd lib/macro/internal && cargo +nightly build --release
-        run: cargo +nightly build --release
-        working-directory: lib/macro/internal
-      - name: cd lib/macro && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: lib/macro
-      - name: cd lib/macro && cargo +nightly build --release
-        run: cargo +nightly build --release
-        working-directory: lib/macro
-      - name: cd bin && cargo +nightly build
-        run: cargo +nightly build
-        working-directory: bin
-      - name: cd bin && cargo +nightly build --release
-        run: cargo +nightly build --release
-        working-directory: bin
-      - run: rustup install stable
-      - name: cd lib && cargo +stable build
-        run: cargo +stable build
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release
-        run: cargo +stable build --release
-        working-directory: lib
-      - name: cd lib && cargo +stable build --no-default-features --features=alloc
-        run: cargo +stable build --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release --no-default-features --features=alloc
-        run: cargo +stable build --release --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +stable build --no-default-features
-        run: cargo +stable build --no-default-features
-        working-directory: lib
-      - name: cd lib && cargo +stable build --release --no-default-features
-        run: cargo +stable build --release --no-default-features
-        working-directory: lib
-      - name: cd lib/macro/internal && cargo +stable build
-        run: cargo +stable build
-        working-directory: lib/macro/internal
-      - name: cd lib/macro/internal && cargo +stable build --release
-        run: cargo +stable build --release
-        working-directory: lib/macro/internal
-      - name: cd lib/macro && cargo +stable build
-        run: cargo +stable build
-        working-directory: lib/macro
-      - name: cd lib/macro && cargo +stable build --release
-        run: cargo +stable build --release
-        working-directory: lib/macro
-      - name: cd bin && cargo +stable build
-        run: cargo +stable build
-        working-directory: bin
-      - name: cd bin && cargo +stable build --release
-        run: cargo +stable build --release
-        working-directory: bin
-      - run: rustup install 1.48
-      - run: cd lib && mv Cargo.lock Cargo.lock.backup
-      - run: cd lib && cp Cargo.lock.msrv Cargo.lock
-      - name: cd lib && cargo +1.48 build
-        run: cargo +1.48 build
-        working-directory: lib
-      - name: cd lib && cargo +1.48 build --release
-        run: cargo +1.48 build --release
-        working-directory: lib
-      - name: cd lib && cargo +1.48 build --no-default-features --features=alloc
-        run: cargo +1.48 build --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +1.48 build --release --no-default-features --features=alloc
-        run: cargo +1.48 build --release --no-default-features --features=alloc
-        working-directory: lib
-      - name: cd lib && cargo +1.48 build --no-default-features
-        run: cargo +1.48 build --no-default-features
-        working-directory: lib
-      - name: cd lib && cargo +1.48 build --release --no-default-features
-        run: cargo +1.48 build --release --no-default-features
-        working-directory: lib
-      - run: cd lib && rm Cargo.lock
-      - run: cd lib && mv Cargo.lock.backup Cargo.lock
-      - run: cd lib/macro/internal && mv Cargo.lock Cargo.lock.backup
-      - run: cd lib/macro/internal && cp Cargo.lock.msrv Cargo.lock
-      - name: cd lib/macro/internal && cargo +1.48 build
-        run: cargo +1.48 build
-        working-directory: lib/macro/internal
-      - name: cd lib/macro/internal && cargo +1.48 build --release
-        run: cargo +1.48 build --release
-        working-directory: lib/macro/internal
-      - run: cd lib/macro/internal && rm Cargo.lock
-      - run: cd lib/macro/internal && mv Cargo.lock.backup Cargo.lock
-      - run: cd lib/macro && mv Cargo.lock Cargo.lock.backup
-      - run: cd lib/macro && cp Cargo.lock.msrv Cargo.lock
-      - name: cd lib/macro && cargo +1.48 build
-        run: cargo +1.48 build
-        working-directory: lib/macro
-      - name: cd lib/macro && cargo +1.48 build --release
-        run: cargo +1.48 build --release
-        working-directory: lib/macro
-      - run: cd lib/macro && rm Cargo.lock
-      - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock
+    - uses: actions/checkout@v4
+    - run: rustup install nightly
+    - name: cd lib && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: lib
+    - name: cd lib && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: lib
+    - name: cd lib && cargo +nightly build --no-default-features --features=alloc
+      run: cargo +nightly build --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +nightly build --release --no-default-features --features=alloc
+      run: cargo +nightly build --release --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +nightly build --no-default-features
+      run: cargo +nightly build --no-default-features
+      working-directory: lib
+    - name: cd lib && cargo +nightly build --release --no-default-features
+      run: cargo +nightly build --release --no-default-features
+      working-directory: lib
+    - name: cd lib/macro/internal && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: lib/macro/internal
+    - name: cd lib/macro/internal && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: lib/macro/internal
+    - name: cd lib/macro && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: lib/macro
+    - name: cd lib/macro && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: lib/macro
+    - name: cd bin && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: bin
+    - name: cd bin && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: bin
+    - run: rustup install stable
+    - name: cd lib && cargo +stable build
+      run: cargo +stable build
+      working-directory: lib
+    - name: cd lib && cargo +stable build --release
+      run: cargo +stable build --release
+      working-directory: lib
+    - name: cd lib && cargo +stable build --no-default-features --features=alloc
+      run: cargo +stable build --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +stable build --release --no-default-features --features=alloc
+      run: cargo +stable build --release --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +stable build --no-default-features
+      run: cargo +stable build --no-default-features
+      working-directory: lib
+    - name: cd lib && cargo +stable build --release --no-default-features
+      run: cargo +stable build --release --no-default-features
+      working-directory: lib
+    - name: cd lib/macro/internal && cargo +stable build
+      run: cargo +stable build
+      working-directory: lib/macro/internal
+    - name: cd lib/macro/internal && cargo +stable build --release
+      run: cargo +stable build --release
+      working-directory: lib/macro/internal
+    - name: cd lib/macro && cargo +stable build
+      run: cargo +stable build
+      working-directory: lib/macro
+    - name: cd lib/macro && cargo +stable build --release
+      run: cargo +stable build --release
+      working-directory: lib/macro
+    - name: cd bin && cargo +stable build
+      run: cargo +stable build
+      working-directory: bin
+    - name: cd bin && cargo +stable build --release
+      run: cargo +stable build --release
+      working-directory: bin
+    - run: rustup install 1.48
+    - run: cd lib && mv Cargo.lock Cargo.lock.backup
+    - run: cd lib && cp Cargo.lock.msrv Cargo.lock
+    - name: cd lib && cargo +1.48 build
+      run: cargo +1.48 build
+      working-directory: lib
+    - name: cd lib && cargo +1.48 build --release
+      run: cargo +1.48 build --release
+      working-directory: lib
+    - name: cd lib && cargo +1.48 build --no-default-features --features=alloc
+      run: cargo +1.48 build --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +1.48 build --release --no-default-features --features=alloc
+      run: cargo +1.48 build --release --no-default-features --features=alloc
+      working-directory: lib
+    - name: cd lib && cargo +1.48 build --no-default-features
+      run: cargo +1.48 build --no-default-features
+      working-directory: lib
+    - name: cd lib && cargo +1.48 build --release --no-default-features
+      run: cargo +1.48 build --release --no-default-features
+      working-directory: lib
+    - run: cd lib && rm Cargo.lock
+    - run: cd lib && mv Cargo.lock.backup Cargo.lock
+    - run: cd lib/macro/internal && mv Cargo.lock Cargo.lock.backup
+    - run: cd lib/macro/internal && cp Cargo.lock.msrv Cargo.lock
+    - name: cd lib/macro/internal && cargo +1.48 build
+      run: cargo +1.48 build
+      working-directory: lib/macro/internal
+    - name: cd lib/macro/internal && cargo +1.48 build --release
+      run: cargo +1.48 build --release
+      working-directory: lib/macro/internal
+    - run: cd lib/macro/internal && rm Cargo.lock
+    - run: cd lib/macro/internal && mv Cargo.lock.backup Cargo.lock
+    - run: cd lib/macro && mv Cargo.lock Cargo.lock.backup
+    - run: cd lib/macro && cp Cargo.lock.msrv Cargo.lock
+    - name: cd lib/macro && cargo +1.48 build
+      run: cargo +1.48 build
+      working-directory: lib/macro
+    - name: cd lib/macro && cargo +1.48 build --release
+      run: cargo +1.48 build --release
+      working-directory: lib/macro
+    - run: cd lib/macro && rm Cargo.lock
+    - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock

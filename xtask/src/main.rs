@@ -358,6 +358,8 @@ struct WorkflowStep {
     run: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "working-directory")]
     working_directory: Option<String>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    with: BTreeMap<String, String>,
 }
 
 impl Flags {
@@ -405,6 +407,24 @@ impl Flags {
                                 run.push_str(component);
                             }
                             job.steps.push(WorkflowStep { run: Some(run), ..Default::default() });
+                        }
+                        if matches!(
+                            actions[0],
+                            Action { os: Os::Ubuntu, toolchain: Toolchain::Nightly, .. }
+                        ) {
+                            job.steps.push(WorkflowStep {
+                                uses: Some("actions/cache@v4".to_owned()),
+                                with: [
+                                    (
+                                        "path".to_owned(),
+                                        "~/.cargo/bin\n~/.cargo/.crates*\n".to_owned(),
+                                    ),
+                                    ("key".to_owned(), "cargo-home-${{ runner.os }}".to_owned()),
+                                ]
+                                .into_iter()
+                                .collect(),
+                                ..Default::default()
+                            });
                         }
                         for task in [Task::Audit, Task::SemverChecks] {
                             if actions.iter().any(|x| x.task == task) {
