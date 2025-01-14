@@ -31,12 +31,18 @@ enum Toolchain {
 
     #[strum(serialize = "1.48")]
     Msrv,
+
+    #[strum(serialize = "1.85")]
+    MsrvV3,
 }
 
 #[derive(
     Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, EnumIter, EnumString, Display,
 )]
 enum Dir {
+    #[strum(serialize = "lib/v3")]
+    LibV3,
+
     #[strum(serialize = "lib")]
     Lib,
 
@@ -64,7 +70,7 @@ enum Dir {
 
 impl Dir {
     fn is_published(self) -> bool {
-        matches!(self, Dir::Lib | Dir::MacroInternal | Dir::Macro | Dir::Bin)
+        matches!(self, Dir::LibV3 | Dir::Lib | Dir::MacroInternal | Dir::Macro | Dir::Bin)
     }
 }
 
@@ -135,7 +141,7 @@ impl Action {
             if self.dir.is_published() {
                 instructions *= &[&["--release"]];
             }
-            if self.dir == Dir::Lib {
+            if matches!(self.dir, Dir::LibV3 | Dir::Lib) {
                 instructions *=
                     &[&["--no-default-features", "--features=alloc"], &["--no-default-features"]];
             }
@@ -542,7 +548,7 @@ impl Actions {
             for dir in Dir::iter() {
                 let os = Os::Ubuntu;
                 let mut toolchain = Toolchain::Nightly;
-                if task == Task::Doc && !matches!(dir, Dir::Lib) {
+                if task == Task::Doc && !matches!(dir, Dir::LibV3 | Dir::Lib) {
                     // Documentation only matters for the library.
                     continue;
                 }
@@ -550,16 +556,18 @@ impl Actions {
                     // Clippy is currently broken on cmp and www.
                     continue;
                 }
-                if task == Task::Miri && !matches!(dir, Dir::Lib) {
+                if task == Task::Miri && !matches!(dir, Dir::LibV3 | Dir::Lib) {
                     // Miri is slow, so only run where it matters.
                     continue;
                 }
-                if task == Task::Bench && !matches!(dir, Dir::Lib | Dir::Bin) {
+                if task == Task::Bench && !matches!(dir, Dir::LibV3 | Dir::Lib | Dir::Bin) {
                     // Bench is only supported for lib and bin.
                     continue;
                 }
                 if task == Task::SemverChecks {
-                    if !dir.is_published() || matches!(dir, Dir::Bin | Dir::MacroInternal) {
+                    if !dir.is_published()
+                        || matches!(dir, Dir::LibV3 | Dir::Bin | Dir::MacroInternal)
+                    {
                         // SemverChecks only makes sense for published library crates (not binary
                         // and not proc-macro).
                         continue;
@@ -574,8 +582,12 @@ impl Actions {
         for os in Os::iter() {
             for toolchain in Toolchain::iter() {
                 for dir in Dir::iter().filter(|x| x.is_published()) {
-                    if toolchain == Toolchain::Msrv && dir == Dir::Bin {
+                    if toolchain == Toolchain::Msrv && matches!(dir, Dir::LibV3 | Dir::Bin) {
                         // Only the libraries need to compile with the MSRV.
+                        continue;
+                    }
+                    if toolchain == Toolchain::MsrvV3 && dir != Dir::LibV3 {
+                        // The v3 library uses a different MSRV.
                         continue;
                     }
                     let task = Task::Build;
