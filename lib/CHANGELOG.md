@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.7.0-git
+## 2.7.0
 
 ### Minor
 
