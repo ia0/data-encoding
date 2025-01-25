@@ -145,21 +145,6 @@
 
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-// TODO: This list up to warn(clippy::pedantic) should ideally use a lint group.
-#![warn(elided_lifetimes_in_paths)]
-// TODO(msrv): #![warn(let_underscore_drop)]
-#![warn(missing_debug_implementations)]
-#![warn(missing_docs)]
-#![warn(unreachable_pub)]
-// TODO(msrv): #![warn(unsafe_op_in_unsafe_fn)]
-#![warn(unused_results)]
-#![allow(unused_unsafe)] // TODO(msrv)
-#![warn(clippy::pedantic)]
-#![allow(clippy::assigning_clones)] // TODO(msrv)
-#![allow(clippy::doc_markdown)]
-#![allow(clippy::enum_glob_use)]
-#![allow(clippy::similar_names)]
-#![allow(clippy::uninlined_format_args)] // TODO(msrv)
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -255,24 +240,38 @@ macro_rules! dispatch {
     ($body: expr) => { $body };
 }
 
+// requires(safety): (i + 1) * n <= x.len()
+// ensures: result == &x[i * n .. (i + 1) * n]
 unsafe fn chunk_unchecked<T>(x: &[T], n: usize, i: usize) -> &[T] {
     debug_assert!((i + 1) * n <= x.len());
+    // SAFETY: By precondition and x.
     unsafe { core::slice::from_raw_parts(x.as_ptr().add(n * i), n) }
 }
 
+// requires(safety): (i + 1) * n <= x.len()
+// ensures(safety): result == &mut x[i * n .. (i + 1) * n]
 unsafe fn chunk_mut_unchecked<T>(x: &mut [T], n: usize, i: usize) -> &mut [T] {
     debug_assert!((i + 1) * n <= x.len());
+    // SAFETY: By precondition and x.
     unsafe { core::slice::from_raw_parts_mut(x.as_mut_ptr().add(n * i), n) }
 }
 
+// requires: x + m <= usize::MAX
+// requires: 0 < m
+// ensures(safety): x / m <= result < x / m + 1
 fn div_ceil(x: usize, m: usize) -> usize {
     (x + m - 1) / m
 }
 
+// requires: 0 < m
+// ensures: result % m == 0
+// ensures: x - m < result <= x
 fn floor(x: usize, m: usize) -> usize {
     x / m * m
 }
 
+// requires: 0 < bs
+// ensures(safety): (0 .. n).for_each(f)
 #[inline]
 fn vectorize<F: FnMut(usize)>(n: usize, bs: usize, mut f: F) {
     for k in 0 .. n / bs {
@@ -355,6 +354,8 @@ const INVALID: u8 = 128;
 const IGNORE: u8 = 129;
 const PADDING: u8 = 130;
 
+// requires: 0 <= i < n
+// ensures: result == if msb { n - 1 - i } else { i }
 fn order(msb: bool, n: usize, i: usize) -> usize {
     if msb {
         n - 1 - i
@@ -363,6 +364,8 @@ fn order(msb: bool, n: usize, i: usize) -> usize {
     }
 }
 
+// requires: 1 <= bit <= 6
+// ensures(safety): result == bit / gcd(bit, 8)
 #[inline]
 fn enc(bit: usize) -> usize {
     match bit {
@@ -373,15 +376,40 @@ fn enc(bit: usize) -> usize {
     }
 }
 
+// requires: 1 <= bit <= 6
+// ensures(safety): result == 8 / gcd(bit, 8)
 #[inline]
 fn dec(bit: usize) -> usize {
     enc(bit) * 8 / bit
 }
 
+// requires: 1 <= bit <= 6
+// requires: 8 * len + bit <= usize::MAX
+// ensures(safety): 8 * len <= bit * result < 8 * len + bit
 fn encode_len<B: Static<usize>>(bit: B, len: usize) -> usize {
     div_ceil(8 * len, bit.val())
 }
 
+// definition: symbols_repeat(bit: usize, symbols: [u8; 256]) -> bool
+// = symbols[.. 2.pow(bit)].repeat(2.pow(8 - bit))[..] == symbols[..]
+
+// definition: symbols_ascii(symbols: [u8; 256]) -> bool
+// = symbols.iter().all(|i| i < 128)
+
+// definition: bits(msb: bool, input: [u8]) -> [bool]
+// = from_fn(|i| input[i / 8] & 1 << order(msb, 8, i % 8) != 0)
+
+// definition: value(bit: usize, msb: bool, input: [u8], i: usize) -> usize
+// = (0 .. enc).zip(bits(msb, input)[i * enc .. (i + 1) * enc])
+//   .map(|(k, b)| 2.pow(order(msb, enc, k)) * b as usize)
+//   .sum()
+
+// requires: 1 <= bit <= 6
+// requires: symbols_repeat(bit, symbols)
+// requires(safety): symbols_ascii(symbols)
+// requires: input.len() <= enc(bit)
+// requires: output.len() == encode_len(bit, input.len())
+// ensures(safety): output[i] == symbols[value(bit, msb, input, i)] if 0 <= i < output.len()
 fn encode_block<B: Static<usize>, M: Static<bool>>(
     bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8],
 ) {
@@ -399,7 +427,12 @@ fn encode_block<B: Static<usize>, M: Static<bool>>(
     }
 }
 
-fn encode_mut<B: Static<usize>, M: Static<bool>>(
+// requires: 1 <= bit <= 6
+// requires: symbols_repeat(bit, symbols)
+// requires(safety): symbols_ascii(symbols)
+// requires(safety): output.len() == encode_len(bit, input.len())
+// ensures(safety): output[i] == symbols[value(bit, msb, input, i)] if 0 <= i < output.len()
+unsafe fn encode_mut<B: Static<usize>, M: Static<bool>>(
     bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8],
 ) {
     debug_assert_eq!(output.len(), encode_len(bit, input.len()));
@@ -412,7 +445,9 @@ fn encode_mut<B: Static<usize>, M: Static<bool>>(
         _ => 1,
     };
     vectorize(n, bs, |i| {
+        // SAFETY: By vectorize, i, and n.
         let input = unsafe { chunk_unchecked(input, enc, i) };
+        // SAFETY: By precondition, encode_len, vectorize, enc, dec, i, and n.
         let output = unsafe { chunk_mut_unchecked(output, dec, i) };
         encode_block(bit, msb, symbols, input, output);
     });
@@ -443,7 +478,9 @@ fn decode_block<B: Static<usize>, M: Static<bool>>(
 // Fails if an input character does not translate to a symbol. The error `pos`
 // is the lowest index of such character. The output is valid up to `pos / dec *
 // enc` excluded.
-fn decode_mut<B: Static<usize>, M: Static<bool>>(
+//
+// requires(safety): input.len() == encode_len(bit, output.len())
+unsafe fn decode_mut<B: Static<usize>, M: Static<bool>>(
     bit: B, msb: M, values: &[u8; 256], input: &[u8], output: &mut [u8],
 ) -> Result<(), usize> {
     debug_assert_eq!(input.len(), encode_len(bit, output.len()));
@@ -451,7 +488,9 @@ fn decode_mut<B: Static<usize>, M: Static<bool>>(
     let dec = dec(bit.val());
     let n = input.len() / dec;
     for i in 0 .. n {
+        // SAFETY: By i and n.
         let input = unsafe { chunk_unchecked(input, dec, i) };
+        // SAFETY: By precondition, encode_len, enc, dec, i, and n.
         let output = unsafe { chunk_mut_unchecked(output, enc, i) };
         decode_block(bit, msb, values, input, output).map_err(|e| dec * i + e)?;
     }
@@ -494,11 +533,14 @@ fn encode_base_len<B: Static<usize>>(bit: B, len: usize) -> usize {
     encode_len(bit, len)
 }
 
-fn encode_base<B: Static<usize>, M: Static<bool>>(
+// requires(safety): output.len() == encode_base_len(bit, input.len())
+// ensures(safety): output[i] < 128 if 0 <= i < output.len()
+unsafe fn encode_base<B: Static<usize>, M: Static<bool>>(
     bit: B, msb: M, symbols: &[u8; 256], input: &[u8], output: &mut [u8],
 ) {
     debug_assert_eq!(output.len(), encode_base_len(bit, input.len()));
-    encode_mut(bit, msb, symbols, input, output);
+    // SAFETY: By precondition and encode_base_len.
+    unsafe { encode_mut(bit, msb, symbols, input, output) };
 }
 
 fn encode_pad_len<B: Static<usize>, P: Static<Option<u8>>>(bit: B, pad: P, len: usize) -> usize {
@@ -508,16 +550,20 @@ fn encode_pad_len<B: Static<usize>, P: Static<Option<u8>>>(bit: B, pad: P, len: 
     }
 }
 
-fn encode_pad<B: Static<usize>, M: Static<bool>, P: Static<Option<u8>>>(
+// requires(safety): output.len() == encode_pad_len(bit, input.len())
+// ensures(safety): output[i] < 128 if 0 <= i < output.len()
+unsafe fn encode_pad<B: Static<usize>, M: Static<bool>, P: Static<Option<u8>>>(
     bit: B, msb: M, symbols: &[u8; 256], spad: P, input: &[u8], output: &mut [u8],
 ) {
     let pad = match spad.val() {
-        None => return encode_base(bit, msb, symbols, input, output),
+        // SAFETY: By precondition and encode_pad_len.
+        None => return unsafe { encode_base(bit, msb, symbols, input, output) },
         Some(pad) => pad,
     };
     debug_assert_eq!(output.len(), encode_pad_len(bit, spad, input.len()));
     let olen = encode_base_len(bit, input.len());
-    encode_base(bit, msb, symbols, input, &mut output[.. olen]);
+    // SAFETY: By olen.
+    unsafe { encode_base(bit, msb, symbols, input, &mut output[.. olen]) };
     for output in output.iter_mut().skip(olen) {
         *output = pad;
     }
@@ -538,7 +584,9 @@ fn encode_wrap_len<
     }
 }
 
-fn encode_wrap_mut<
+// requires(safety): output.len() == encode_wrap_len(bit, input.len())
+// ensures(safety): output[i] < 128 if 0 <= i < output.len()
+unsafe fn encode_wrap_mut<
     'a,
     B: Static<usize>,
     M: Static<bool>,
@@ -548,7 +596,8 @@ fn encode_wrap_mut<
     bit: B, msb: M, symbols: &[u8; 256], pad: P, wrap: W, input: &[u8], output: &mut [u8],
 ) {
     let (col, end) = match wrap.val() {
-        None => return encode_pad(bit, msb, symbols, pad, input, output),
+        // SAFETY: By precondition and encode_wrap_len.
+        None => return unsafe { encode_pad(bit, msb, symbols, pad, input, output) },
         Some((col, end)) => (col, end),
     };
     debug_assert_eq!(output.len(), encode_wrap_len(bit, pad, wrap, input.len()));
@@ -559,14 +608,20 @@ fn encode_wrap_mut<
     let olen = dec - end.len();
     let n = input.len() / enc;
     for i in 0 .. n {
+        // SAFETY: By i and n.
         let input = unsafe { chunk_unchecked(input, enc, i) };
+        // SAFETY: By precondition and mentioned functions and variables.
         let output = unsafe { chunk_mut_unchecked(output, dec, i) };
-        encode_base(bit, msb, symbols, input, &mut output[.. olen]);
+        // SAFETY: By encode_{base_,}len, olen, enc, and dec.
+        unsafe { encode_base(bit, msb, symbols, input, &mut output[.. olen]) };
         output[olen ..].copy_from_slice(end);
     }
     if input.len() > enc * n {
         let olen = dec * n + encode_pad_len(bit, pad, input.len() - enc * n);
-        encode_pad(bit, msb, symbols, pad, &input[enc * n ..], &mut output[dec * n .. olen]);
+        // SAFETY: By precondition and mentioned functions and variables.
+        unsafe {
+            encode_pad(bit, msb, symbols, pad, &input[enc * n ..], &mut output[dec * n .. olen]);
+        }
         output[olen ..].copy_from_slice(end);
     }
 }
@@ -603,7 +658,9 @@ fn decode_base_len<B: Static<usize>>(bit: B, len: usize) -> Result<usize, Decode
 // Fails with Symbol if an input character does not translate to a symbol. The
 // error is the lowest index of such character.
 // Fails with Trailing if there are non-zero trailing bits.
-fn decode_base_mut<B: Static<usize>, M: Static<bool>>(
+//
+// requires(safety): Ok(output.len()) == decode_base_len(bit, input.len())
+unsafe fn decode_base_mut<B: Static<usize>, M: Static<bool>>(
     bit: B, msb: M, ctb: bool, values: &[u8; 256], input: &[u8], output: &mut [u8],
 ) -> Result<usize, DecodePartial> {
     debug_assert_eq!(Ok(output.len()), decode_base_len(bit, input.len()));
@@ -612,7 +669,9 @@ fn decode_base_mut<B: Static<usize>, M: Static<bool>>(
         written: pos / dec(bit.val()) * enc(bit.val()),
         error: DecodeError { position: pos, kind },
     };
-    decode_mut(bit, msb, values, input, output).map_err(|pos| fail(pos, DecodeKind::Symbol))?;
+    // SAFETY: By precondition and mentioned functions and variables.
+    unsafe { decode_mut(bit, msb, values, input, output) }
+        .map_err(|pos| fail(pos, DecodeKind::Symbol))?;
     check_trail(bit, msb, ctb, values, input)
         .map_err(|()| fail(input.len() - 1, DecodeKind::Trailing))?;
     Ok(output.len())
@@ -623,11 +682,14 @@ fn decode_base_mut<B: Static<usize>, M: Static<bool>>(
 // Fails with Padding if some padding length is invalid. The error is the index
 // of the first padding character of the invalid padding.
 // Fails with Trailing if there are non-zero trailing bits.
-fn decode_pad_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
+//
+// requires(safety): Ok(output.len()) == decode_pad_len(bit, pad, input.len())
+unsafe fn decode_pad_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
     bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, input: &[u8], output: &mut [u8],
 ) -> Result<usize, DecodePartial> {
     if !pad.val() {
-        return decode_base_mut(bit, msb, ctb, values, input, output);
+        // SAFETY: By precondition and decode_base_len.
+        return unsafe { decode_base_mut(bit, msb, ctb, values, input, output) };
     }
     debug_assert_eq!(Ok(output.len()), decode_pad_len(bit, pad, input.len()));
     let enc = enc(bit.val());
@@ -636,14 +698,10 @@ fn decode_pad_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
     let mut outpos = 0;
     let mut outend = output.len();
     while inpos < input.len() {
-        match decode_base_mut(
-            bit,
-            msb,
-            ctb,
-            values,
-            &input[inpos ..],
-            &mut output[outpos .. outend],
-        ) {
+        // SAFETY: By inpos, outpos, and outend (which invariant uses the precondition).
+        match unsafe {
+            decode_base_mut(bit, msb, ctb, values, &input[inpos ..], &mut output[outpos .. outend])
+        } {
             Ok(written) => {
                 if cfg!(debug_assertions) {
                     inpos = input.len();
@@ -663,14 +721,17 @@ fn decode_pad_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
                 error: DecodeError { position: inpos + pos, kind: DecodeKind::Padding },
             })?;
         let outlen = decode_base_len(bit, inlen).unwrap();
-        let written = decode_base_mut(
-            bit,
-            msb,
-            ctb,
-            values,
-            &input[inpos .. inpos + inlen],
-            &mut output[outpos .. outpos + outlen],
-        )
+        // SAFETY: By outlen.
+        let written = unsafe {
+            decode_base_mut(
+                bit,
+                msb,
+                ctb,
+                values,
+                &input[inpos .. inpos + inlen],
+                &mut output[outpos .. outpos + outlen],
+            )
+        }
         .map_err(|partial| {
             debug_assert_eq!(partial.read, 0);
             debug_assert_eq!(partial.written, 0);
@@ -728,12 +789,15 @@ fn decode_wrap_block<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
         e.position = shift[e.position];
         e
     })?;
-    let written = decode_pad_mut(bit, msb, ctb, values, pad, &buf[.. bufpos], &mut output[.. olen])
-        .map_err(|partial| {
-            debug_assert_eq!(partial.read, 0);
-            debug_assert_eq!(partial.written, 0);
-            DecodeError { position: shift[partial.error.position], kind: partial.error.kind }
-        })?;
+    // SAFETY: By olen.
+    let written = unsafe {
+        decode_pad_mut(bit, msb, ctb, values, pad, &buf[.. bufpos], &mut output[.. olen])
+    }
+    .map_err(|partial| {
+        debug_assert_eq!(partial.read, 0);
+        debug_assert_eq!(partial.written, 0);
+        DecodeError { position: shift[partial.error.position], kind: partial.error.kind }
+    })?;
     Ok((inpos, written))
 }
 
@@ -743,28 +807,35 @@ fn decode_wrap_block<B: Static<usize>, M: Static<bool>, P: Static<bool>>(
 // of the first padding character of the invalid padding.
 // Fails with Trailing if there are non-zero trailing bits.
 // Fails with Length if input length (without ignored characters) is invalid.
+//
+// requires(safety): output.len() == decode_wrap_len(bit, pad, input.len()).1
+// requires(safety): input.len() == decode_wrap_len(bit, pad, input.len()).0 if !has_ignore
 #[allow(clippy::too_many_arguments)]
-fn decode_wrap_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>, I: Static<bool>>(
+unsafe fn decode_wrap_mut<B: Static<usize>, M: Static<bool>, P: Static<bool>, I: Static<bool>>(
     bit: B, msb: M, ctb: bool, values: &[u8; 256], pad: P, has_ignore: I, input: &[u8],
     output: &mut [u8],
 ) -> Result<usize, DecodePartial> {
     if !has_ignore.val() {
-        return decode_pad_mut(bit, msb, ctb, values, pad, input, output);
+        // SAFETY: By precondition and decode_pad_len.
+        return unsafe { decode_pad_mut(bit, msb, ctb, values, pad, input, output) };
     }
     debug_assert_eq!(output.len(), decode_wrap_len(bit, pad, input.len()).1);
     let mut inpos = 0;
     let mut outpos = 0;
     while inpos < input.len() {
         let (inlen, outlen) = decode_wrap_len(bit, pad, input.len() - inpos);
-        match decode_pad_mut(
-            bit,
-            msb,
-            ctb,
-            values,
-            pad,
-            &input[inpos .. inpos + inlen],
-            &mut output[outpos .. outpos + outlen],
-        ) {
+        // SAFETY: inlen and outlen.
+        match unsafe {
+            decode_pad_mut(
+                bit,
+                msb,
+                ctb,
+                values,
+                pad,
+                &input[inpos .. inpos + inlen],
+                &mut output[outpos .. outpos + outlen],
+            )
+        } {
             Ok(written) => {
                 inpos += inlen;
                 outpos += written;
@@ -1298,6 +1369,7 @@ impl Encoding {
     /// ```
     ///
     /// [`encode_len`]: struct.Encoding.html#method.encode_len
+    // ensures(safety): output[i] < 128 if 0 <= i < output.len()
     #[allow(clippy::cognitive_complexity)]
     pub fn encode_mut(&self, input: &[u8], output: &mut [u8]) {
         assert_eq!(output.len(), self.encode_len(input.len()));
@@ -1306,7 +1378,8 @@ impl Encoding {
             let msb: bool = self.msb();
             let pad: Option<u8> = self.pad();
             let wrap: Option<(usize, &[u8])> = self.wrap();
-            encode_wrap_mut(bit, msb, self.sym(), pad, wrap, input, output)
+            // SAFETY: By assert and mentioned functions.
+            unsafe { encode_wrap_mut(bit, msb, self.sym(), pad, wrap, input, output) }
         }
     }
 
@@ -1324,6 +1397,7 @@ impl Encoding {
     /// ```
     #[cfg(feature = "alloc")]
     pub fn encode_append(&self, input: &[u8], output: &mut String) {
+        // SAFETY: By output.resize() and self.encode_mut() below.
         let output = unsafe { output.as_mut_vec() };
         let output_len = output.len();
         output.resize(output_len + self.encode_len(input.len()), 0u8);
@@ -1369,6 +1443,7 @@ impl Encoding {
         for input in input.chunks(buffer.len() / dec * enc) {
             let buffer = &mut buffer[.. self.encode_len(input.len())];
             self.encode_mut(input, buffer);
+            // SAFETY: By self.encode_mut() above.
             output.write_str(unsafe { core::str::from_utf8_unchecked(buffer) })?;
         }
         Ok(())
@@ -1403,6 +1478,7 @@ impl Encoding {
     pub fn encode(&self, input: &[u8]) -> String {
         let mut output = vec![0u8; self.encode_len(input.len())];
         self.encode_mut(input, &mut output);
+        // SAFETY: By self.encode_mut() above.
         unsafe { String::from_utf8_unchecked(output) }
     }
 
@@ -1477,8 +1553,10 @@ impl Encoding {
             let msb: bool = self.msb();
             let pad: bool = self.pad().is_some();
             let has_ignore: bool = self.has_ignore();
-            decode_wrap_mut(bit, msb, self.ctb(), self.val(), pad, has_ignore,
-                            input, output)
+            // SAFETY: By assert and mentioned functions.
+            unsafe {
+                decode_wrap_mut(bit, msb, self.ctb(), self.val(), pad, has_ignore, input, output)
+            }
         }
     }
 

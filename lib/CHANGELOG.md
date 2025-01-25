@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.7.1-git
+
+### Patch
+
+- Move lints from `src/lib.rs` to `Cargo.toml` to ignore MSRV restrictions
+
 ## 2.7.0
 
 ### Minor
