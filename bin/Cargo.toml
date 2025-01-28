@@ -1,6 +1,6 @@
 [package]
 name = "data-encoding-bin"
-version = "0.3.5"
+version = "0.3.6-git"
 authors = ["Julien Cretin <git@ia0.eu>"]
 license = "MIT"
 edition = "2021"
@@ -17,5 +17,5 @@ name = "data-encoding"
 path = "src/main.rs"
 
 [dependencies]
-data-encoding = { version = "2.7.0", path = "../lib" }
+data-encoding = { version = "2.8.0-git", path = "../lib" }
 getopts = "0.2"
