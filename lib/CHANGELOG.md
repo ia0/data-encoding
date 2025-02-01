@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.8.0-git
+
+### Minor
+
+- Add `BASE32_NOPAD_NOCASE` and `BASE32_NOPAD_VISUAL`
+
 ## 2.7.0
 
 ### Minor
