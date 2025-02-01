@@ -1,3 +1,5 @@
+//! Library benchmarks
+
 #![feature(test)]
 
 extern crate test;

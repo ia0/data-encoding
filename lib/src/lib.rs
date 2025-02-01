@@ -145,21 +145,6 @@
 
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-// TODO: This list up to warn(clippy::pedantic) should ideally use a lint group.
-#![warn(elided_lifetimes_in_paths)]
-// TODO(msrv): #![warn(let_underscore_drop)]
-#![warn(missing_debug_implementations)]
-#![warn(missing_docs)]
-#![warn(unreachable_pub)]
-// TODO(msrv): #![warn(unsafe_op_in_unsafe_fn)]
-#![warn(unused_results)]
-#![allow(unused_unsafe)] // TODO(msrv)
-#![warn(clippy::pedantic)]
-#![allow(clippy::assigning_clones)] // TODO(msrv)
-#![allow(clippy::doc_markdown)]
-#![allow(clippy::enum_glob_use)]
-#![allow(clippy::similar_names)]
-#![allow(clippy::uninlined_format_args)] // TODO(msrv)
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -175,6 +160,7 @@ use alloc::vec;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use core::convert::TryInto;
+use core::debug_assert as safety_assert;
 
 macro_rules! check {
     ($e: expr, $c: expr) => {
@@ -255,13 +241,15 @@ macro_rules! dispatch {
     ($body: expr) => { $body };
 }
 
-unsafe fn chunk_unchecked<T>(x: &[T], n: usize, i: usize) -> &[T] {
-    debug_assert!((i + 1) * n <= x.len());
+fn chunk_unchecked<T>(x: &[T], n: usize, i: usize) -> &[T] {
+    safety_assert!((i + 1) * n <= x.len());
+    // SAFETY: Ensured by correctness requirements (and asserted above).
     unsafe { core::slice::from_raw_parts(x.as_ptr().add(n * i), n) }
 }
 
-unsafe fn chunk_mut_unchecked<T>(x: &mut [T], n: usize, i: usize) -> &mut [T] {
-    debug_assert!((i + 1) * n <= x.len());
+fn chunk_mut_unchecked<T>(x: &mut [T], n: usize, i: usize) -> &mut [T] {
+    safety_assert!((i + 1) * n <= x.len());
+    // SAFETY: Ensured by correctness requirements (and asserted above).
     unsafe { core::slice::from_raw_parts_mut(x.as_mut_ptr().add(n * i), n) }
 }
 
@@ -412,8 +400,8 @@ fn encode_mut<B: Static<usize>, M: Static<bool>>(
         _ => 1,
     };
     vectorize(n, bs, |i| {
-        let input = unsafe { chunk_unchecked(input, enc, i) };
-        let output = unsafe { chunk_mut_unchecked(output, dec, i) };
+        let input = chunk_unchecked(input, enc, i);
+        let output = chunk_mut_unchecked(output, dec, i);
         encode_block(bit, msb, symbols, input, output);
     });
     encode_block(bit, msb, symbols, &input[enc * n ..], &mut output[dec * n ..]);
@@ -451,8 +439,8 @@ fn decode_mut<B: Static<usize>, M: Static<bool>>(
     let dec = dec(bit.val());
     let n = input.len() / dec;
     for i in 0 .. n {
-        let input = unsafe { chunk_unchecked(input, dec, i) };
-        let output = unsafe { chunk_mut_unchecked(output, enc, i) };
+        let input = chunk_unchecked(input, dec, i);
+        let output = chunk_mut_unchecked(output, enc, i);
         decode_block(bit, msb, values, input, output).map_err(|e| dec * i + e)?;
     }
     decode_block(bit, msb, values, &input[dec * n ..], &mut output[enc * n ..])
@@ -559,8 +547,8 @@ fn encode_wrap_mut<
     let olen = dec - end.len();
     let n = input.len() / enc;
     for i in 0 .. n {
-        let input = unsafe { chunk_unchecked(input, enc, i) };
-        let output = unsafe { chunk_mut_unchecked(output, dec, i) };
+        let input = chunk_unchecked(input, enc, i);
+        let output = chunk_mut_unchecked(output, dec, i);
         encode_base(bit, msb, symbols, input, &mut output[.. olen]);
         output[olen ..].copy_from_slice(end);
     }
@@ -1324,10 +1312,12 @@ impl Encoding {
     /// ```
     #[cfg(feature = "alloc")]
     pub fn encode_append(&self, input: &[u8], output: &mut String) {
+        // SAFETY: Ensured by correctness guarantees of encode_mut (and asserted below).
         let output = unsafe { output.as_mut_vec() };
         let output_len = output.len();
         output.resize(output_len + self.encode_len(input.len()), 0u8);
         self.encode_mut(input, &mut output[output_len ..]);
+        safety_assert!(output[output_len ..].is_ascii());
     }
 
     /// Returns an object to encode a fragmented input and append it to `output`
@@ -1369,6 +1359,8 @@ impl Encoding {
         for input in input.chunks(buffer.len() / dec * enc) {
             let buffer = &mut buffer[.. self.encode_len(input.len())];
             self.encode_mut(input, buffer);
+            safety_assert!(buffer.is_ascii());
+            // SAFETY: Ensured by correctness guarantees of encode_mut (and asserted above).
             output.write_str(unsafe { core::str::from_utf8_unchecked(buffer) })?;
         }
         Ok(())
@@ -1403,6 +1395,8 @@ impl Encoding {
     pub fn encode(&self, input: &[u8]) -> String {
         let mut output = vec![0u8; self.encode_len(input.len())];
         self.encode_mut(input, &mut output);
+        safety_assert!(output.is_ascii());
+        // SAFETY: Ensured by correctness guarantees of encode_mut (and asserted above).
         unsafe { String::from_utf8_unchecked(output) }
     }
 

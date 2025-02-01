@@ -6,6 +6,11 @@
 
 - Add `BASE32_NOPAD_NOCASE` and `BASE32_NOPAD_VISUAL`
 
+### Patch
+
+- Add missing safety documentation and assertions for testing and fuzzing
+- Move lints from `src/lib.rs` to `Cargo.toml` to ignore MSRV restrictions
+
 ## 2.7.0
 
 ### Minor

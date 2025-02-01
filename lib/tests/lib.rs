@@ -1,3 +1,5 @@
+//! Library tests
+
 use data_encoding::DecodeKind::*;
 use data_encoding::{DecodeError, Encoding, Specification};
 
