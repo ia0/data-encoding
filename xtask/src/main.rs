@@ -327,6 +327,8 @@ struct Workflow {
     name: String,
     on: WorkflowOn,
     jobs: BTreeMap<String, WorkflowJob>,
+    concurrency: BTreeMap<String, String>,
+    permissions: BTreeMap<String, String>,
 }
 
 #[derive(Serialize)]
@@ -358,6 +360,10 @@ struct WorkflowStep {
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    r#if: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     uses: Option<String>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     env: BTreeMap<String, String>,
@@ -381,8 +387,15 @@ impl Flags {
                         pull_request: WorkflowEvents { branches: vec!["main".to_owned()] },
                         schedule: vec![WorkflowSchedule { cron: "38 11 * * 6".to_owned() }],
                     },
+                    concurrency: BTreeMap::new(),
+                    permissions: BTreeMap::new(),
                     jobs: BTreeMap::new(),
                 };
+                ci.concurrency.insert("group".to_string(), "ci-${{ github.ref }}".to_string());
+                ci.concurrency.insert(
+                    "cancel-in-progress".to_string(),
+                    "${{ github.event_name == 'pull_request' }}".to_string(),
+                );
                 for actions in actions.chunk_by(|x, y| x.os == y.os) {
                     let mut job =
                         WorkflowJob { runs_on: format!("{}-latest", actions[0].os), steps: vec![] };
@@ -390,6 +403,28 @@ impl Flags {
                         uses: Some("actions/checkout@v4".to_owned()),
                         ..Default::default()
                     });
+                    let use_cache = matches!(
+                        actions[0],
+                        Action { os: Os::Ubuntu, toolchain: Toolchain::Nightly, .. }
+                    );
+                    let with = [
+                        ("path".to_string(), "~/.cargo/bin\n~/.cargo/.crates*\n".to_string()),
+                        ("key".to_string(), "cargo-home-${{ runner.os }}".to_string()),
+                    ];
+                    let snapshot =
+                        "echo snapshot=\"$(cargo install --list | sha256sum)\" >> $GITHUB_OUTPUT";
+                    if use_cache {
+                        job.steps.push(WorkflowStep {
+                            uses: Some("actions/cache/restore@v4".to_owned()),
+                            with: with.iter().cloned().collect(),
+                            ..Default::default()
+                        });
+                        job.steps.push(WorkflowStep {
+                            id: Some("before".to_string()),
+                            run: Some(snapshot.to_string()),
+                            ..Default::default()
+                        });
+                    }
                     for actions in actions.chunk_by(|x, y| x.toolchain == y.toolchain) {
                         job.steps.push(WorkflowStep {
                             run: Some(format!("rustup install {}", actions[0].toolchain)),
@@ -415,24 +450,6 @@ impl Flags {
                             }
                             job.steps.push(WorkflowStep { run: Some(run), ..Default::default() });
                         }
-                        if matches!(
-                            actions[0],
-                            Action { os: Os::Ubuntu, toolchain: Toolchain::Nightly, .. }
-                        ) {
-                            job.steps.push(WorkflowStep {
-                                uses: Some("actions/cache@v4".to_owned()),
-                                with: [
-                                    (
-                                        "path".to_owned(),
-                                        "~/.cargo/bin\n~/.cargo/.crates*\n".to_owned(),
-                                    ),
-                                    ("key".to_owned(), "cargo-home-${{ runner.os }}".to_owned()),
-                                ]
-                                .into_iter()
-                                .collect(),
-                                ..Default::default()
-                            });
-                        }
                         for task in [Task::Audit, Task::SemverChecks] {
                             if actions.iter().any(|x| x.task == task) {
                                 job.steps.push(WorkflowStep {
@@ -450,6 +467,23 @@ impl Flags {
                                     .extend(instruction.generate(action.toolchain, action.dir));
                             }
                         }
+                    }
+                    if use_cache {
+                        job.steps.push(WorkflowStep {
+                            id: Some("after".to_string()),
+                            run: Some(snapshot.to_string()),
+                            ..Default::default()
+                        });
+                        job.steps.push(WorkflowStep {
+                            uses: Some("actions/cache/save@v4".to_owned()),
+                            with: with.iter().cloned().collect(),
+                            r#if: Some(
+                                "${{ steps.before.outputs.snapshot != \
+                                 steps.after.outputs.snapshot }}"
+                                    .to_string(),
+                            ),
+                            ..Default::default()
+                        });
                     }
                     ci.jobs.insert(actions[0].os.to_string(), job);
                 }
