@@ -1,7 +1,7 @@
 To install the binary from the [github] repository:
 
 ```
-make install
+cargo install --path=bin
 ```
 
 To install the latest version published on `crates.io` (does not require to clone the repository):

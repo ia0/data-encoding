@@ -1,11 +1,5 @@
 .SUFFIXES:
 
-.PHONY: help
-help:
-	@echo 'Targets:'
-	@echo '    make html      # builds website'
-	@echo '    make help      # shows this help'
-
 .PHONY: html
 html:
 	rustc -V | grep nightly >/dev/null
