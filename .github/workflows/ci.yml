@@ -13,14 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - run: rustup install nightly
-    - run: rustup component add --toolchain=nightly clippy miri rustfmt
-    - uses: actions/cache@v4
+    - uses: actions/cache/restore@v4
       with:
         key: cargo-home-${{ runner.os }}
         path: |
           ~/.cargo/bin
           ~/.cargo/.crates*
+    - id: before
+      run: echo snapshot="$(cargo install --list | sha256sum)" >> $GITHUB_OUTPUT
+    - run: rustup install nightly
+    - run: rustup component add --toolchain=nightly clippy miri rustfmt
     - run: cargo +nightly install cargo-audit --locked
     - name: cd lib && cargo +nightly fmt -- --check
       run: cargo +nightly fmt -- --check
@@ -270,6 +272,15 @@ jobs:
       working-directory: lib/macro
     - run: cd lib/macro && rm Cargo.lock
     - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock
+    - id: after
+      run: echo snapshot="$(cargo install --list | sha256sum)" >> $GITHUB_OUTPUT
+    - if: ${{ steps.before.outputs.snapshot != steps.after.outputs.snapshot }}
+      uses: actions/cache/save@v4
+      with:
+        key: cargo-home-${{ runner.os }}
+        path: |
+          ~/.cargo/bin
+          ~/.cargo/.crates*
   windows:
     runs-on: windows-latest
     steps:
@@ -391,3 +402,7 @@ jobs:
       working-directory: lib/macro
     - run: cd lib/macro && rm Cargo.lock
     - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock
+concurrency:
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.ref }}
+permissions: {}
