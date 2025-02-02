@@ -21,3 +21,13 @@ rustdoc-args = ["--cfg=docsrs"]
 default = ["std"]
 alloc = []
 std = ["alloc"]
+
+[lints]
+clippy.undocumented-unsafe-blocks = "warn"
+rust.elided-lifetimes-in-paths = "warn"
+rust.let-underscore-drop = "warn"
+rust.missing-debug-implementations = "warn"
+rust.missing-docs = "warn"
+rust.unreachable-pub = "warn"
+rust.unsafe-op-in-unsafe-fn = "warn"
+rust.unused-results = "warn"
