@@ -61,7 +61,12 @@ jobs:
     - name: cd nostd && cargo +nightly clippy -- --deny=warnings
       run: cargo +nightly clippy -- --deny=warnings
       working-directory: nostd
+    - name: cd lib/fuzz && cargo +nightly clippy --lib --examples -- --deny=warnings
+      run: cargo +nightly clippy --lib --examples -- --deny=warnings
+      working-directory: lib/fuzz
     - name: cd lib/fuzz && cargo +nightly clippy -- --deny=warnings
+      env:
+        RUSTFLAGS: --cfg=fuzzing
       run: cargo +nightly clippy -- --deny=warnings
       working-directory: lib/fuzz
     - name: cd lib && cargo +nightly build
@@ -103,7 +108,12 @@ jobs:
     - name: cd nostd && cargo +nightly build --release
       run: cargo +nightly build --release
       working-directory: nostd
+    - name: cd lib/fuzz && cargo +nightly build --lib --examples
+      run: cargo +nightly build --lib --examples
+      working-directory: lib/fuzz
     - name: cd lib/fuzz && cargo +nightly build
+      env:
+        RUSTFLAGS: --cfg=fuzzing
       run: cargo +nightly build
       working-directory: lib/fuzz
     - name: cd cmp && cargo +nightly build
@@ -128,8 +138,8 @@ jobs:
     - name: cd nostd && cargo +nightly run --release --features=alloc
       run: cargo +nightly run --release --features=alloc
       working-directory: nostd
-    - name: cd lib/fuzz && cargo +nightly test
-      run: cargo +nightly test
+    - name: cd lib/fuzz && cargo +nightly test --lib
+      run: cargo +nightly test --lib
       working-directory: lib/fuzz
     - name: cd cmp && cargo +nightly test
       run: cargo +nightly test
