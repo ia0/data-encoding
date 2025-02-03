@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "MIT"
 edition = "2021"
-rust-version = "1.81"
 repository = "https://github.com/ia0/data-encoding"
 description = "Website for data-encoding"
 publish = false
