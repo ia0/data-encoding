@@ -388,7 +388,9 @@ impl Flags {
                         schedule: vec![WorkflowSchedule { cron: "38 11 * * 6".to_owned() }],
                     },
                     concurrency: BTreeMap::new(),
-                    permissions: BTreeMap::new(),
+                    permissions: [("actions".to_string(), "write".to_string())]
+                        .into_iter()
+                        .collect(),
                     jobs: BTreeMap::new(),
                 };
                 ci.concurrency.insert("group".to_string(), "ci-${{ github.ref }}".to_string());
@@ -407,12 +409,14 @@ impl Flags {
                         actions[0],
                         Action { os: Os::Ubuntu, toolchain: Toolchain::Nightly, .. }
                     );
+                    let cache_key = "cargo-home";
                     let with = [
                         ("path".to_string(), "~/.cargo/bin\n~/.cargo/.crates*\n".to_string()),
-                        ("key".to_string(), "cargo-home-${{ runner.os }}".to_string()),
+                        ("key".to_string(), cache_key.to_string()),
                     ];
-                    let snapshot =
-                        "echo snapshot=\"$(cargo install --list | sha256sum)\" >> $GITHUB_OUTPUT";
+                    let snapshot = "LIST=\"$(cargo install --list)\"\necho \"$LIST\"\nHASH=$(echo \
+                                    \"$LIST\" | sha256sum | cut -f1 -d' ')\necho $HASH\necho \
+                                    snapshot=$HASH >> $GITHUB_OUTPUT\n";
                     if use_cache {
                         job.steps.push(WorkflowStep {
                             uses: Some("actions/cache/restore@v4".to_owned()),
@@ -469,19 +473,29 @@ impl Flags {
                         }
                     }
                     if use_cache {
+                        let if_ =
+                            "${{ steps.before.outputs.snapshot != steps.after.outputs.snapshot }}";
                         job.steps.push(WorkflowStep {
                             id: Some("after".to_string()),
                             run: Some(snapshot.to_string()),
                             ..Default::default()
                         });
                         job.steps.push(WorkflowStep {
+                            r#if: Some(if_.to_string()),
+                            run: Some(format!(
+                                "ID=\"$(gh cache list --ref=${{{{ github.ref }}}} \
+                                 --key={cache_key} --json=id --jq='.[].id')\"\necho \"[$ID]\"\n[ \
+                                 -z \"$ID\" ] || gh cache delete \"$ID\"\n"
+                            )),
+                            env: [("GH_TOKEN".to_string(), "${{ github.token }}".to_string())]
+                                .into_iter()
+                                .collect(),
+                            ..Default::default()
+                        });
+                        job.steps.push(WorkflowStep {
+                            r#if: Some(if_.to_string()),
                             uses: Some("actions/cache/save@v4".to_owned()),
                             with: with.iter().cloned().collect(),
-                            r#if: Some(
-                                "${{ steps.before.outputs.snapshot != \
-                                 steps.after.outputs.snapshot }}"
-                                    .to_string(),
-                            ),
                             ..Default::default()
                         });
                     }

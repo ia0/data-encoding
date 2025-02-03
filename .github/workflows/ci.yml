@@ -15,12 +15,17 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/cache/restore@v4
       with:
-        key: cargo-home-${{ runner.os }}
+        key: cargo-home
         path: |
           ~/.cargo/bin
           ~/.cargo/.crates*
     - id: before
-      run: echo snapshot="$(cargo install --list | sha256sum)" >> $GITHUB_OUTPUT
+      run: |
+        LIST="$(cargo install --list)"
+        echo "$LIST"
+        HASH=$(echo "$LIST" | sha256sum | cut -f1 -d' ')
+        echo $HASH
+        echo snapshot=$HASH >> $GITHUB_OUTPUT
     - run: rustup install nightly
     - run: rustup component add --toolchain=nightly clippy miri rustfmt
     - run: cargo +nightly install cargo-audit --locked
@@ -273,11 +278,23 @@ jobs:
     - run: cd lib/macro && rm Cargo.lock
     - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock
     - id: after
-      run: echo snapshot="$(cargo install --list | sha256sum)" >> $GITHUB_OUTPUT
+      run: |
+        LIST="$(cargo install --list)"
+        echo "$LIST"
+        HASH=$(echo "$LIST" | sha256sum | cut -f1 -d' ')
+        echo $HASH
+        echo snapshot=$HASH >> $GITHUB_OUTPUT
+    - if: ${{ steps.before.outputs.snapshot != steps.after.outputs.snapshot }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        ID="$(gh cache list --ref=${{ github.ref }} --key=cargo-home --json=id --jq='.[].id')"
+        echo "[$ID]"
+        [ -z "$ID" ] || gh cache delete "$ID"
     - if: ${{ steps.before.outputs.snapshot != steps.after.outputs.snapshot }}
       uses: actions/cache/save@v4
       with:
-        key: cargo-home-${{ runner.os }}
+        key: cargo-home
         path: |
           ~/.cargo/bin
           ~/.cargo/.crates*
@@ -405,4 +422,5 @@ jobs:
 concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
   group: ci-${{ github.ref }}
-permissions: {}
+permissions:
+  actions: write
