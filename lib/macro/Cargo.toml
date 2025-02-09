@@ -1,6 +1,6 @@
 [package]
 name = "data-encoding-macro"
-version = "0.1.17-git"
+version = "0.1.17"
 authors = ["Julien Cretin <cretin@google.com>"]
 license = "MIT"
 edition = "2018"
@@ -14,5 +14,5 @@ description = "Macros for data-encoding"
 include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 
 [dependencies]
-data-encoding = { version = "2.8.0-git", path = "..", default-features = false }
-data-encoding-macro-internal = { version = "0.1.15-git", path = "internal" }
+data-encoding = { version = "2.8.0", path = "..", default-features = false }
+data-encoding-macro-internal = { version = "0.1.15", path = "internal" }

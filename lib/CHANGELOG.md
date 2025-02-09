@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.8.0-git
+## 2.8.0
 
 ### Minor
 
