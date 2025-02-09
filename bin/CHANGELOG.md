@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.6-git
+## 0.3.6
 
 ### Patch
 
