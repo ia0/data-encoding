@@ -22,7 +22,7 @@ This repository provides the following Rust crates for data-encoding:
 [ci]: https://github.com/ia0/data-encoding/actions/workflows/ci.yml
 [coveralls-badge]: https://coveralls.io/repos/github/ia0/data-encoding/badge.svg?branch=main
 [coveralls]: https://coveralls.io/github/ia0/data-encoding?branch=main
-[documentation-badge]: https://docs.rs/data-encoding/badge.svg
+[documentation-badge]: https://img.shields.io/docsrs/data-encoding/latest
 [documentation]: https://docs.rs/data-encoding
 [fuzz-badge]: https://oss-fuzz-build-logs.storage.googleapis.com/badges/data-encoding.svg
 [fuzz]: https://oss-fuzz-build-logs.storage.googleapis.com/index.html#data-encoding
