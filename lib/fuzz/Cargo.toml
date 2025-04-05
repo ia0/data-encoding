@@ -30,24 +30,32 @@ name = "impl_decode"
 path = "fuzz_targets/impl_decode.rs"
 
 [[bin]]
-name = "impl_new_encoder"
-path = "fuzz_targets/impl_new_encoder.rs"
+name = "impl_encode_mut_str"
+path = "fuzz_targets/impl_encode_mut_str.rs"
+
+[[bin]]
+name = "impl_encode_append"
+path = "fuzz_targets/impl_encode_append.rs"
 
 [[bin]]
 name = "impl_encode_write_buffer"
 path = "fuzz_targets/impl_encode_write_buffer.rs"
 
 [[bin]]
-name = "spec_spec_base"
-path = "fuzz_targets/spec_spec_base.rs"
+name = "impl_new_encoder"
+path = "fuzz_targets/impl_new_encoder.rs"
+
+[[bin]]
+name = "spec_decode_encode"
+path = "fuzz_targets/spec_decode_encode.rs"
 
 [[bin]]
 name = "spec_encode_decode"
 path = "fuzz_targets/spec_encode_decode.rs"
 
 [[bin]]
-name = "spec_decode_encode"
-path = "fuzz_targets/spec_decode_encode.rs"
+name = "spec_spec_base"
+path = "fuzz_targets/spec_spec_base.rs"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }

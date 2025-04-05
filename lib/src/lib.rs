@@ -1298,6 +1298,34 @@ impl Encoding {
         }
     }
 
+    /// Encodes `input` in `output` and returns it as a `&str`
+    ///
+    /// It is guaranteed that `output` and the return value only differ by their type. They both
+    /// point to the same range of memory (pointer and length).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `output` length does not match the result of [`encode_len`] for the `input`
+    /// length.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use data_encoding::BASE64;
+    /// # let mut buffer = vec![0; 100];
+    /// let input = b"Hello world";
+    /// let output = &mut buffer[0 .. BASE64.encode_len(input.len())];
+    /// assert_eq!(BASE64.encode_mut_str(input, output), "SGVsbG8gd29ybGQ=");
+    /// ```
+    ///
+    /// [`encode_len`]: struct.Encoding.html#method.encode_len
+    pub fn encode_mut_str<'a>(&self, input: &[u8], output: &'a mut [u8]) -> &'a str {
+        self.encode_mut(input, output);
+        safety_assert!(output.is_ascii());
+        // SAFETY: Ensured by correctness guarantees of encode_mut (and asserted above).
+        unsafe { core::str::from_utf8_unchecked(output) }
+    }
+
     /// Appends the encoding of `input` to `output`
     ///
     /// # Examples
