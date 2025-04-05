@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.7-git
+
+### Patch
+
+- Update `data-encoding` version
+
 ## 0.3.6
 
 ### Patch

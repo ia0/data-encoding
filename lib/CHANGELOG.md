@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.9.0-git
+
+### Minor
+
+- Add `Encoding::encode_mut_str()` to guarantee UTF-8 for safe callers (fixes #136)
+
 ## 2.8.0
 
 ### Minor

@@ -50,6 +50,17 @@ pub fn execute(target: &str, mut input: &[u8]) -> Output {
             output.insert("decode_ok", actual.is_ok() as usize);
             assert_eq!(actual.ok(), spec::decode(&spec, input));
         }
+        "impl_encode_mut_str" => {
+            let (spec, base) = gen_spec_base(&mut input, &mut output);
+            let mut output = vec![0; base.encode_len(input.len())];
+            assert_eq!(base.encode_mut_str(input, &mut output), spec::encode(&spec, input));
+        }
+        "impl_encode_append" => {
+            let (spec, base) = gen_spec_base(&mut input, &mut output);
+            let mut output = String::new();
+            base.encode_append(input, &mut output);
+            assert_eq!(output, spec::encode(&spec, input));
+        }
         "impl_encode_write_buffer" => {
             let (_, base) = gen_spec_base(&mut input, &mut output);
             let mut buffer = vec![0; gen::nat(&mut input, 510, 2050)];
