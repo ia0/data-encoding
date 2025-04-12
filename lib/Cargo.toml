@@ -1,6 +1,6 @@
 [package]
 name = "data-encoding"
-version = "2.9.0-git"
+version = "2.9.0"
 authors = ["Julien Cretin <git@ia0.eu>"]
 license = "MIT"
 edition = "2018"

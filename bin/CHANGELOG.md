@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.7-git
+## 0.3.7
 
 ### Patch
 
