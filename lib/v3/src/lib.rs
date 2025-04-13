@@ -1,4 +1,5 @@
 //! Efficient and customizable data-encoding functions like base64, base32, and hex
+#![doc = ""]
 #![doc = include_str!("../README.md")]
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
