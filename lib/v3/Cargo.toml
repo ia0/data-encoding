@@ -1,0 +1,38 @@
+[package]
+name = "data-encoding-v3"
+version = "0.1.0"
+authors = ["Julien Cretin <git@ia0.eu>"]
+license = "MIT"
+edition = "2024"
+rust-version = "1.85"
+keywords = ["no_std", "base64", "base32", "hex"]
+categories = ["encoding", "no-std"]
+readme = "README.md"
+repository = "https://github.com/ia0/data-encoding"
+documentation = "https://docs.rs/data-encoding"
+description = "Development branch of data-encoding 3.0.0"
+include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
+
+# TODO(https://github.com/rust-lang/rust/issues/43781): Remove this once doc_auto_cfg is in the MSRV.
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg=docsrs"]
+
+[features]
+default = ["std"]
+alloc = []
+std = ["alloc"]
+
+[lints]
+rust.elided-lifetimes-in-paths = "warn"
+rust.let-underscore-drop = "warn"
+rust.missing-debug-implementations = "warn"
+rust.missing-docs = "warn"
+rust.unreachable-pub = "warn"
+rust.unused-results = "warn"
+clippy.pedantic = { level = "warn", priority = -1 }
+clippy.assigning-clones = "allow"
+clippy.doc-markdown = "allow"
+clippy.enum-glob-use = "allow"
+clippy.match-bool = "allow"
+clippy.semicolon-if-nothing-returned = "allow"
+clippy.similar-names = "allow"
