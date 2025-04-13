@@ -565,9 +565,7 @@ impl Actions {
                     continue;
                 }
                 if task == Task::SemverChecks {
-                    if !dir.is_published()
-                        || matches!(dir, Dir::LibV3 | Dir::Bin | Dir::MacroInternal)
-                    {
+                    if !dir.is_published() || matches!(dir, Dir::Bin | Dir::MacroInternal) {
                         // SemverChecks only makes sense for published library crates (not binary
                         // and not proc-macro).
                         continue;
