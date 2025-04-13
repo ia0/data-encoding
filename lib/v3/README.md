@@ -1,4 +1,4 @@
-:warning: It is strongly **discouraged** to use this crate _at this time_. There are no guarantees
+WARNING: It is strongly **discouraged** to use this crate _at this time_. There are no guarantees
 whatsoever (correctness, stability, documentation, etc). This warning will be updated as new
 versions are published.
 
