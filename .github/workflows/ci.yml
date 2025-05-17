@@ -29,6 +29,9 @@ jobs:
     - run: rustup install nightly
     - run: rustup component add --toolchain=nightly clippy miri rustfmt
     - run: cargo +nightly install cargo-audit --locked
+    - name: cd lib/v3 && cargo +nightly fmt -- --check
+      run: cargo +nightly fmt -- --check
+      working-directory: lib/v3
     - name: cd lib && cargo +nightly fmt -- --check
       run: cargo +nightly fmt -- --check
       working-directory: lib
@@ -53,6 +56,9 @@ jobs:
     - name: cd www && cargo +nightly fmt -- --check
       run: cargo +nightly fmt -- --check
       working-directory: www
+    - name: cd lib/v3 && cargo +nightly clippy -- --deny=warnings
+      run: cargo +nightly clippy -- --deny=warnings
+      working-directory: lib/v3
     - name: cd lib && cargo +nightly clippy -- --deny=warnings
       run: cargo +nightly clippy -- --deny=warnings
       working-directory: lib
@@ -76,6 +82,24 @@ jobs:
         RUSTFLAGS: --cfg=fuzzing
       run: cargo +nightly clippy -- --deny=warnings
       working-directory: lib/fuzz
+    - name: cd lib/v3 && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +nightly build --no-default-features --features=alloc
+      run: cargo +nightly build --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +nightly build --release --no-default-features --features=alloc
+      run: cargo +nightly build --release --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +nightly build --no-default-features
+      run: cargo +nightly build --no-default-features
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +nightly build --release --no-default-features
+      run: cargo +nightly build --release --no-default-features
+      working-directory: lib/v3
     - name: cd lib && cargo +nightly build
       run: cargo +nightly build
       working-directory: lib
@@ -129,6 +153,9 @@ jobs:
     - name: cd www && cargo +nightly build
       run: cargo +nightly build
       working-directory: www
+    - name: cd lib/v3 && cargo +nightly test
+      run: cargo +nightly test
+      working-directory: lib/v3
     - name: cd lib && cargo +nightly test
       run: cargo +nightly test
       working-directory: lib
@@ -154,18 +181,32 @@ jobs:
     - name: cd www && cargo +nightly test
       run: cargo +nightly test
       working-directory: www
+    - name: cd lib/v3 && cargo +nightly doc
+      env:
+        RUSTDOCFLAGS: --deny=warnings
+      run: cargo +nightly doc
+      working-directory: lib/v3
     - name: cd lib && cargo +nightly doc
       env:
         RUSTDOCFLAGS: --deny=warnings
       run: cargo +nightly doc
       working-directory: lib
-    - name: cd lib && cargo +nightly miri test
-      run: cargo +nightly miri test
+    - name: cd lib/v3 && cargo +nightly miri test --test=lib
+      run: cargo +nightly miri test --test=lib
+      working-directory: lib/v3
+    - name: cd lib && cargo +nightly miri test --test=lib
+      run: cargo +nightly miri test --test=lib
       working-directory: lib
+    - name: cd lib/v3 && cargo +nightly bench
+      run: cargo +nightly bench
+      working-directory: lib/v3
     - name: cd lib && cargo +nightly bench
       run: cargo +nightly bench
       working-directory: lib
     - run: cd bin && ./bench.sh +nightly
+    - name: cd lib/v3 && cargo +nightly audit --deny=warnings
+      run: cargo +nightly audit --deny=warnings
+      working-directory: lib/v3
     - name: cd lib && cargo +nightly audit --deny=warnings
       run: cargo +nightly audit --deny=warnings
       working-directory: lib
@@ -192,6 +233,24 @@ jobs:
       working-directory: www
     - run: rustup install stable
     - run: cargo +stable install cargo-semver-checks --locked
+    - name: cd lib/v3 && cargo +stable build
+      run: cargo +stable build
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +stable build --release
+      run: cargo +stable build --release
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +stable build --no-default-features --features=alloc
+      run: cargo +stable build --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +stable build --release --no-default-features --features=alloc
+      run: cargo +stable build --release --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +stable build --no-default-features
+      run: cargo +stable build --no-default-features
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +stable build --release --no-default-features
+      run: cargo +stable build --release --no-default-features
+      working-directory: lib/v3
     - name: cd lib && cargo +stable build
       run: cargo +stable build
       working-directory: lib
@@ -228,6 +287,9 @@ jobs:
     - name: cd bin && cargo +stable build --release
       run: cargo +stable build --release
       working-directory: bin
+    - name: cd lib/v3 && cargo +stable semver-checks check-release
+      run: cargo +stable semver-checks check-release
+      working-directory: lib/v3
     - name: cd lib && cargo +stable semver-checks check-release
       run: cargo +stable semver-checks check-release
       working-directory: lib
@@ -277,6 +339,25 @@ jobs:
       working-directory: lib/macro
     - run: cd lib/macro && rm Cargo.lock
     - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock
+    - run: rustup install 1.85
+    - name: cd lib/v3 && cargo +1.85 build
+      run: cargo +1.85 build
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +1.85 build --release
+      run: cargo +1.85 build --release
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +1.85 build --no-default-features --features=alloc
+      run: cargo +1.85 build --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +1.85 build --release --no-default-features --features=alloc
+      run: cargo +1.85 build --release --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +1.85 build --no-default-features
+      run: cargo +1.85 build --no-default-features
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +1.85 build --release --no-default-features
+      run: cargo +1.85 build --release --no-default-features
+      working-directory: lib/v3
     - id: after
       run: |
         LIST="$(cargo install --list)"
@@ -303,6 +384,24 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - run: rustup install nightly
+    - name: cd lib/v3 && cargo +nightly build
+      run: cargo +nightly build
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +nightly build --release
+      run: cargo +nightly build --release
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +nightly build --no-default-features --features=alloc
+      run: cargo +nightly build --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +nightly build --release --no-default-features --features=alloc
+      run: cargo +nightly build --release --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +nightly build --no-default-features
+      run: cargo +nightly build --no-default-features
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +nightly build --release --no-default-features
+      run: cargo +nightly build --release --no-default-features
+      working-directory: lib/v3
     - name: cd lib && cargo +nightly build
       run: cargo +nightly build
       working-directory: lib
@@ -340,6 +439,24 @@ jobs:
       run: cargo +nightly build --release
       working-directory: bin
     - run: rustup install stable
+    - name: cd lib/v3 && cargo +stable build
+      run: cargo +stable build
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +stable build --release
+      run: cargo +stable build --release
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +stable build --no-default-features --features=alloc
+      run: cargo +stable build --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +stable build --release --no-default-features --features=alloc
+      run: cargo +stable build --release --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +stable build --no-default-features
+      run: cargo +stable build --no-default-features
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +stable build --release --no-default-features
+      run: cargo +stable build --release --no-default-features
+      working-directory: lib/v3
     - name: cd lib && cargo +stable build
       run: cargo +stable build
       working-directory: lib
@@ -419,6 +536,25 @@ jobs:
       working-directory: lib/macro
     - run: cd lib/macro && rm Cargo.lock
     - run: cd lib/macro && mv Cargo.lock.backup Cargo.lock
+    - run: rustup install 1.85
+    - name: cd lib/v3 && cargo +1.85 build
+      run: cargo +1.85 build
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +1.85 build --release
+      run: cargo +1.85 build --release
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +1.85 build --no-default-features --features=alloc
+      run: cargo +1.85 build --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +1.85 build --release --no-default-features --features=alloc
+      run: cargo +1.85 build --release --no-default-features --features=alloc
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +1.85 build --no-default-features
+      run: cargo +1.85 build --no-default-features
+      working-directory: lib/v3
+    - name: cd lib/v3 && cargo +1.85 build --release --no-default-features
+      run: cargo +1.85 build --release --no-default-features
+      working-directory: lib/v3
 concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
   group: ci-${{ github.ref }}
