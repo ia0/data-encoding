@@ -126,7 +126,7 @@ impl Action {
             (Task::Clippy, _) => &["--", "--deny=warnings"],
             (Task::Build, Dir::Nostd) => &["--release"],
             (Task::Test, Dir::Fuzz) => &["--lib"],
-            (Task::Miri, _) => &["test"],
+            (Task::Miri, _) => &["test", "--test=lib"],
             (Task::SemverChecks, _) => &["check-release"],
             (Task::Audit, _) => &["--deny=warnings"],
             _ => &[],
