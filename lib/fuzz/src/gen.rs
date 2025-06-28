@@ -17,7 +17,7 @@ pub fn spec(data: &mut &[u8]) -> Specification {
     if generate(data, 0, 1) == 1 {
         spec.check_trailing_bits = false;
     }
-    if 8 % bit != 0 && generate(data, 0, 1) == 1 {
+    if !8u8.is_multiple_of(bit) && generate(data, 0, 1) == 1 {
         spec.padding = Some(ascii.next_free(data));
     }
     let ignore_translate_len = generate(data, 0, ascii.len_free());
@@ -60,7 +60,7 @@ pub fn rev_spec(spec: &Specification) -> Vec<u8> {
     }
     output.push((spec.bit_order == data_encoding::BitOrder::LeastSignificantFirst) as u8);
     output.push(!spec.check_trailing_bits as u8);
-    if 8 % bit != 0 {
+    if !8u8.is_multiple_of(bit) {
         output.push(spec.padding.is_some() as u8);
         if let Some(pad) = spec.padding {
             output.push(ascii.rev_free(pad as u8));
