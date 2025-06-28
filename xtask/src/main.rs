@@ -300,7 +300,7 @@ fn execute_command(mut command: Command) {
     }
 }
 
-fn escape(x: &OsStr) -> Cow<str> {
+fn escape(x: &OsStr) -> Cow<'_, str> {
     shell_escape::escape(x.to_str().unwrap().into())
 }
 
