@@ -15,7 +15,7 @@ pub fn encode(spec: &Specification, input: &[u8]) -> String {
     output.iter_mut().for_each(|x| *x = symbols[*x as usize]);
     // Pad to the next `dec(bit)` boundary, if needed.
     if let Some(pad) = spec.padding {
-        while output.len() % dec(bit) != 0 {
+        while !output.len().is_multiple_of(dec(bit)) {
             output.push(pad as u8);
         }
     }
