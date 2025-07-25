@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.10.0-git
+
+### Minor
+
+- Document maximum input length for `Encoding::{decode,encode}_len()` (fixes #145)
+- Add `Encoding::encode_align()` to decide where to split long inputs
+
 ## 2.9.0
 
 ### Minor

@@ -40,6 +40,14 @@ pub fn execute(target: &str, mut input: &[u8]) -> Output {
             let input = gen::rev_spec(&spec);
             assert_eq!(gen::spec(&mut input.as_slice()).encoding().unwrap(), base);
         }
+        "impl_encode_len" => {
+            let (_, base) = gen_spec_base(&mut input, &mut output);
+            let _ = base.encode_len(usize::MAX / 512);
+        }
+        "impl_decode_len" => {
+            let (_, base) = gen_spec_base(&mut input, &mut output);
+            let _ = base.decode_len(usize::MAX / 8);
+        }
         "impl_encode" => {
             let (spec, base) = gen_spec_base(&mut input, &mut output);
             assert_eq!(base.encode(input), spec::encode(&spec, input));

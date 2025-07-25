@@ -22,6 +22,14 @@ name = "fuzz_any_spec"
 path = "fuzz_targets/fuzz_any_spec.rs"
 
 [[bin]]
+name = "impl_encode_len"
+path = "fuzz_targets/impl_encode_len.rs"
+
+[[bin]]
+name = "impl_decode_len"
+path = "fuzz_targets/impl_decode_len.rs"
+
+[[bin]]
 name = "impl_encode"
 path = "fuzz_targets/impl_encode.rs"
 
