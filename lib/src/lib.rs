@@ -1258,13 +1258,18 @@ impl Encoding {
     ///
     /// # Panics
     ///
-    /// Panics if `len` is greater than `usize::MAX / 512`:
+    /// May panic if `len` is greater than `usize::MAX / 512`:
     /// - `len <= 8_388_607` when `target_pointer_width = "32"`
     /// - `len <= 36028_797018_963967` when `target_pointer_width = "64"`
     ///
     /// If you need to encode an input of length greater than this limit (possibly of infinite
     /// length), then you must chunk your input, encode each chunk, and concatenate to obtain the
     /// output. The length of each input chunk must be a multiple of [`encode_align`].
+    ///
+    /// Note that this function only _may_ panic in those cases. The function may also return the
+    /// correct value in some cases depending on the implementation. In other words, those limits
+    /// are the guarantee below which the function will not panic, and not the guarantee above which
+    /// the function will panic.
     ///
     /// [`encode_align`]: struct.Encoding.html#method.encode_align
     /// [`encode_mut`]: struct.Encoding.html#method.encode_mut
@@ -1461,7 +1466,7 @@ impl Encoding {
     ///
     /// # Panics
     ///
-    /// Panics if `len` is greater than `usize::MAX / 8`:
+    /// May panic if `len` is greater than `usize::MAX / 8`:
     /// - `len <= 536_870_911` when `target_pointer_width = "32"`
     /// - `len <= 2_305843_009213_693951` when `target_pointer_width = "64"`
     ///
@@ -1474,6 +1479,11 @@ impl Encoding {
     ///   DecodeKind::Length` or this was the last input chunk
     /// - `Err(DecodePartial { read, written, .. })` means that `read` bytes have been read and
     ///   `written` bytes written (the error can be ignored)
+    ///
+    /// Note that this function only _may_ panic in those cases. The function may also return the
+    /// correct value in some cases depending on the implementation. In other words, those limits
+    /// are the guarantee below which the function will not panic, and not the guarantee above which
+    /// the function will panic.
     ///
     /// # Errors
     ///
