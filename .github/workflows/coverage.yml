@@ -8,12 +8,8 @@ jobs:
   tarpaulin:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
+      - uses: actions/checkout@v4
+      - run: rustup default nightly
       - run: cargo install cargo-tarpaulin
-      - run: >
-          cd lib && cargo tarpaulin --coveralls=${{ secrets.COVERALLS_TOKEN }}
-          --exclude-files=fuzz --exclude-files=tests --exclude-files=macro
+      - run: cargo tarpaulin --coveralls=${{ secrets.COVERALLS_TOKEN }} --include-files=src/lib.rs
+        working-directory: lib
