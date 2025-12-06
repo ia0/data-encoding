@@ -31,7 +31,10 @@ fn encode_exact() {
 fn difference() {
     let x = b"AAB=";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 2, kind: Trailing });
-    assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidLastSymbol(2, b'B'));
+    assert_eq!(
+        BASE64_STANDARD.decode(x).err().unwrap(),
+        InvalidLastSymbol { offset: 2, symbol: b'B', symbol_value: 0x01 },
+    );
     let x = b"AA\nB=";
     assert_eq!(BASE64.decode(x).err().unwrap(), DecodeError { position: 4, kind: Length });
     assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidByte(2, b'\n'));
