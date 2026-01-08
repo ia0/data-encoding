@@ -146,6 +146,9 @@ impl Action {
                     &[&["--no-default-features", "--features=alloc"], &["--no-default-features"]];
             }
         }
+        if self.dir == Dir::Lib && self.task == Task::Doc {
+            instructions.0[0].env[0].1.push_str(" --cfg=docsrs");
+        }
         if self.dir == Dir::Nostd && self.task == Task::Test {
             instructions = Instructions::default();
             instructions += Instruction {

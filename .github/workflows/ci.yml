@@ -188,7 +188,7 @@ jobs:
       working-directory: lib/v3
     - name: cd lib && cargo +nightly doc
       env:
-        RUSTDOCFLAGS: --deny=warnings
+        RUSTDOCFLAGS: --deny=warnings --cfg=docsrs
       run: cargo +nightly doc
       working-directory: lib
     - name: cd lib/v3 && cargo +nightly miri test --test=lib
