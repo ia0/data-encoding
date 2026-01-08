@@ -7,6 +7,10 @@
 - Document maximum input length for `Encoding::{decode,encode}_len()` (fixes #145)
 - Add `Encoding::encode_align()` to decide where to split long inputs
 
+### Patch
+
+- Use `doc_cfg` instead of `doc_auto_cfg`
+
 ## 2.9.0
 
 ### Minor
