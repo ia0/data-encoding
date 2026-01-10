@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.8-git
+## 0.3.8
 
 ### Patch
 

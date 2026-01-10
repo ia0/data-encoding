@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.10.0-git
+## 2.10.0
 
 ### Minor
 
