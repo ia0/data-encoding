@@ -840,6 +840,44 @@ pub enum BitOrder {
 #[cfg(feature = "alloc")]
 use crate::BitOrder::*;
 
+/// Interpretation of a byte for decoding purposes
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Character {
+    /// A symbol
+    Symbol {
+        /// The value of the symbol
+        value: u8,
+    },
+    /// An invalid character
+    Invalid,
+    /// An ignored character
+    Ignored,
+    /// A padding character
+    Padding,
+}
+
+impl Character {
+    /// Returns whether the character is a symbol
+    pub fn is_symbol(self) -> bool {
+        matches!(self, Character::Symbol { .. })
+    }
+
+    /// Returns whether the character is invalid
+    pub fn is_invalid(self) -> bool {
+        matches!(self, Character::Invalid)
+    }
+
+    /// Returns whether the character is ignored
+    pub fn is_ignored(self) -> bool {
+        matches!(self, Character::Ignored)
+    }
+
+    /// Returns whether the character is padding
+    pub fn is_padding(self) -> bool {
+        matches!(self, Character::Padding)
+    }
+}
+
 #[doc(hidden)]
 #[cfg(feature = "alloc")]
 pub type InternalEncoding = Cow<'static, [u8]>;
@@ -1598,6 +1636,16 @@ impl Encoding {
     #[must_use]
     pub fn bit_width(&self) -> usize {
         self.bit()
+    }
+
+    /// Interprets a byte as a character
+    pub fn interpret_byte(&self, byte: u8) -> Character {
+        match self.val()[byte as usize] {
+            INVALID => Character::Invalid,
+            IGNORE => Character::Ignored,
+            PADDING => Character::Padding,
+            value => Character::Symbol { value },
+        }
     }
 
     /// Returns whether the encoding is canonical

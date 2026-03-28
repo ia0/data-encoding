@@ -1,0 +1,22 @@
+[package]
+name = "ecma262-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+data-encoding.path = "../../lib"
+libfuzzer-sys = "0.4"
+
+[dependencies.ecma262]
+path = ".."
+
+[[bin]]
+name = "correct"
+path = "fuzz_targets/correct.rs"
+test = false
+doc = false
+bench = false
