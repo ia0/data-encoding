@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.11.0-git
+
+### Minor
+
+- Add `Character` and `Encoding::interpret_byte()` to help with unsupported custom processing
+
 ## 2.10.0
 
 ### Minor
