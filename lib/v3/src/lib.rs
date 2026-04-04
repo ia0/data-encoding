@@ -344,8 +344,8 @@ fn decode_block<Bit: BitWidth, Msb: Bool>(
     let bit = Bit::VAL;
     let msb = Msb::VAL;
     let mut x = 0u64;
-    for j in 0 .. input.len() {
-        let y = values[input[j] as usize];
+    for (j, input) in input.iter().enumerate() {
+        let y = values[*input as usize];
         check!(j, y < 1 << bit);
         x |= u64::from(y) << (bit * order(msb, dec(bit), j));
     }
