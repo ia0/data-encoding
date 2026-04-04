@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Encode by the greatest multiple of blocks that fits 128 bits
 - Use `doc_cfg` instead of `doc_auto_cfg`
 
 ## 0.1.2

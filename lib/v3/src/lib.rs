@@ -326,12 +326,7 @@ fn encode_mut<Bit: BitWidth, Msb: Bool>(
     let enc = enc(bit);
     let dec = dec(bit);
     let n = input.len() / enc;
-    let bs = match bit {
-        5 => 2,
-        6 => 4,
-        _ => 1,
-    };
-    vectorize(n, bs, |i| {
+    vectorize(n, 16 / enc, |i| {
         let input = unsafe { chunk_unchecked(input, enc, i) };
         let output = unsafe { chunk_mut_unchecked(output, dec, i) };
         encode_block::<Bit, Msb>(symbols, input, output);
