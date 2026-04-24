@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.9-git
+## 0.3.9
 
 ### Patch
 
