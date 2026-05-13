@@ -410,6 +410,9 @@ impl Flags {
                 for actions in actions.chunk_by(|x, y| x.os == y.os) {
                     let mut job =
                         WorkflowJob { runs_on: format!("{}-latest", actions[0].os), steps: vec![] };
+                    if actions[0].os == Os::Windows {
+                        job.runs_on = "windows-2025-vs2026".to_string();
+                    }
                     job.steps.push(WorkflowStep {
                         uses: Some("actions/checkout@v4".to_owned()),
                         ..Default::default()
