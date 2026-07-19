@@ -1,7 +1,6 @@
 [package]
 name = "data-encoding-bin"
 version = "0.3.9"
-authors = ["Julien Cretin <git@ia0.eu>"]
 license = "MIT"
 edition = "2021"
 rust-version = "1.81"

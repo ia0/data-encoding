@@ -1,7 +1,6 @@
 [package]
 name = "data-encoding-macro"
 version = "0.1.20"
-authors = ["Julien Cretin <cretin@google.com>"]
 license = "MIT"
 edition = "2018"
 rust-version = "1.48"
