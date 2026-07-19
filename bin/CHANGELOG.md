@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.10-git
+
+### Patch
+
+- Remove deprecated `authors` field from `Cargo.toml`
+- Update `data-encoding` version
+
 ## 0.3.9
 
 ### Patch

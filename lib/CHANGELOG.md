@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.11.1-git
+
+### Patch
+
+- Remove deprecated `authors` field from `Cargo.toml`
+
 ## 2.11.0
 
 ### Minor
