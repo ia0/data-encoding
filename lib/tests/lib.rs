@@ -187,7 +187,6 @@ fn base32_error() {
 fn base64_error() {
     let b = &data_encoding::BASE64;
     assert_eq!(b.decode(b"====").err().unwrap(), DecodeError { position: 0, kind: Padding });
-    assert_eq!(b.decode(b"====").err().unwrap(), DecodeError { position: 0, kind: Padding });
     assert_eq!(
         b.decode(b"Zm9vYmFy====").err().unwrap(),
         DecodeError { position: 8, kind: Padding }
