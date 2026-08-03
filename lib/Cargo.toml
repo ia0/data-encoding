@@ -1,6 +1,6 @@
 [package]
 name = "data-encoding"
-version = "2.11.1-git"
+version = "2.11.1"
 license = "MIT"
 edition = "2018"
 rust-version = "1.48"
