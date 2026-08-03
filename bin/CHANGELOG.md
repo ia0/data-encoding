@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.10-git
+## 0.3.10
 
 ### Patch
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.11.1-git
+## 2.11.1
 
 ### Patch
 
