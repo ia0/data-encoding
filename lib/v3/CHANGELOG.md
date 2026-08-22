@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3-git
+
+### Patch
+
+- Use `doc_cfg` instead of `doc_auto_cfg`
+
 ## 0.1.2
 
 ### Patch
