@@ -1,6 +1,6 @@
 [package]
 name = "data-encoding-macro-internal"
-version = "0.1.19"
+version = "0.1.20-git"
 license = "MIT"
 edition = "2018"
 rust-version = "1.48"
@@ -13,7 +13,7 @@ include = ["Cargo.toml", "LICENSE", "README.md", "src/lib.rs"]
 proc-macro = true
 
 [dependencies.data-encoding]
-version = "2.11.1"
+version = "2.11.2-git"
 path = "../.."
 default-features = false
 features = ["alloc"]

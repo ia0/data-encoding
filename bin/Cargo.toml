@@ -1,6 +1,6 @@
 [package]
 name = "data-encoding-bin"
-version = "0.3.10"
+version = "0.3.11-git"
 license = "MIT"
 edition = "2021"
 rust-version = "1.81"
@@ -16,5 +16,5 @@ name = "data-encoding"
 path = "src/main.rs"
 
 [dependencies]
-data-encoding = { version = "2.11.1", path = "../lib" }
+data-encoding = { version = "2.11.2-git", path = "../lib" }
 getopts = "0.2"

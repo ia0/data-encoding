@@ -1481,7 +1481,7 @@ use crate::BitOrder::*;
 /// The order matters. The first character of the `from` field is translated to the first character
 /// of the `to` field. The second to the second. Etc.
 ///
-/// See [Specification](struct.Specification.html) for more information.
+/// See [Specification] for more information.
 #[derive(Debug, Clone)]
 #[cfg(feature = "alloc")]
 pub struct Translate {
@@ -1494,7 +1494,7 @@ pub struct Translate {
 
 /// How to wrap the output when encoding
 ///
-/// See [Specification](struct.Specification.html) for more information.
+/// See [Specification] for more information.
 #[derive(Debug, Clone)]
 #[cfg(feature = "alloc")]
 pub struct Wrap {

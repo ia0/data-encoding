@@ -1,6 +1,6 @@
 [package]
 name = "data-encoding"
-version = "2.11.1"
+version = "2.11.2-git"
 license = "MIT"
 edition = "2018"
 rust-version = "1.48"
@@ -22,11 +22,11 @@ alloc = []
 std = ["alloc"]
 
 [lints]
-clippy.undocumented-unsafe-blocks = "warn"
-rust.elided-lifetimes-in-paths = "warn"
-rust.let-underscore-drop = "warn"
-rust.missing-debug-implementations = "warn"
-rust.missing-docs = "warn"
-rust.unreachable-pub = "warn"
-rust.unsafe-op-in-unsafe-fn = "warn"
-rust.unused-results = "warn"
+clippy.undocumented_unsafe_blocks = "warn"
+rust.elided_lifetimes_in_paths = "warn"
+rust.let_underscore_drop = "warn"
+rust.missing_debug_implementations = "warn"
+rust.missing_docs = "warn"
+rust.unreachable_pub = "warn"
+rust.unsafe_op_in_unsafe_fn = "warn"
+rust.unused_results = "warn"

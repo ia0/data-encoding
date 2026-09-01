@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.11.2-git
+
+### Patch
+
+- Fix `redundant_explicit_links` rustdoc lint
+- Rename lints in `Cargo.toml` to use underscores
+
 ## 2.11.1
 
 ### Patch
