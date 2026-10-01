@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Fix decoding silently stopping when the input buffer fills up with ignored characters
 - Update `data-encoding` version
 
 ## 0.3.10

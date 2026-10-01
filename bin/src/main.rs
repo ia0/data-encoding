@@ -115,7 +115,10 @@ where
     let mut pos = 0;
     let mut rest = 0;
     loop {
-        let ilen = reader.read(&mut input[rest ..]).map_err(Error::Read)?;
+        // Reading into an empty buffer returns zero like the end of the input does.
+        let ilen =
+            if rest < size { reader.read(&mut input[rest ..]).map_err(Error::Read)? } else { 0 };
+        let eof = ilen == 0 && rest < size;
         let next = if ilen == 0 { rest } else { floor(rest + ilen, block) };
         let mlen = base.decode_len(next).map_err(|mut error| {
             error.position += pos;
@@ -124,7 +127,7 @@ where
         let (next, olen) = match base.decode_mut(&input[0 .. next], &mut output[0 .. mlen]) {
             Ok(olen) => (next, olen),
             Err(mut partial) => {
-                if partial.error.kind != DecodeKind::Length || ilen == 0 {
+                if partial.error.kind != DecodeKind::Length || eof {
                     partial.error.position += pos;
                     return Err(Error::Decode(partial.error));
                 }
@@ -133,9 +136,13 @@ where
         };
         writer.write_all(&output[0 .. olen]).map_err(Error::Write)?;
         rest = rest + ilen - next;
-        if ilen == 0 {
+        if eof {
             return Ok(());
         }
+        check!(
+            Error::Cmdline("Block value is too small to decode this input".into()),
+            next > 0 || rest < size
+        );
         for i in 0 .. rest {
             input[i] = input[next + i];
         }
