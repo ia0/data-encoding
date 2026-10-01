@@ -802,9 +802,24 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     /// Returns the encoded length of an input of length `len`.
     ///
     /// See [`Self::encode_mut()`] for when to use it.
+    ///
+    /// # Panics
+    ///
+    /// May panic if `len` is greater than `usize::MAX / 512`.
+    ///
+    /// If you need to encode an input of length greater than this limit (possibly of infinite
+    /// length), then you must chunk your input, encode each chunk, and concatenate to obtain the
+    /// output. The length of each input chunk must be a multiple of [`Self::encode_align()`].
     #[must_use]
     pub fn encode_len(&self, len: usize) -> usize {
+        assert!(len <= usize::MAX / 512);
         encode_wrap_len::<Bit, Pad, Wrap>(self.wrap(), len)
+    }
+
+    /// Returns the minimum alignment when chunking a long input.
+    #[must_use]
+    pub fn encode_align(&self) -> usize {
+        self.block_len().0
     }
 
     /// Encodes `input` in `output`.
@@ -919,12 +934,22 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     ///
     /// See [`Self::decode_mut()`] for when to use it.
     ///
+    /// # Panics
+    ///
+    /// May panic if `len` is greater than `usize::MAX / 8`.
+    ///
+    /// If you need to decode an input of length greater than this limit (possibly of infinite
+    /// length), then you must decode your input chunk by chunk with [`Self::decode_mut()`], making
+    /// sure that you take into account how many bytes have been read from the input and how many
+    /// bytes have been written to the output.
+    ///
     /// # Errors
     ///
     /// Returns an error if `len` is invalid. The error [kind][DecodeError::kind] is
     /// [`DecodeKind::Length`] and the error [position][DecodeError::position] is the greatest valid
     /// input length.
     pub fn decode_len(&self, len: usize) -> Result<usize, DecodeError> {
+        assert!(len <= usize::MAX / 8);
         let (ilen, olen) = decode_wrap_len::<Bit, Pad>(len);
         check!(
             DecodeError { position: ilen, kind: DecodeKind::Length },
@@ -1089,6 +1114,10 @@ impl DynEncoding {
     ///
     /// See [`encode_mut`] for when to use it.
     ///
+    /// # Panics
+    ///
+    /// May panic if `len` is greater than `usize::MAX / 512`.
+    ///
     /// [`encode_mut`]: struct.Encoding.html#method.encode_mut
     #[must_use]
     pub fn encode_len(&self, len: usize) -> usize {
@@ -1195,6 +1224,10 @@ impl DynEncoding {
     ///
     /// See [`decode_mut`] for when to use it. In particular, the actual decoded length might be
     /// smaller if the actual input contains padding or ignored characters.
+    ///
+    /// # Panics
+    ///
+    /// May panic if `len` is greater than `usize::MAX / 8`.
     ///
     /// # Errors
     ///

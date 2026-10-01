@@ -2,6 +2,11 @@
 
 ## 0.1.3-git
 
+### Minor
+
+- Add `Encoding::encode_align()` to decide where to split long inputs
+- Document maximum input length for `{decode,encode}_len()`
+
 ### Patch
 
 - Fix `redundant_explicit_links` rustdoc lint
