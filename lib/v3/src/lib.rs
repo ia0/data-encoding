@@ -805,16 +805,21 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     ///
     /// # Panics
     ///
-    /// May panic if `len` is greater than `usize::MAX / 512`. Above that bound the output length
-    /// can overflow `usize`, which in release builds would silently return a wrong (too small)
-    /// length and let [`Self::encode()`] and friends write out of bounds. To encode a larger input,
-    /// split it into chunks, encode each chunk, and concatenate the results. The bound is a
-    /// conservative lower limit, so this panic is not guaranteed and the function may still return
-    /// the correct value above it depending on the encoding.
+    /// May panic if `len` is greater than `usize::MAX / 512`.
+    ///
+    /// If you need to encode an input of length greater than this limit (possibly of infinite
+    /// length), then you must chunk your input, encode each chunk, and concatenate to obtain the
+    /// output. The length of each input chunk must be a multiple of [`Self::encode_align()`].
     #[must_use]
     pub fn encode_len(&self, len: usize) -> usize {
         assert!(len <= usize::MAX / 512);
         encode_wrap_len::<Bit, Pad, Wrap>(self.wrap(), len)
+    }
+
+    /// Returns the minimum alignment when chunking a long input.
+    #[must_use]
+    pub fn encode_align(&self) -> usize {
+        self.block_len().0
     }
 
     /// Encodes `input` in `output`.
@@ -931,11 +936,12 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     ///
     /// # Panics
     ///
-    /// May panic if `len` is greater than `usize::MAX / 8`. Above that bound the length arithmetic
-    /// can overflow `usize`. To decode a larger input, decode it chunk by chunk with
-    /// [`Self::decode_mut()`]. The bound is a conservative lower limit, so this panic is not
-    /// guaranteed and the function may still return the correct value above it depending on the
-    /// encoding.
+    /// May panic if `len` is greater than `usize::MAX / 8`.
+    ///
+    /// If you need to decode an input of length greater than this limit (possibly of infinite
+    /// length), then you must decode your input chunk by chunk with [`Self::decode_mut()`], making
+    /// sure that you take into account how many bytes have been read from the input and how many
+    /// bytes have been written to the output.
     ///
     /// # Errors
     ///
@@ -1110,9 +1116,7 @@ impl DynEncoding {
     ///
     /// # Panics
     ///
-    /// May panic if `len` is greater than `usize::MAX / 512`. Above that bound the output length can
-    /// overflow `usize`; split the input into chunks and encode each chunk separately. The bound is
-    /// a conservative lower limit, so this panic is not guaranteed.
+    /// May panic if `len` is greater than `usize::MAX / 512`.
     ///
     /// [`encode_mut`]: struct.Encoding.html#method.encode_mut
     #[must_use]
@@ -1223,9 +1227,7 @@ impl DynEncoding {
     ///
     /// # Panics
     ///
-    /// May panic if `len` is greater than `usize::MAX / 8`. Above that bound the length arithmetic
-    /// can overflow `usize`; decode the input chunk by chunk with [`decode_mut`] instead. The bound
-    /// is a conservative lower limit, so this panic is not guaranteed.
+    /// May panic if `len` is greater than `usize::MAX / 8`.
     ///
     /// # Errors
     ///

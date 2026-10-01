@@ -2,9 +2,13 @@
 
 ## 0.1.3-git
 
+### Minor
+
+- Add `Encoding::encode_align()` to decide where to split long inputs
+- Document maximum input length for `{decode,encode}_len()`
+
 ### Patch
 
-- Reject inputs whose length would overflow in `encode_len()` and `decode_len()`
 - Fix `redundant_explicit_links` rustdoc lint
 - Rename lints in `Cargo.toml` to use underscores
 - Use `iter().enumerate()` when possible
