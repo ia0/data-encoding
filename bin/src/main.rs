@@ -73,6 +73,10 @@ fn decode_block(base: &Encoding) -> usize {
     encode_block(base) * 8 / base.bit_width()
 }
 
+fn size_error(block: usize) -> Error {
+    Error::Cmdline(format!("Block value must be greater than or equal to {block}"))
+}
+
 pub fn encode<R: Read, W: Write>(
     base: &Encoding, wrap: usize, mut reader: R, mut writer: W, size: usize,
 ) -> Result<()> {
@@ -83,7 +87,7 @@ pub fn encode<R: Read, W: Write>(
         wrap * base.bit_width() / 8
     };
     assert_eq!(block % encode_block(base), 0);
-    assert!(size >= block);
+    check!(size_error(block), size >= block);
     let mut input = vec![0u8; size];
     let mut output = vec![0u8; base.encode_len(size)];
     let mut rest = 0;
@@ -109,15 +113,19 @@ where
     W: Write,
 {
     let block = decode_block(base);
-    assert!(size >= block);
+    check!(size_error(2 * block), size >= 2 * block);
     let mut input = vec![0u8; size];
     let mut output = vec![0u8; base.decode_len(ceil(size, block)).unwrap()];
     let mut pos = 0;
     let mut rest = 0;
+    let mut map = [0; 15];
     loop {
         let ilen = reader.read(&mut input[rest ..]).map_err(Error::Read)?;
         let next = if ilen == 0 { rest } else { floor(rest + ilen, block) };
         let mlen = base.decode_len(next).map_err(|mut error| {
+            if error.position < rest {
+                error.position += map[error.position];
+            }
             error.position += pos;
             Error::Decode(error)
         })?;
@@ -125,6 +133,9 @@ where
             Ok(olen) => (next, olen),
             Err(mut partial) => {
                 if partial.error.kind != DecodeKind::Length || ilen == 0 {
+                    if partial.error.position < rest {
+                        partial.error.position += map[partial.error.position];
+                    }
                     partial.error.position += pos;
                     return Err(Error::Decode(partial.error));
                 }
@@ -132,14 +143,22 @@ where
             }
         };
         writer.write_all(&output[0 .. olen]).map_err(Error::Write)?;
-        rest = rest + ilen - next;
         if ilen == 0 {
             return Ok(());
         }
+        // We won't give accurate positions once `next < rest`, but that's far out of distribution.
+        pos += next + rest.checked_sub(1).map_or(0, |i| map[i]);
+        rest = rest + ilen - next;
+        let mut j = 0;
         for i in 0 .. rest {
-            input[i] = input[next + i];
+            let c = input[next + i];
+            if !base.interpret_byte(c).is_ignored() {
+                input[j] = c;
+                map[j] = i - j;
+                j += 1;
+            }
         }
-        pos += next;
+        rest = j;
     }
 }
 
@@ -303,7 +322,6 @@ Examples:
         .unwrap_or_else(|| "15360".to_owned())
         .parse()
         .map_err(|_| Error::Cmdline("Invalid block value".into()))?;
-    check!(Error::Cmdline("Block value must be greater or equal than 8".into()), size >= 8);
 
     if mode {
         encode(&base, spec.wrap.width, input, output, size)
