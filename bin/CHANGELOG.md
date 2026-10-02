@@ -5,6 +5,8 @@
 ### Patch
 
 - Fix decoding silently stopping when the input buffer fills up with ignored characters
+- Fix decoding without padding failing or producing wrong output when ignored characters shift
+  a block boundary
 - Update `data-encoding` version
 
 ## 0.3.10

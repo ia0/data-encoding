@@ -71,14 +71,17 @@ unit "-md -b64 -p= -g'$LF' --block=8" \
   "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" ffo 'invalid symbol at 19'
 unit '-md -b16 -gx' 6474y dt 'invalid length at 4'
 unit "-md -b64 -p= -g'$LF' --block=9" "Zm9${LF}${LF}${LF}${LF}${LF}vZm9vYmFy" 'foofoobar'
+unit "-md -b64 -g'$LF'" "Zm9v${LF}Zm9vYmFy" foofoobar
+unit "-md -b64 -g'$LF' --block=8" "aGVs${LF}bG8xd29ybGQ" hello1world
+unit "-md -b64 -p= -g'$LF' --block=8" "Zm9v${LF}Zm${LF}9v${LF}Zm-=" foofoo 'invalid symbol at 13'
 echo
 echo -n 'symbol:'
-unit '-md -b64 -p=' Zg==Zm8=Zg-= '' 'invalid symbol at 10'
+unit '-md -b64 -p=' Zg==Zm8=Zg-= ffo 'invalid symbol at 10'
 unit '-md -b64 -p= --block=8' Zg==Zm8=Zg-= ffo 'invalid symbol at 10'
 unit '-md -b64 -p=' "Z${LF}g=" '' 'invalid symbol at 1'
 unit '-md -b64 -p=' 'Z g=' '' 'invalid symbol at 1'
 unit '-md -b64 -p=' Z=g= '' 'invalid symbol at 1'
-unit '-md -b64 -p=' Zm9vZm9v---- '' 'invalid symbol at 8'
+unit '-md -b64 -p=' Zm9vZm9v---- foofoo 'invalid symbol at 8'
 unit '-md -b64 -p= --block=8' Zm9vZm9v---- foofoo 'invalid symbol at 8'
 echo
 echo -n 'padding:'
