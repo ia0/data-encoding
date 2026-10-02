@@ -70,8 +70,7 @@ unit "-md -b64 -p= -g'$LF'" \
 unit "-md -b64 -p= -g'$LF' --block=8" \
   "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" ffo 'invalid symbol at 19'
 unit '-md -b16 -gx' 6474y dt 'invalid length at 4'
-unit "-md -b64 -p= -g'$LF' --block=9" "Zm9${LF}${LF}${LF}${LF}${LF}vZm9vYmFy" '' \
-  'Block value is too small to decode this input'
+unit "-md -b64 -p= -g'$LF' --block=9" "Zm9${LF}${LF}${LF}${LF}${LF}vZm9vYmFy" 'foofoobar'
 echo
 echo -n 'symbol:'
 unit '-md -b64 -p=' Zg==Zm8=Zg-= '' 'invalid symbol at 10'
