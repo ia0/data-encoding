@@ -3,7 +3,7 @@
 use std::fs::File;
 use std::io::{Read, Write};
 
-use data_encoding::{DecodeKind, Encoding};
+use data_encoding::Encoding;
 use getopts::Options;
 
 macro_rules! check {
@@ -77,6 +77,19 @@ fn size_error(block: usize) -> Error {
     Error::Cmdline(format!("Block value must be greater than or equal to {block}"))
 }
 
+/// Returns the longest prefix of `input` with a multiple of `block` non-ignored characters.
+fn symbol_floor(ignore: &[bool; 256], block: usize, input: &[u8]) -> usize {
+    let count = input.iter().filter(|&&c| !ignore[c as usize]).count();
+    let mut next = input.len();
+    for _ in 0 .. count % block {
+        next -= 1;
+        while ignore[input[next] as usize] {
+            next -= 1;
+        }
+    }
+    next
+}
+
 pub fn encode<R: Read, W: Write>(
     base: &Encoding, wrap: usize, mut reader: R, mut writer: W, size: usize,
 ) -> Result<()> {
@@ -114,6 +127,8 @@ where
 {
     let block = decode_block(base);
     check!(size_error(2 * block), size >= 2 * block);
+    let ignore: [bool; 256] = std::array::from_fn(|c| base.interpret_byte(c as u8).is_ignored());
+    let has_ignore = ignore.contains(&true);
     let mut input = vec![0u8; size];
     let mut output = vec![0u8; base.decode_len(ceil(size, block)).unwrap()];
     let mut pos = 0;
@@ -121,25 +136,26 @@ where
     let mut map = [0; 15];
     loop {
         let ilen = reader.read(&mut input[rest ..]).map_err(Error::Read)?;
-        let next = if ilen == 0 { rest } else { floor(rest + ilen, block) };
+        // Only the last block may end in the middle of a group of symbols. Otherwise, a trailing
+        // partial group would be decoded as the end of the input (or rejected for its trailing
+        // bits) when the encoding has no padding.
+        let next = if ilen == 0 {
+            rest
+        } else if has_ignore {
+            symbol_floor(&ignore, block, &input[.. rest + ilen])
+        } else {
+            floor(rest + ilen, block)
+        };
         let mlen = base.decode_len(next).map_err(|mut error| {
-            if error.position < rest {
-                error.position += map[error.position];
-            }
-            error.position += pos;
+            error.position += pos + map[error.position.min(rest)];
             Error::Decode(error)
         })?;
-        let (next, olen) = match base.decode_mut(&input[0 .. next], &mut output[0 .. mlen]) {
-            Ok(olen) => (next, olen),
+        let olen = match base.decode_mut(&input[0 .. next], &mut output[0 .. mlen]) {
+            Ok(olen) => olen,
             Err(mut partial) => {
-                if partial.error.kind != DecodeKind::Length || ilen == 0 {
-                    if partial.error.position < rest {
-                        partial.error.position += map[partial.error.position];
-                    }
-                    partial.error.position += pos;
-                    return Err(Error::Decode(partial.error));
-                }
-                (partial.read, partial.written)
+                writer.write_all(&output[0 .. partial.written]).map_err(Error::Write)?;
+                partial.error.position += pos + map[partial.error.position.min(rest)];
+                return Err(Error::Decode(partial.error));
             }
         };
         writer.write_all(&output[0 .. olen]).map_err(Error::Write)?;
@@ -147,17 +163,18 @@ where
             return Ok(());
         }
         // We won't give accurate positions once `next < rest`, but that's far out of distribution.
-        pos += next + rest.checked_sub(1).map_or(0, |i| map[i]);
+        pos += next + map[next.min(rest)];
         rest = rest + ilen - next;
         let mut j = 0;
         for i in 0 .. rest {
             let c = input[next + i];
-            if !base.interpret_byte(c).is_ignored() {
+            if !ignore[c as usize] {
                 input[j] = c;
                 map[j] = i - j;
                 j += 1;
             }
         }
+        map[j] = rest - j;
         rest = j;
     }
 }
