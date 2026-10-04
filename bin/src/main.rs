@@ -111,7 +111,8 @@ pub fn encode<R: Read, W: Write>(
         base.encode_mut(&input[0 .. next], &mut output[0 .. olen]);
         writer.write_all(&output[0 .. olen]).map_err(Error::Write)?;
         if ilen == 0 {
-            return Ok(());
+            // Dropping a buffered writer ignores the errors of its last flush.
+            return writer.flush().map_err(Error::Write);
         }
         rest = rest + ilen - next;
         for i in 0 .. rest {
@@ -160,7 +161,8 @@ where
         };
         writer.write_all(&output[0 .. olen]).map_err(Error::Write)?;
         if ilen == 0 {
-            return Ok(());
+            // Dropping a buffered writer ignores the errors of its last flush.
+            return writer.flush().map_err(Error::Write);
         }
         // We won't give accurate positions once `next < rest`, but that's far out of distribution.
         pos += next + map[next.min(rest)];
