@@ -74,6 +74,9 @@ unit "-md -b64 -p= -g'$LF' --block=9" "Zm9${LF}${LF}${LF}${LF}${LF}vZm9vYmFy" 'f
 unit "-md -b64 -g'$LF'" "Zm9v${LF}Zm9vYmFy" foofoobar
 unit "-md -b64 -g'$LF' --block=8" "aGVs${LF}bG8xd29ybGQ" hello1world
 unit "-md -b64 -p= -g'$LF' --block=8" "Zm9v${LF}Zm${LF}9v${LF}Zm-=" foofoo 'invalid symbol at 13'
+unit "-md -b64 -g'$LF' --block=8" "AAAAAA${LF}/${LF}" '' 'non-zero trailing bits at 7'
+unit "-md -b64 -g'$LF' --block=8" "AAAAAAAAAAAAA${LF}${LF}A/" '' 'non-zero trailing bits at 16'
+unit "-md -b64 -g'$LF' --block=9" "AAAAAAAAAAAAA${LF}${LF}A/" '' 'non-zero trailing bits at 16'
 echo
 echo -n 'symbol:'
 unit '-md -b64 -p=' Zg==Zm8=Zg-= ffo 'invalid symbol at 10'

@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Fix inaccurate error positions when decoding by small blocks with ignored characters
 - Fix incorrect decoding for encodings with ignored characters and without padding
 - Fix decoding silently stopping when the input buffer fills up with ignored characters
 - Update `data-encoding` version

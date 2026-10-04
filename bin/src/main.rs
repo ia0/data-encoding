@@ -131,9 +131,12 @@ where
     let has_ignore = ignore.contains(&true);
     let mut input = vec![0u8; size];
     let mut output = vec![0u8; base.decode_len(ceil(size, block)).unwrap()];
-    let mut pos = 0;
+    // The first `rest` bytes of `input` are compacted (i.e. they contain no ignored character) and
+    // their position in the original input is `orig[i]`. The bytes of `input` that were last read
+    // start at index `rest` and their position in the original input starts at `read_pos`.
+    let mut orig = [0; 15];
+    let mut read_pos = 0;
     let mut rest = 0;
-    let mut map = [0; 15];
     loop {
         let ilen = reader.read(&mut input[rest ..]).map_err(Error::Read)?;
         // Only the last block may end in the middle of a group of symbols. Otherwise, a trailing
@@ -146,15 +149,16 @@ where
         } else {
             floor(rest + ilen, block)
         };
+        let position = |i| if i < rest { orig[i] } else { read_pos + i - rest };
         let mlen = base.decode_len(next).map_err(|mut error| {
-            error.position += pos + map[error.position.min(rest)];
+            error.position = position(error.position);
             Error::Decode(error)
         })?;
         let olen = match base.decode_mut(&input[0 .. next], &mut output[0 .. mlen]) {
             Ok(olen) => olen,
             Err(mut partial) => {
                 writer.write_all(&output[0 .. partial.written]).map_err(Error::Write)?;
-                partial.error.position += pos + map[partial.error.position.min(rest)];
+                partial.error.position = position(partial.error.position);
                 return Err(Error::Decode(partial.error));
             }
         };
@@ -162,20 +166,17 @@ where
         if ilen == 0 {
             return Ok(());
         }
-        // We won't give accurate positions once `next < rest`, but that's far out of distribution.
-        pos += next + map[next.min(rest)];
-        rest = rest + ilen - next;
         let mut j = 0;
-        for i in 0 .. rest {
-            let c = input[next + i];
+        for i in next .. rest + ilen {
+            let c = input[i];
             if !ignore[c as usize] {
                 input[j] = c;
-                map[j] = i - j;
+                orig[j] = if i < rest { orig[i] } else { read_pos + i - rest };
                 j += 1;
             }
         }
-        map[j] = rest - j;
         rest = j;
+        read_pos += ilen;
     }
 }
 
