@@ -227,7 +227,8 @@ fn wrapped_main(program: &str, args: Vec<String>) -> Result<()> {
             r"Usage: {program} --mode=<mode> --base=<base> [<options>]
 Usage: {program} --mode=<mode> --symbols=<symbols> [<options>]"
         );
-        print!(
+        write!(
+            std::io::stdout(),
             "{0}
 Examples:
     # Using the RFC4648 base64 encoding
@@ -250,12 +251,13 @@ Examples:
 ",
             opts.usage(&brief),
             program
-        );
+        )
+        .map_err(Error::Write)?;
         return Ok(());
     }
 
     if args.len() == 1 && (args[0] == "--version" || args[0] == "-v") {
-        println!("{}", env!("CARGO_PKG_VERSION"));
+        writeln!(std::io::stdout(), "{}", env!("CARGO_PKG_VERSION")).map_err(Error::Write)?;
         return Ok(());
     }
 
@@ -325,7 +327,7 @@ Examples:
         x if "encode".starts_with(x) => true,
         x if "decode".starts_with(x) => false,
         x if "specification".starts_with(x) => {
-            println!("{:#?}", base.specification());
+            writeln!(std::io::stdout(), "{:#?}", base.specification()).map_err(Error::Write)?;
             return Ok(());
         }
         _ => return Err(Error::Cmdline("Invalid mode".into())),
