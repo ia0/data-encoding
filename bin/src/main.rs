@@ -141,10 +141,10 @@ where
     let mut output = vec![0u8; base.decode_len(ceil(size, block)).unwrap()];
     // The first `rest` bytes of `input` are compacted (i.e. they contain no ignored character) and
     // their position in the original input is `orig[i]`. The bytes of `input` that were last read
-    // start at index `rest` and their position in the original input starts at `read_pos`.
-    let mut orig = [0; 15];
-    let mut read_pos = 0;
+    // start at index `rest` and their position in the original input starts at `pos`.
+    let mut pos = 0;
     let mut rest = 0;
+    let mut map = [0; 15];
     loop {
         let ilen = reader.read(&mut input[rest ..]).map_err(Error::Read)?;
         // Only the last block may end in the middle of a group of symbols. Otherwise, a trailing
@@ -157,7 +157,7 @@ where
         } else {
             floor(rest + ilen, block)
         };
-        let position = |i| if i < rest { orig[i] } else { read_pos + i - rest };
+        let position = |i| if i < rest { map[i] } else { pos + i - rest };
         let mlen = base.decode_len(next).map_err(|mut error| {
             error.position = position(error.position);
             Error::Decode(error)
@@ -180,12 +180,12 @@ where
             let c = input[i];
             if !ignore[c as usize] {
                 input[j] = c;
-                orig[j] = if i < rest { orig[i] } else { read_pos + i - rest };
+                map[j] = if i < rest { map[i] } else { pos + i - rest };
                 j += 1;
             }
         }
+        pos += ilen;
         rest = j;
-        read_pos += ilen;
     }
 }
 

@@ -73,7 +73,7 @@ echo
 echo -n 'skip:'
 unit "-md -b64 -p= -g'$LF'" "Z${LF}m$LF$LF$LF${LF}8=" fo
 unit "-md -b64 -p= -g'$LF'" \
-  "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" 'ffo' 'invalid symbol at 19'
+  "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" ffo 'invalid symbol at 19'
 unit "-md -b64 -p= -g'$LF' --block=8" \
   "Zg$LF$LF=$LF$LF=Z$LF${LF}m$LF${LF}8=${LF}Zg-=" ffo 'invalid symbol at 19'
 unit '-md -b16 -gx' 6474y dt 'invalid length at 4'
@@ -81,9 +81,11 @@ unit "-md -b64 -p= -g'$LF' --block=9" "Zm9${LF}${LF}${LF}${LF}${LF}vZm9vYmFy" 'f
 unit "-md -b64 -g'$LF'" "Zm9v${LF}Zm9vYmFy" foofoobar
 unit "-md -b64 -g'$LF' --block=8" "aGVs${LF}bG8xd29ybGQ" hello1world
 unit "-md -b64 -p= -g'$LF' --block=8" "Zm9v${LF}Zm${LF}9v${LF}Zm-=" foofoo 'invalid symbol at 13'
-unit "-md -b64 -g'$LF' --block=8" "AAAAAA${LF}/${LF}" '' 'non-zero trailing bits at 7'
-unit "-md -b64 -g'$LF' --block=8" "AAAAAAAAAAAAA${LF}${LF}A/" '' 'non-zero trailing bits at 16'
-unit "-md -b64 -g'$LF' --block=9" "AAAAAAAAAAAAA${LF}${LF}A/" '' 'non-zero trailing bits at 16'
+unit "-md -b64 -g'$LF' --block=8" "Zm9vZg${LF}/${LF}" foo 'non-zero trailing bits at 7'
+unit "-md -b64 -g'$LF' --block=8" "Zm9vZm9vZm9vZ${LF}${LF}g/" foofoofoo \
+  'non-zero trailing bits at 16'
+unit "-md -b64 -g'$LF' --block=9" "Zm9vZm9vZm9vZ${LF}${LF}g/" foofoofoo \
+  'non-zero trailing bits at 16'
 echo
 echo -n 'symbol:'
 unit '-md -b64 -p=' Zg==Zm8=Zg-= ffo 'invalid symbol at 10'
