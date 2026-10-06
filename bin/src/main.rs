@@ -96,7 +96,14 @@ pub fn encode<R: Read, W: Write>(
     let block = if wrap == 0 {
         encode_block(base)
     } else {
-        assert_eq!(wrap * base.bit_width() % 8, 0);
+        check!(
+            Error::Cmdline(format!("Width value must be a multiple of {}", decode_block(base))),
+            wrap % decode_block(base) == 0
+        );
+        check!(
+            Error::Cmdline("Width value is too large".into()),
+            wrap <= usize::MAX / base.bit_width()
+        );
         wrap * base.bit_width() / 8
     };
     assert_eq!(block % encode_block(base), 0);

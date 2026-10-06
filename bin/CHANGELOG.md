@@ -4,6 +4,7 @@
 
 ### Patch
 
+- Fix panic when the width value is not a multiple of the base or is too large
 - Fix write errors being silently ignored when flushing the end of the output
 - Fix incorrect decoding for encodings with ignored characters and without padding
 - Fix decoding silently stopping when the input buffer fills up with ignored characters

@@ -62,6 +62,13 @@ unit "-me -b64 -p= -w0 -s'$LF'" fo Zm8=
 unit "-me -b64 -p= -w1 -s'$LF'" fo '' 'wrap width not a multiple of 4'
 unit "-me -b64 -p= -w4 -s'$LF'" fo Zm8=
 unit "-me -b64 -p= -w4 -s'$LF'" foobar "Zm9v${LF}YmFy"
+unit '-me -b64 -w4' fo Zm8
+unit '-me -b64 -w256' fo Zm8
+unit '-me -b64 -w1' fo '' 'Width value must be a multiple of 4'
+unit '-me -b64 -w5' fo '' 'Width value must be a multiple of 4'
+unit '-me -b16 -w3' f '' 'Width value must be a multiple of 2'
+unit '-me -b32 -w4' f '' 'Width value must be a multiple of 8'
+unit '-me -b64 -w9223372036854775808' fo '' 'Width value is too large'
 echo
 echo -n 'skip:'
 unit "-md -b64 -p= -g'$LF'" "Z${LF}m$LF$LF$LF${LF}8=" fo
