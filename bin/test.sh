@@ -103,6 +103,14 @@ echo
 echo -n 'trailing:'
 unit "-md -b64 -p=" Zh== '' 'non-zero trailing bits at 1'
 echo
+echo -n 'write:'
+if [ -e /dev/full ]; then
+  unit '-me -b64 -p= -o /dev/full' foo '' \
+    'Write error: No space left on device (os error 28)'
+  unit '-md -b64 -p= -o /dev/full' Zm9v '' \
+    'Write error: No space left on device (os error 28)'
+fi
+echo
 echo -n 'custom:'
 unit "-ms --symbols=0" '' '' 'invalid number of symbols'
 unit "-ms --symbols=$(printf '\303\251')" '' '' 'non-ascii character'
