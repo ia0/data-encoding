@@ -62,6 +62,13 @@ unit "-me -b64 -p= -w0 -s'$LF'" fo Zm8=
 unit "-me -b64 -p= -w1 -s'$LF'" fo '' 'wrap width not a multiple of 4'
 unit "-me -b64 -p= -w4 -s'$LF'" fo Zm8=
 unit "-me -b64 -p= -w4 -s'$LF'" foobar "Zm9v${LF}YmFy"
+unit '-me -b64 -w4' fo Zm8
+unit '-me -b64 -w256' fo Zm8
+unit '-me -b64 -w1' fo '' 'Width value must be a multiple of 4'
+unit '-me -b64 -w5' fo '' 'Width value must be a multiple of 4'
+unit '-me -b16 -w3' f '' 'Width value must be a multiple of 2'
+unit '-me -b32 -w4' f '' 'Width value must be a multiple of 8'
+unit '-me -b64 -w9223372036854775808' fo '' 'Width value is too large'
 echo
 echo -n 'skip:'
 unit "-md -b64 -p= -g'$LF'" "Z${LF}m$LF$LF$LF${LF}8=" fo
@@ -98,6 +105,14 @@ unit "-md -b64 -p=" Zg==ZgZ f 'invalid length at 4'
 echo
 echo -n 'trailing:'
 unit "-md -b64 -p=" Zh== '' 'non-zero trailing bits at 1'
+echo
+echo -n 'write:'
+if [ -e /dev/full ]; then
+  unit '-me -b64 -p= -o /dev/full' foo '' \
+    'Write error: No space left on device (os error 28)'
+  unit '-md -b64 -p= -o /dev/full' Zm9v '' \
+    'Write error: No space left on device (os error 28)'
+fi
 echo
 echo -n 'custom:'
 unit "-ms --symbols=0" '' '' 'invalid number of symbols'

@@ -96,7 +96,14 @@ pub fn encode<R: Read, W: Write>(
     let block = if wrap == 0 {
         encode_block(base)
     } else {
-        assert_eq!(wrap * base.bit_width() % 8, 0);
+        check!(
+            Error::Cmdline(format!("Width value must be a multiple of {}", decode_block(base))),
+            wrap % decode_block(base) == 0
+        );
+        check!(
+            Error::Cmdline("Width value is too large".into()),
+            wrap <= usize::MAX / base.bit_width()
+        );
         wrap * base.bit_width() / 8
     };
     assert_eq!(block % encode_block(base), 0);
@@ -111,7 +118,8 @@ pub fn encode<R: Read, W: Write>(
         base.encode_mut(&input[0 .. next], &mut output[0 .. olen]);
         writer.write_all(&output[0 .. olen]).map_err(Error::Write)?;
         if ilen == 0 {
-            return Ok(());
+            // Dropping a buffered writer ignores the errors of its last flush.
+            return writer.flush().map_err(Error::Write);
         }
         rest = rest + ilen - next;
         for i in 0 .. rest {
@@ -164,7 +172,8 @@ where
         };
         writer.write_all(&output[0 .. olen]).map_err(Error::Write)?;
         if ilen == 0 {
-            return Ok(());
+            // Dropping a buffered writer ignores the errors of its last flush.
+            return writer.flush().map_err(Error::Write);
         }
         let mut j = 0;
         for i in next .. rest + ilen {
