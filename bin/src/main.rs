@@ -139,6 +139,9 @@ where
     let has_ignore = ignore.contains(&true);
     let mut input = vec![0u8; size];
     let mut output = vec![0u8; base.decode_len(ceil(size, block)).unwrap()];
+    // The first `rest` bytes of `input` are compacted (i.e. they contain no ignored character) and
+    // their position in the original input is `orig[i]`. The bytes of `input` that were last read
+    // start at index `rest` and their position in the original input starts at `pos`.
     let mut pos = 0;
     let mut rest = 0;
     let mut map = [0; 15];
@@ -154,15 +157,16 @@ where
         } else {
             floor(rest + ilen, block)
         };
+        let position = |i| if i < rest { map[i] } else { pos + i - rest };
         let mlen = base.decode_len(next).map_err(|mut error| {
-            error.position += pos + map[error.position.min(rest)];
+            error.position = position(error.position);
             Error::Decode(error)
         })?;
         let olen = match base.decode_mut(&input[0 .. next], &mut output[0 .. mlen]) {
             Ok(olen) => olen,
             Err(mut partial) => {
                 writer.write_all(&output[0 .. partial.written]).map_err(Error::Write)?;
-                partial.error.position += pos + map[partial.error.position.min(rest)];
+                partial.error.position = position(partial.error.position);
                 return Err(Error::Decode(partial.error));
             }
         };
@@ -171,19 +175,16 @@ where
             // Dropping a buffered writer ignores the errors of its last flush.
             return writer.flush().map_err(Error::Write);
         }
-        // We won't give accurate positions once `next < rest`, but that's far out of distribution.
-        pos += next + map[next.min(rest)];
-        rest = rest + ilen - next;
         let mut j = 0;
-        for i in 0 .. rest {
-            let c = input[next + i];
+        for i in next .. rest + ilen {
+            let c = input[i];
             if !ignore[c as usize] {
                 input[j] = c;
-                map[j] = i - j;
+                map[j] = if i < rest { map[i] } else { pos + i - rest };
                 j += 1;
             }
         }
-        map[j] = rest - j;
+        pos += ilen;
         rest = j;
     }
 }
