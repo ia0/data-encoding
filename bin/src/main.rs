@@ -349,6 +349,9 @@ Examples:
         .unwrap_or_else(|| "15360".to_owned())
         .parse()
         .map_err(|_| Error::Cmdline("Invalid block value".into()))?;
+    // This limit is required by base.encode_len(). It is also sufficient for
+    // base.decode_len(ceil(size, block)), since a block is at most 8 symbols.
+    check!(Error::Cmdline("Block value is too large".into()), size <= usize::MAX / 512);
 
     if mode {
         encode(&base, spec.wrap.width, input, output, size)

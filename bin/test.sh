@@ -57,6 +57,13 @@ unit '-md -b64 -p=' Zm9vYmE= fooba
 unit '-md -b64 -p=' Zm9vYmFy foobar
 unit '-md -b64 -p=' Zg==Zm8=Zg== ffof
 echo
+echo -n 'block:'
+unit '-me -b64 -p= --block=8' fo Zm8=
+unit '-me -b64 --block=9223372036854775808' fo '' 'Block value is too large'
+unit '-me -b64 --block=18446744073709551615' fo '' 'Block value is too large'
+unit '-md -b64 --block=9223372036854775808' Zm9v '' 'Block value is too large'
+unit '-md -b64 --block=18446744073709551615' Zm9v '' 'Block value is too large'
+echo
 echo -n 'wrap:'
 unit "-me -b64 -p= -w0 -s'$LF'" fo Zm8=
 unit "-me -b64 -p= -w1 -s'$LF'" fo '' 'wrap width not a multiple of 4'
