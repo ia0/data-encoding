@@ -1,0 +1,128 @@
+body {
+    font-family: sans-serif;
+    color: #000;
+}
+
+button, select {
+    background-color: #f6f6ff;
+    border: 1px solid #88a;
+    border-radius: 2px;
+}
+
+input {
+    background-color: #fff;
+    border: 1px solid #aaa;
+    border-radius: 2px;
+    padding: 1px 2px;
+}
+
+::placeholder {
+    color: #aaa;
+}
+
+.s_disabled {
+    color: #aaa;
+}
+
+.s_hidden {
+    display: none;
+}
+
+.s_disabled input, input.s_disabled {
+    border-color: #ccc;
+}
+
+.s_disabled button, button.s_disabled {
+    background-color: #f6ffff;
+    border-color: #bcd;
+}
+
+.s_nofocus {
+    background-color: #fcfcfc;
+    border-color: #ccc;
+    color: #666;
+}
+
+.s_top_menu {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+    background-color: #eef;
+    border: 1px solid #448;
+    border-radius: 5px;
+    padding: 5px;
+    margin-bottom: 5px;
+}
+
+.s_title {
+    font-weight: bold;
+}
+
+.s_top_right button {
+    margin: 0px 2px 0px 3px;
+}
+
+.s_content {
+    background-color: #ffe;
+    border: 1px solid #884;
+    border-radius: 5px;
+    padding: 5px;
+    margin-bottom: 5px;
+}
+
+.s_encodings {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: flex-start;
+    margin: 0px -4px -4px 0px;
+}
+
+.s_encoding {
+    display: flex;
+    flex-flow: column nowrap;
+    background-color: #efe;
+    border: 1px solid #484;
+    border-radius: 5px;
+    margin: 0px 5px 5px 0px;
+    padding: 8px;
+}
+
+.s_next {
+    display: grid;
+    grid-template-columns: auto;
+    grid-gap: 5px;
+}
+
+.s_menu {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.s_preset {
+    margin-bottom: 5px;
+}
+
+.s_specification {
+    margin-top: 8px;
+}
+
+.s_control>div {
+    padding: 1px 0px;
+}
+
+.s_control>div::before {
+    content: "• ";
+}
+
+.s_error {
+    font-weight: bold;
+    color: #c00;
+    margin-top: 2px;
+}
+
+.s_invalid_input {
+    background-color: #fee;
+    border-color: #a88;
+}
