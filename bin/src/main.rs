@@ -14,6 +14,14 @@ macro_rules! check {
     };
 }
 
+macro_rules! println {
+    ($($x:tt)*) => {{
+        let mut stdout = std::io::stdout();
+        let result = writeln!(stdout, $($x)*).map_err(Error::Write);
+        result.and_then(|()| stdout.flush().map_err(Error::Write))
+    }};
+}
+
 #[derive(Debug)]
 pub enum Error {
     ParseOpts(getopts::Fail),
@@ -227,7 +235,7 @@ fn wrapped_main(program: &str, args: Vec<String>) -> Result<()> {
             r"Usage: {program} --mode=<mode> --base=<base> [<options>]
 Usage: {program} --mode=<mode> --symbols=<symbols> [<options>]"
         );
-        print!(
+        return println!(
             "{0}
 Examples:
     # Using the RFC4648 base64 encoding
@@ -246,17 +254,14 @@ Examples:
     {1} --mode=decode \\
         --symbols=0123456789bcdfghjklmnpqrstuvwxyz \\
         --translate=BCDFGHJKLMNPQRSTUVWXYZbcdfghjklmnpqrstuvwxyz \\
-        --least_significant_bit_first
-",
+        --least_significant_bit_first",
             opts.usage(&brief),
             program
         );
-        return Ok(());
     }
 
     if args.len() == 1 && (args[0] == "--version" || args[0] == "-v") {
-        println!("{}", env!("CARGO_PKG_VERSION"));
-        return Ok(());
+        return println!("{}", env!("CARGO_PKG_VERSION"));
     }
 
     let matches = opts.parse(&args).map_err(Error::ParseOpts)?;
@@ -324,10 +329,7 @@ Examples:
         "" => return Err(Error::Cmdline("Empty mode".into())),
         x if "encode".starts_with(x) => true,
         x if "decode".starts_with(x) => false,
-        x if "specification".starts_with(x) => {
-            println!("{:#?}", base.specification());
-            return Ok(());
-        }
+        x if "specification".starts_with(x) => return println!("{:#?}", base.specification()),
         _ => return Err(Error::Cmdline("Invalid mode".into())),
     };
 

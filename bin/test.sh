@@ -119,6 +119,9 @@ if [ -e /dev/full ]; then
     'Write error: No space left on device (os error 28)'
   unit '-md -b64 -p= -o /dev/full' Zm9v '' \
     'Write error: No space left on device (os error 28)'
+  unit '-ms -b64 >/dev/full' '' '' 'Write error: No space left on device (os error 28)'
+  unit '--version >/dev/full' '' '' 'Write error: No space left on device (os error 28)'
+  unit '--help >/dev/full' '' '' 'Write error: No space left on device (os error 28)'
 fi
 echo
 echo -n 'custom:'
