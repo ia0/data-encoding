@@ -18,6 +18,7 @@ use alloc::vec;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use core::convert::TryInto;
+use core::debug_assert as safety_assert;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 
@@ -111,10 +112,19 @@ impl sealed::Bool for True {
     }
 }
 
+/// Reinterprets a dynamic encoding as a static one.
+///
+/// # Safety
+///
+/// The configuration of `base` must match the type parameters: `base.bit()` must be `Bit::VAL`,
+/// `base.msb()` must be `Msb::VAL`, `base.pad().is_some()` must be `Pad::VAL`,
+/// `base.wrap().is_some()` must be `Wrap::VAL`, and `base.has_ignore()` must be `Ignore::VAL`.
 unsafe fn cast<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>(
     base: &DynEncoding,
 ) -> &Encoding<Bit, Msb, Pad, Wrap, Ignore> {
     let ptr = core::ptr::from_ref(base).cast::<Encoding<Bit, Msb, Pad, Wrap, Ignore>>();
+    // SAFETY: Both types are repr(transparent) over InternalEncoding and the configuration
+    // matches the type parameters by correctness requirements.
     unsafe { &*ptr }
 }
 
@@ -158,31 +168,61 @@ macro_rules! dispatch {
         }
     };
     ({ $($gen:ty),* } $dyn:ident $($body:tt)*) => {
+        // SAFETY: The type parameters are the ones matched on above.
         unsafe { cast::<$($gen),*>($dyn) } $($body)*
     };
 }
 
+/// Returns the `i`-th chunk of `n` elements of `x`.
+///
+/// # Safety
+///
+/// `(i + 1) * n` must not overflow and must be at most `x.len()`.
 unsafe fn chunk_unchecked<T>(x: &[T], n: usize, i: usize) -> &[T] {
-    debug_assert!((i + 1) * n <= x.len());
+    safety_assert!((i + 1) * n <= x.len());
+    // SAFETY: Ensured by correctness requirements (and asserted above).
     unsafe { core::slice::from_raw_parts(x.as_ptr().add(n * i), n) }
 }
 
+/// Returns the `i`-th chunk of `n` elements of `x`.
+///
+/// # Safety
+///
+/// `(i + 1) * n` must not overflow and must be at most `x.len()`.
 unsafe fn chunk_mut_unchecked<T>(x: &mut [T], n: usize, i: usize) -> &mut [T] {
-    debug_assert!((i + 1) * n <= x.len());
+    safety_assert!((i + 1) * n <= x.len());
+    // SAFETY: Ensured by correctness requirements (and asserted above).
     unsafe { core::slice::from_raw_parts_mut(x.as_mut_ptr().add(n * i), n) }
 }
 
 // TODO(https://github.com/rust-lang/rust/issues/79995): Use write_slice() instead.
-unsafe fn copy_from_slice(dst: &mut [MaybeUninit<u8>], src: &[u8]) {
+fn copy_from_slice(dst: &mut [MaybeUninit<u8>], src: &[u8]) {
+    // SAFETY: MaybeUninit<u8> has the same layout as u8 and an initialized u8 is a valid
+    // MaybeUninit<u8>. The reference is shared, so `src` cannot be de-initialized.
     dst.copy_from_slice(unsafe { &*(core::ptr::from_ref(src) as *const [MaybeUninit<u8>]) });
 }
 
+/// Assumes that `xs` is initialized.
+///
+/// # Safety
+///
+/// All the elements of `xs` must be initialized.
 // TODO(https://github.com/rust-lang/rust/issues/63569): Use slice_assume_init_mut() instead.
 unsafe fn slice_assume_init_mut(xs: &mut [MaybeUninit<u8>]) -> &mut [u8] {
+    // SAFETY: MaybeUninit<u8> has the same layout as u8 and all the elements are initialized by
+    // correctness requirements.
     unsafe { &mut *(core::ptr::from_mut(xs) as *mut [u8]) }
 }
 
+/// Forgets that `xs` is initialized.
+///
+/// # Safety
+///
+/// The returned slice must not be de-initialized, because `xs` is initialized. In particular,
+/// writing `MaybeUninit::uninit()` to any of its elements is not permitted.
 unsafe fn slice_uninit_mut(xs: &mut [u8]) -> &mut [MaybeUninit<u8>] {
+    // SAFETY: MaybeUninit<u8> has the same layout as u8 and the result is not de-initialized by
+    // correctness requirements.
     unsafe { &mut *(core::ptr::from_mut(xs) as *mut [MaybeUninit<u8>]) }
 }
 
@@ -327,7 +367,9 @@ fn encode_mut<Bit: BitWidth, Msb: Bool>(
     let dec = dec(bit);
     let n = input.len() / enc;
     vectorize(n, 16 / enc, |i| {
+        // SAFETY: `i < n` and `n` is the number of whole chunks in both slices.
         let input = unsafe { chunk_unchecked(input, enc, i) };
+        // SAFETY: `i < n` and `n` is the number of whole chunks in both slices.
         let output = unsafe { chunk_mut_unchecked(output, dec, i) };
         encode_block::<Bit, Msb>(symbols, input, output);
     });
@@ -367,7 +409,9 @@ fn decode_mut<Bit: BitWidth, Msb: Bool>(
     let dec = dec(bit);
     let n = input.len() / dec;
     for i in 0 .. n {
+        // SAFETY: `i < n` and `n` is the number of whole chunks in both slices.
         let input = unsafe { chunk_unchecked(input, dec, i) };
+        // SAFETY: `i < n` and `n` is the number of whole chunks in both slices.
         let output = unsafe { chunk_mut_unchecked(output, enc, i) };
         decode_block::<Bit, Msb>(values, input, output).map_err(|e| dec * i + e)?;
     }
@@ -466,15 +510,17 @@ fn encode_wrap_mut<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool>(
     let olen = dec - end.len();
     let n = input.len() / enc;
     for i in 0 .. n {
+        // SAFETY: `i < n` and `n` is the number of whole rows in both slices.
         let input = unsafe { chunk_unchecked(input, enc, i) };
+        // SAFETY: `i < n` and `n` is the number of whole rows in both slices.
         let output = unsafe { chunk_mut_unchecked(output, dec, i) };
         encode_base::<Bit, Msb>(symbols, input, &mut output[.. olen]);
-        unsafe { copy_from_slice(&mut output[olen ..], end) };
+        copy_from_slice(&mut output[olen ..], end);
     }
     if input.len() > enc * n {
         let olen = dec * n + encode_pad_len::<Bit, Pad>(input.len() - enc * n);
         encode_pad::<Bit, Msb, Pad>(symbols, pad, &input[enc * n ..], &mut output[dec * n .. olen]);
-        unsafe { copy_from_slice(&mut output[olen ..], end) };
+        copy_from_slice(&mut output[olen ..], end);
     }
 }
 
@@ -833,6 +879,8 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     ) -> &'a mut [u8] {
         assert_eq!(output.len(), self.encode_len(input.len()));
         encode_wrap_mut::<Bit, Msb, Pad, Wrap>(self.sym(), self.pad(), self.wrap(), input, output);
+        // SAFETY: Ensured by correctness guarantees of encode_wrap_mut which initializes the
+        // whole output (its length was checked above).
         unsafe { slice_assume_init_mut(output) }
     }
 
@@ -843,17 +891,22 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     /// Panics if the `output` length does not match the result of [`Self::encode_len()`] for the
     /// `input` length.
     pub fn encode_mut(&self, input: &[u8], output: &mut [u8]) {
+        // SAFETY: encode_mut_uninit only initializes its output, it never de-initializes it.
         let _ = self.encode_mut_uninit(input, unsafe { slice_uninit_mut(output) });
     }
 
     /// Appends the encoding of `input` to `output`.
     #[cfg(feature = "alloc")]
     pub fn encode_append(&self, input: &[u8], output: &mut String) {
+        // SAFETY: Ensured by correctness guarantees of encode_mut_uninit (and asserted below).
         let output = unsafe { output.as_mut_vec() };
         let output_len = output.len();
         let len = self.encode_len(input.len());
-        let actual_len = self.encode_mut_uninit(input, reserve_spare(output, len)).len();
-        debug_assert_eq!(actual_len, len);
+        let encoded = self.encode_mut_uninit(input, reserve_spare(output, len));
+        debug_assert_eq!(encoded.len(), len);
+        safety_assert!(encoded.is_ascii());
+        // SAFETY: The `len` bytes after `output_len` were initialized by encode_mut_uninit and
+        // are within the capacity reserved by reserve_spare.
         unsafe { output.set_len(output_len + len) };
     }
 
@@ -884,6 +937,9 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
         for input in input.chunks(buffer.len() / dec * enc) {
             let buffer = &mut buffer[.. self.encode_len(input.len())];
             let buffer = self.encode_mut_uninit(input, buffer);
+            safety_assert!(buffer.is_ascii());
+            // SAFETY: Ensured by correctness guarantees of encode_mut_uninit which only writes
+            // ASCII symbols (and asserted above).
             output.write_str(unsafe { core::str::from_utf8_unchecked(buffer) })?;
         }
         Ok(())
@@ -901,6 +957,8 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     pub fn encode_write_buffer(
         &self, input: &[u8], output: &mut impl core::fmt::Write, buffer: &mut [u8],
     ) -> core::fmt::Result {
+        // SAFETY: encode_write_buffer_uninit only initializes its buffer, it never
+        // de-initializes it.
         self.encode_write_buffer_uninit(input, output, unsafe { slice_uninit_mut(buffer) })
     }
 
@@ -924,9 +982,14 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     pub fn encode(&self, input: &[u8]) -> String {
         let mut output = Vec::new();
         let len = self.encode_len(input.len());
-        let actual_len = self.encode_mut_uninit(input, reserve_spare(&mut output, len)).len();
-        debug_assert_eq!(actual_len, len);
+        let encoded = self.encode_mut_uninit(input, reserve_spare(&mut output, len));
+        debug_assert_eq!(encoded.len(), len);
+        safety_assert!(encoded.is_ascii());
+        // SAFETY: The first `len` bytes were initialized by encode_mut_uninit and are within the
+        // capacity reserved by reserve_spare.
         unsafe { output.set_len(len) };
+        // SAFETY: Ensured by correctness guarantees of encode_mut_uninit which only writes ASCII
+        // symbols (and asserted above).
         unsafe { String::from_utf8_unchecked(output) }
     }
 
@@ -977,6 +1040,8 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     ) -> Result<&'a mut [u8], DecodePartial> {
         assert_eq!(Ok(output.len()), self.decode_len(input.len()));
         let len = decode_wrap_mut::<Bit, Msb, Pad, Ignore>(self.ctb(), self.val(), input, output)?;
+        // SAFETY: Ensured by correctness guarantees of decode_wrap_mut which initializes the
+        // first `len` bytes of the output when it succeeds.
         Ok(unsafe { slice_assume_init_mut(&mut output[.. len]) })
     }
 
@@ -1001,6 +1066,7 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     /// - The [`DecodePartial::read`] first bytes of the input have been successfully decoded to the
     ///   [`DecodePartial::written`] first bytes of the output.
     pub fn decode_mut(&self, input: &[u8], output: &mut [u8]) -> Result<usize, DecodePartial> {
+        // SAFETY: decode_mut_uninit only initializes its output, it never de-initializes it.
         Ok(self.decode_mut_uninit(input, unsafe { slice_uninit_mut(output) })?.len())
     }
 
@@ -1030,6 +1096,8 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
             .decode_mut_uninit(input, reserve_spare(&mut output, max_len))
             .map_err(|partial| partial.error)?
             .len();
+        // SAFETY: The first `len` bytes were initialized by decode_mut_uninit and are within the
+        // capacity reserved by reserve_spare.
         unsafe { output.set_len(len) };
         Ok(output)
     }
@@ -1047,6 +1115,12 @@ impl<Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
         self.into()
     }
 
+    /// Builds an encoding from its internal representation.
+    ///
+    /// # Safety
+    ///
+    /// `data` must be a valid internal representation, as documented on [`DynEncoding`], and its
+    /// configuration must match the type parameters.
     #[doc(hidden)]
     #[must_use]
     pub const unsafe fn new_unchecked(data: &'static [u8]) -> Self {
@@ -1162,10 +1236,12 @@ impl DynEncoding {
     /// ```
     #[cfg(feature = "alloc")]
     pub fn encode_append(&self, input: &[u8], output: &mut String) {
+        // SAFETY: Ensured by correctness guarantees of encode_mut (and asserted below).
         let output = unsafe { output.as_mut_vec() };
         let output_len = output.len();
         output.resize(output_len + self.encode_len(input.len()), 0u8);
         self.encode_mut(input, &mut output[output_len ..]);
+        safety_assert!(output[output_len ..].is_ascii());
     }
 
     /// Writes the encoding of `input` to `output`
@@ -1199,6 +1275,9 @@ impl DynEncoding {
         for input in input.chunks(buffer.len() / dec * enc) {
             let buffer = &mut buffer[.. self.encode_len(input.len())];
             self.encode_mut(input, buffer);
+            safety_assert!(buffer.is_ascii());
+            // SAFETY: Ensured by correctness guarantees of encode_mut which only writes ASCII
+            // symbols (and asserted above).
             output.write_str(unsafe { core::str::from_utf8_unchecked(buffer) })?;
         }
         Ok(())
@@ -1217,6 +1296,9 @@ impl DynEncoding {
     pub fn encode(&self, input: &[u8]) -> String {
         let mut output = vec![0u8; self.encode_len(input.len())];
         self.encode_mut(input, &mut output);
+        safety_assert!(output.is_ascii());
+        // SAFETY: Ensured by correctness guarantees of encode_mut which only writes ASCII symbols
+        // (and asserted above).
         unsafe { String::from_utf8_unchecked(output) }
     }
 
@@ -1398,6 +1480,11 @@ impl DynEncoding {
         specification
     }
 
+    /// Builds a dynamic encoding from its internal representation.
+    ///
+    /// # Safety
+    ///
+    /// `implementation` must be a valid internal representation, as documented on this type.
     #[doc(hidden)]
     #[must_use]
     pub const unsafe fn internal_new(implementation: &'static [u8]) -> DynEncoding {
@@ -1441,6 +1528,7 @@ impl<'a, Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool> TryFrom<
 
     fn try_from(base: &'a DynEncoding) -> Result<Self, Self::Error> {
         Encoding::<Bit, Msb, Pad, Wrap, Ignore>::check_compatible(base)?;
+        // SAFETY: The configuration matches the type parameters, as checked above.
         Ok(unsafe { cast(base) })
     }
 }
@@ -1449,6 +1537,7 @@ impl<'a, Bit: BitWidth, Msb: Bool, Pad: Bool, Wrap: Bool, Ignore: Bool>
     From<&'a Encoding<Bit, Msb, Pad, Wrap, Ignore>> for &'a DynEncoding
 {
     fn from(base: &'a Encoding<Bit, Msb, Pad, Wrap, Ignore>) -> Self {
+        // SAFETY: Both types are repr(transparent) over InternalEncoding.
         unsafe { &*core::ptr::from_ref(base).cast::<DynEncoding>() }
     }
 }
@@ -2042,6 +2131,8 @@ pub type Base64Wrap = Encoding<Bit6, True, True, True, True>;
 /// assert_eq!(HEXLOWER.decode(b"deadbeef").unwrap(), deadbeef);
 /// assert_eq!(HEXLOWER.encode(&deadbeef), "deadbeef");
 /// ```
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static HEXLOWER: Hex = unsafe { Hex::new_unchecked(HEXLOWER_IMPL) };
 const HEXLOWER_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54,
@@ -2098,6 +2189,8 @@ const HEXLOWER_IMPL: &[u8] = &[
 /// ```rust
 /// pub use data_encoding_v3::HEXLOWER_PERMISSIVE as HEX;
 /// ```
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static HEXLOWER_PERMISSIVE: Hex = unsafe { Hex::new_unchecked(HEXLOWER_PERMISSIVE_IMPL) };
 const HEXLOWER_PERMISSIVE_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 48, 49, 50, 51, 52, 53, 54,
@@ -2150,6 +2243,8 @@ const HEXLOWER_PERMISSIVE_IMPL: &[u8] = &[
 /// ```
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-8
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static HEXUPPER: Hex = unsafe { Hex::new_unchecked(HEXUPPER_IMPL) };
 const HEXUPPER_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
@@ -2199,6 +2294,8 @@ const HEXUPPER_IMPL: &[u8] = &[
 /// assert_eq!(HEXUPPER_PERMISSIVE.decode(b"DeadBeef").unwrap(), deadbeef);
 /// assert_eq!(HEXUPPER_PERMISSIVE.encode(&deadbeef), "DEADBEEF");
 /// ```
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static HEXUPPER_PERMISSIVE: Hex = unsafe { Hex::new_unchecked(HEXUPPER_PERMISSIVE_IMPL) };
 const HEXUPPER_PERMISSIVE_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48, 49, 50, 51, 52, 53, 54, 55,
@@ -2242,6 +2339,8 @@ const HEXUPPER_PERMISSIVE_IMPL: &[u8] = &[
 /// It conforms to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-6
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE32: Base32 = unsafe { Base32::new_unchecked(BASE32_IMPL) };
 const BASE32_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
@@ -2280,6 +2379,8 @@ const BASE32_IMPL: &[u8] = &[
 /// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567");
 /// assert_eq!(BASE32_NOPAD.as_dyn(), &spec.encoding().unwrap());
 /// ```
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE32_NOPAD: Base32NoPad = unsafe { Base32NoPad::new_unchecked(BASE32_NOPAD_IMPL) };
 const BASE32_NOPAD_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
@@ -2323,6 +2424,8 @@ const BASE32_NOPAD_IMPL: &[u8] = &[
 /// It conforms to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-7
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE32HEX: Base32 = unsafe { Base32::new_unchecked(BASE32HEX_IMPL) };
 const BASE32HEX_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
@@ -2361,6 +2464,8 @@ const BASE32HEX_IMPL: &[u8] = &[
 /// spec.symbols.push_str("0123456789ABCDEFGHIJKLMNOPQRSTUV");
 /// assert_eq!(BASE32HEX_NOPAD.as_dyn(), &spec.encoding().unwrap());
 /// ```
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE32HEX_NOPAD: Base32NoPad =
     unsafe { Base32NoPad::new_unchecked(BASE32HEX_NOPAD_IMPL) };
 const BASE32HEX_NOPAD_IMPL: &[u8] = &[
@@ -2410,6 +2515,8 @@ const BASE32HEX_NOPAD_IMPL: &[u8] = &[
 /// - It does not use padding.
 ///
 /// [RFC5155]: https://tools.ietf.org/html/rfc5155
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE32_DNSSEC: Base32NoPad = unsafe { Base32NoPad::new_unchecked(BASE32_DNSSEC_IMPL) };
 const BASE32_DNSSEC_IMPL: &[u8] = &[
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
@@ -2458,6 +2565,8 @@ const BASE32_DNSSEC_IMPL: &[u8] = &[
 /// It conforms to [DNSCurve].
 ///
 /// [DNSCurve]: https://dnscurve.org/in-implement.html
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE32_DNSCURVE: Base32LsbNoPad =
     unsafe { Base32LsbNoPad::new_unchecked(BASE32_DNSCURVE_IMPL) };
 const BASE32_DNSCURVE_IMPL: &[u8] = &[
@@ -2504,6 +2613,8 @@ const BASE32_DNSCURVE_IMPL: &[u8] = &[
 /// It conforms to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-4
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE64: Base64 = unsafe { Base64::new_unchecked(BASE64_IMPL) };
 const BASE64_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
@@ -2543,6 +2654,8 @@ const BASE64_IMPL: &[u8] = &[
 /// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 /// assert_eq!(BASE64_NOPAD.as_dyn(), &spec.encoding().unwrap());
 /// ```
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE64_NOPAD: Base64NoPad = unsafe { Base64NoPad::new_unchecked(BASE64_NOPAD_IMPL) };
 const BASE64_NOPAD_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
@@ -2590,6 +2703,8 @@ const BASE64_NOPAD_IMPL: &[u8] = &[
 /// and does not ignore all characters.
 ///
 /// [RFC2045]: https://tools.ietf.org/html/rfc2045
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE64_MIME: Base64Wrap = unsafe { Base64Wrap::new_unchecked(BASE64_MIME_IMPL) };
 const BASE64_MIME_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
@@ -2638,6 +2753,8 @@ const BASE64_MIME_IMPL: &[u8] = &[
 /// and does not ignore all characters.
 ///
 /// [RFC2045]: https://tools.ietf.org/html/rfc2045
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE64_MIME_PERMISSIVE: Base64Wrap =
     unsafe { Base64Wrap::new_unchecked(BASE64_MIME_PERMISSIVE_IMPL) };
 const BASE64_MIME_PERMISSIVE_IMPL: &[u8] = &[
@@ -2683,6 +2800,8 @@ const BASE64_MIME_PERMISSIVE_IMPL: &[u8] = &[
 /// It conforms to [RFC4648].
 ///
 /// [RFC4648]: https://tools.ietf.org/html/rfc4648#section-5
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE64URL: Base64 = unsafe { Base64::new_unchecked(BASE64URL_IMPL) };
 const BASE64URL_IMPL: &[u8] = &[
     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
@@ -2722,6 +2841,8 @@ const BASE64URL_IMPL: &[u8] = &[
 /// spec.symbols.push_str("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
 /// assert_eq!(BASE64URL_NOPAD.as_dyn(), &spec.encoding().unwrap());
 /// ```
+// SAFETY: The implementation is generated from a valid specification and its configuration
+// matches the type.
 pub static BASE64URL_NOPAD: Base64NoPad =
     unsafe { Base64NoPad::new_unchecked(BASE64URL_NOPAD_IMPL) };
 const BASE64URL_NOPAD_IMPL: &[u8] = &[

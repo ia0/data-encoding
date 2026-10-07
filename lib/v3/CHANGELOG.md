@@ -9,6 +9,7 @@
 
 ### Patch
 
+- Document the safety requirements of unsafe code and enable `undocumented_unsafe_blocks`
 - Fix `redundant_explicit_links` rustdoc lint
 - Rename lints in `Cargo.toml` to use underscores
 - Use `iter().enumerate()` when possible
