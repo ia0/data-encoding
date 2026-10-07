@@ -8,12 +8,12 @@ fn to_hex(x: u8) -> char {
     }) as char
 }
 
-fn from_hex(x: u8) -> u8 {
+fn from_hex(x: u8) -> Result<u8, String> {
     match x {
-        b'0' ..= b'9' => x - b'0',
-        b'A' ..= b'F' => x - b'A' + 10,
-        b'a' ..= b'f' => x - b'a' + 10,
-        _ => panic!(),
+        b'0' ..= b'9' => Ok(x - b'0'),
+        b'A' ..= b'F' => Ok(x - b'A' + 10),
+        b'a' ..= b'f' => Ok(x - b'a' + 10),
+        _ => Err(format!("invalid hexadecimal digit '{}'", x as char)),
     }
 }
 
@@ -79,8 +79,8 @@ pub fn decode(input: &str) -> Result<Vec<u8>, String> {
             b'r' => result.push(b'\r'),
             b'\\' => result.push(b'\\'),
             b'x' => {
-                let high = from_hex(next(&mut input)?);
-                let low = from_hex(next(&mut input)?);
+                let high = from_hex(next(&mut input)?)?;
+                let low = from_hex(next(&mut input)?)?;
                 result.push(high << 4 | low);
             }
             x => return Err(format!("invalid escape sequence '\\{}'", x as char)),
@@ -110,4 +110,7 @@ fn test_decode() {
     assert_eq!(decode("\n").unwrap(), b"\n");
     assert_eq!(decode("\x41").unwrap(), b"A");
     assert_eq!(decode("\x4A").unwrap(), b"J");
+    assert!(decode(r"\xG1").is_err());
+    assert!(decode(r"\x1G").is_err());
+    assert!(decode(r"\x").is_err());
 }
