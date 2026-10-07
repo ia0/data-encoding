@@ -5,6 +5,7 @@
 ### Patch
 
 - Fix panic when printing the help, version, or specification output fails
+- Fix panic when the block value is too large
 - Fix inaccurate error positions when decoding by small blocks with ignored characters
 - Fix panic when the width value is not a multiple of the base or is too large
 - Fix write errors being silently ignored when flushing the end of the output
