@@ -77,6 +77,9 @@ fn size_error(block: usize) -> Error {
     Error::Cmdline(format!("Block value must be greater than or equal to {block}"))
 }
 
+// Reasonably large value that fits u32 when multiplied by a bit width.
+const MAX_BYTES: usize = u32::MAX as usize / 6; // ~700MB
+
 /// Returns the longest prefix of `input` with a multiple of `block` non-ignored characters.
 fn symbol_floor(ignore: &[bool; 256], block: usize, input: &[u8]) -> usize {
     let count = input.iter().filter(|&&c| !ignore[c as usize]).count();
@@ -100,10 +103,7 @@ pub fn encode<R: Read, W: Write>(
             Error::Cmdline(format!("Width value must be a multiple of {}", decode_block(base))),
             wrap % decode_block(base) == 0
         );
-        check!(
-            Error::Cmdline("Width value is too large".into()),
-            wrap <= usize::MAX / base.bit_width()
-        );
+        check!(Error::Cmdline("Width value is too large".into()), wrap <= MAX_BYTES);
         wrap * base.bit_width() / 8
     };
     assert_eq!(block % encode_block(base), 0);
@@ -349,9 +349,7 @@ Examples:
         .unwrap_or_else(|| "15360".to_owned())
         .parse()
         .map_err(|_| Error::Cmdline("Invalid block value".into()))?;
-    // This limit is required by base.encode_len(). It is also sufficient for
-    // base.decode_len(ceil(size, block)), since a block is at most 8 symbols.
-    check!(Error::Cmdline("Block value is too large".into()), size <= usize::MAX / 512);
+    check!(Error::Cmdline("Block value is too large".into()), size <= MAX_BYTES);
 
     if mode {
         encode(&base, spec.wrap.width, input, output, size)
