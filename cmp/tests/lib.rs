@@ -54,3 +54,39 @@ fn difference() {
     assert_eq!(BASE64.decode(x).unwrap(), vec![0, 0]);
     assert_eq!(BASE64_STANDARD.decode(x).err().unwrap(), InvalidByte(2, b'='));
 }
+
+#[test]
+fn partial_block() {
+    let encode = &[
+        (b"f" as &[u8], b"" as &[u8]),
+        (b"fo" as &[u8], b"" as &[u8]),
+        (b"foob" as &[u8], b"Zm9v" as &[u8]),
+        (b"fooba" as &[u8], b"Zm9v" as &[u8]),
+    ];
+    for &(ref i, ref o) in encode {
+        let mut r = vec![0u8; o.len()];
+        cmp::base64_encode_seq_gcc(i, &mut r);
+        assert_eq!(&r, o);
+    }
+    for &(ref i, ref o) in encode {
+        let mut r = vec![0u8; o.len()];
+        cmp::base64_encode_par_gcc(i, &mut r);
+        assert_eq!(&r, o);
+    }
+    let decode = &[
+        (b"Z" as &[u8], b"" as &[u8]),
+        (b"Zm9" as &[u8], b"" as &[u8]),
+        (b"Zm9vY" as &[u8], b"foo" as &[u8]),
+        (b"Zm9vYmF" as &[u8], b"foo" as &[u8]),
+    ];
+    for &(ref i, ref o) in decode {
+        let mut r = vec![0u8; o.len()];
+        assert_eq!(cmp::base64_decode_seq_gcc(i, &mut r), Ok(()));
+        assert_eq!(&r, o);
+    }
+    for &(ref i, ref o) in decode {
+        let mut r = vec![0u8; o.len()];
+        assert_eq!(cmp::base64_decode_par_gcc(i, &mut r), Ok(()));
+        assert_eq!(&r, o);
+    }
+}

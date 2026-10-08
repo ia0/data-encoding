@@ -34,6 +34,7 @@ static const u8 values[256] = {
 void SUFFIX(encode_seq, COMPILER)
 (u8 const* restrict input, usize len, u8* restrict output)
 {
+	len -= len % 3;
 	for (; len; len -= 3) {
 		*output++ = symbols[(u8)(input[0] >> 2)];
 		*output++ = symbols[(u8)(input[0] << 4 | input[1] >> 4)];
@@ -46,6 +47,7 @@ void SUFFIX(encode_seq, COMPILER)
 void SUFFIX(encode_par, COMPILER)
 (u8 const* restrict input, usize len, u8* restrict output)
 {
+	len -= len % 3;
 	for (; len; len -= 3) {
 		u64 x = (u64)input[0] << 16 | (u64)input[1] << 8 | input[2];
 		output[0] = symbols[(u8)(x >> 18)];
@@ -60,6 +62,7 @@ void SUFFIX(encode_par, COMPILER)
 i32 SUFFIX(decode_seq, COMPILER)
 (u8 const* restrict input, usize len, u8* restrict output)
 {
+	len -= len % 4;
 	for (; len; len -= 4) {
 		if (values[input[0]] >= 64) return -1;
 		if (values[input[1]] >= 64) return -1;
@@ -76,6 +79,7 @@ i32 SUFFIX(decode_seq, COMPILER)
 i32 SUFFIX(decode_par, COMPILER)
 (u8 const* restrict input, usize len, u8* restrict output)
 {
+	len -= len % 4;
 	for (; len; len -= 4) {
 		if (values[input[0]] & values[input[1]] & values[input[2]]
 		    & values[input[3]] & 0xc0) {
