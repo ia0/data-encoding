@@ -1,6 +1,11 @@
 # Changelog
 
-## 2.11.2-git
+## 2.12.0-git
+
+### Minor
+
+- Document the input chunk alignment for `Encoding::decode_mut()`
+- Add `Encoding::decode_align()` to decide where to split long inputs
 
 ### Patch
 

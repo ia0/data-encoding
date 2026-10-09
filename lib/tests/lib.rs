@@ -701,3 +701,57 @@ fn encoder() {
     test(&[b"foob", b"a"], "Zm9vYmE=");
     test(&[b"foob", b"ar"], "Zm9vYmFy");
 }
+
+#[test]
+fn decode_align() {
+    // Decodes chunk by chunk as documented by `decode_len`, cutting each chunk after
+    // `decode_align` non-ignored characters.
+    #[track_caller]
+    fn test(base: &Encoding, align: usize) {
+        assert_eq!(base.decode_align(), align);
+        for input in [b"" as &[u8], b"f", b"fo", b"foo", b"foob", b"fooba", b"foobar", &[0; 25]] {
+            let encoded = base.encode(input);
+            let encoded = encoded.as_bytes();
+            let mut output = Vec::new();
+            let mut pos = 0;
+            while pos < encoded.len() {
+                let mut end = pos;
+                let mut count = 0;
+                while end < encoded.len()
+                    && (count < align || base.interpret_byte(encoded[end]).is_ignored())
+                {
+                    count += usize::from(!base.interpret_byte(encoded[end]).is_ignored());
+                    end += 1;
+                }
+                let chunk = &encoded[pos .. end];
+                pos = end;
+                let mut buffer = vec![0; base.decode_len(chunk.len()).unwrap()];
+                let written = base.decode_mut(chunk, &mut buffer).unwrap();
+                output.extend_from_slice(&buffer[.. written]);
+            }
+            assert_eq!(output, input);
+        }
+    }
+    let custom = |symbols| {
+        let mut spec = Specification::new();
+        spec.symbols.push_str(symbols);
+        spec.encoding().unwrap()
+    };
+    test(&custom("01"), 8);
+    test(&custom("0123"), 4);
+    test(&custom("01234567"), 8);
+    test(&data_encoding::HEXLOWER, 2);
+    test(&data_encoding::HEXUPPER, 2);
+    test(&data_encoding::BASE32, 8);
+    test(&data_encoding::BASE32_NOPAD, 8);
+    test(&data_encoding::BASE32HEX, 8);
+    test(&data_encoding::BASE32HEX_NOPAD, 8);
+    test(&data_encoding::BASE32_DNSSEC, 8);
+    test(&data_encoding::BASE32_DNSCURVE, 8);
+    test(&data_encoding::BASE64, 4);
+    test(&data_encoding::BASE64_NOPAD, 4);
+    test(&data_encoding::BASE64_MIME, 4);
+    test(&data_encoding::BASE64_MIME_PERMISSIVE, 4);
+    test(&data_encoding::BASE64URL, 4);
+    test(&data_encoding::BASE64URL_NOPAD, 4);
+}
