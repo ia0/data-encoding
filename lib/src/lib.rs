@@ -1530,6 +1530,11 @@ impl Encoding {
     /// - `Err(DecodePartial { read, written, .. })` means that `read` bytes have been read and
     ///   `written` bytes written (the error can be ignored)
     ///
+    /// The number of non-ignored characters of each input chunk must be a multiple of
+    /// [`decode_align`]. Bases whose bit-width does not divide 8 and that don't use padding
+    /// otherwise decode a trailing partial group of symbols as the end of the input, so
+    /// `Ok(written)` is returned and the remaining symbols of that group are lost.
+    ///
     /// Note that this function only _may_ panic in those cases. The function may also return the
     /// correct value in some cases depending on the implementation. In other words, those limits
     /// are the guarantee below which the function will not panic, and not the guarantee above which
@@ -1540,6 +1545,7 @@ impl Encoding {
     /// Returns an error if `len` is invalid. The error kind is [`Length`] and the [position] is the
     /// greatest valid input length.
     ///
+    /// [`decode_align`]: struct.Encoding.html#method.decode_align
     /// [`decode_mut`]: struct.Encoding.html#method.decode_mut
     /// [`Length`]: enum.DecodeKind.html#variant.Length
     /// [position]: struct.DecodeError.html#structfield.position
@@ -1555,6 +1561,16 @@ impl Encoding {
             self.has_ignore() || len == ilen
         );
         Ok(olen)
+    }
+
+    /// Returns the minimum alignment when chunking a long input
+    ///
+    /// See [`decode_len`] for context.
+    ///
+    /// [`decode_len`]: struct.Encoding.html#method.decode_len
+    #[must_use]
+    pub fn decode_align(&self) -> usize {
+        dec(self.bit())
     }
 
     /// Decodes `input` in `output`
