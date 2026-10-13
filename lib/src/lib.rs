@@ -1521,19 +1521,9 @@ impl Encoding {
     /// - `len <= 2_305843_009213_693951` when `target_pointer_width = "64"`
     ///
     /// If you need to decode an input of length greater than this limit (possibly of infinite
-    /// length), then you must decode your input chunk by chunk with [`decode_mut`], making sure
-    /// that you take into account how many bytes have been read from the input and how many bytes
-    /// have been written to the output:
-    /// - `Ok(written)` means all bytes have been read and `written` bytes have been written
-    /// - `Err(DecodePartial { error, .. })` means an error occurred if `error.kind !=
-    ///   DecodeKind::Length` or this was the last input chunk
-    /// - `Err(DecodePartial { read, written, .. })` means that `read` bytes have been read and
-    ///   `written` bytes written (the error can be ignored)
-    ///
-    /// The number of non-ignored characters of each input chunk must be a multiple of
-    /// [`decode_align`]. Bases whose bit-width does not divide 8 and that don't use padding
-    /// otherwise decode a trailing partial group of symbols as the end of the input, so
-    /// `Ok(written)` is returned and the remaining symbols of that group are lost.
+    /// length), then you must chunk your input, decode each chunk, and concatenate to obtain the
+    /// output. The number of non-ignored characters of each input chunk must be a multiple of
+    /// [`decode_align`].
     ///
     /// Note that this function only _may_ panic in those cases. The function may also return the
     /// correct value in some cases depending on the implementation. In other words, those limits
