@@ -1,6 +1,10 @@
 # Changelog
 
-## 2.11.2-git
+## 2.12.0-git
+
+### Minor
+
+- Add `Encoding::decode_align()` to decide where to split long inputs
 
 ### Patch
 

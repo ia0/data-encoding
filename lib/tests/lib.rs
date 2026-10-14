@@ -701,3 +701,25 @@ fn encoder() {
     test(&[b"foob", b"a"], "Zm9vYmE=");
     test(&[b"foob", b"ar"], "Zm9vYmFy");
 }
+
+#[test]
+fn decode_align() {
+    #[track_caller]
+    fn test(chunks: &[&[u8]], expected: &[u8]) {
+        let mut output = Vec::new();
+        for chunk in chunks {
+            let mut buffer = vec![0; data_encoding::BASE64_MIME.decode_len(chunk.len()).unwrap()];
+            let written = data_encoding::BASE64_MIME.decode_mut(chunk, &mut buffer).unwrap();
+            output.extend_from_slice(&buffer[.. written]);
+        }
+        assert_eq!(output, expected);
+    }
+    assert_eq!(data_encoding::BASE64_MIME.decode_align(), 4);
+    test(&[], b"");
+    test(&[b""], b"");
+    test(&[b"Zm9vYmFy"], b"foobar");
+    test(&[b"Zm9v", b"YmFy"], b"foobar");
+    test(&[b"Zm9v", b"Yg=="], b"foob");
+    test(&[b"Zm9v\r\n", b"YmE=\r\n"], b"fooba");
+    test(&[b"Zm9v\r\nYmFy", b"\r\nZm9v"], b"foobarfoo");
+}
