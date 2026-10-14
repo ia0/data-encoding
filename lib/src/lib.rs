@@ -1522,8 +1522,8 @@ impl Encoding {
     ///
     /// If you need to decode an input of length greater than this limit (possibly of infinite
     /// length), then you must chunk your input, decode each chunk, and concatenate to obtain the
-    /// output. The number of non-ignored characters of each input chunk must be a multiple of
-    /// [`decode_align`].
+    /// output. The number of non-ignored characters of each input chunk (except the last) must be a
+    /// multiple of [`decode_align`].
     ///
     /// Note that this function only _may_ panic in those cases. The function may also return the
     /// correct value in some cases depending on the implementation. In other words, those limits

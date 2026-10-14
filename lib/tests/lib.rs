@@ -704,15 +704,12 @@ fn encoder() {
 
 #[test]
 fn decode_align() {
-    // Decodes chunk by chunk as documented by `decode_len`. Each chunk holds a multiple of
-    // `decode_align` non-ignored characters.
     #[track_caller]
     fn test(chunks: &[&[u8]], expected: &[u8]) {
-        static BASE64_MIME: Encoding = data_encoding::BASE64_MIME;
         let mut output = Vec::new();
         for chunk in chunks {
-            let mut buffer = vec![0; BASE64_MIME.decode_len(chunk.len()).unwrap()];
-            let written = BASE64_MIME.decode_mut(chunk, &mut buffer).unwrap();
+            let mut buffer = vec![0; data_encoding::BASE64_MIME.decode_len(chunk.len()).unwrap()];
+            let written = data_encoding::BASE64_MIME.decode_mut(chunk, &mut buffer).unwrap();
             output.extend_from_slice(&buffer[.. written]);
         }
         assert_eq!(output, expected);
