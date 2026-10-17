@@ -9,6 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 data-encoding = { path = ".." }
+data-encoding-v3 = { path = "../v3" }
 libfuzzer-sys = "0.4.3"
 
 # Fuzz targets organization based on prefix:
@@ -51,6 +52,14 @@ path = "fuzz_targets/impl_encode_write_buffer.rs"
 [[bin]]
 name = "impl_new_encoder"
 path = "fuzz_targets/impl_new_encoder.rs"
+
+[[bin]]
+name = "impl_v3_encode"
+path = "fuzz_targets/impl_v3_encode.rs"
+
+[[bin]]
+name = "impl_v3_decode"
+path = "fuzz_targets/impl_v3_decode.rs"
 
 [[bin]]
 name = "spec_decode_encode"
