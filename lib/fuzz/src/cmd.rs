@@ -7,7 +7,7 @@ use std::sync::OnceLock;
 
 use data_encoding::{BitOrder, Encoding, Specification};
 
-use crate::{gen, spec};
+use crate::{gen, spec, v3};
 
 macro_rules! debug {
     ($($arg:tt)*) => {
@@ -94,6 +94,26 @@ pub fn execute(target: &str, mut input: &[u8]) -> Output {
             output.insert("full_len", full.len());
             output.insert("num_chunks", num_chunks);
             assert_eq!(actual, base.encode(&full));
+        }
+        "impl_v3_encode" => {
+            let (spec, base) = gen_spec_base(&mut input, &mut output);
+            let Ok(base3) = v3::spec(&spec).encoding() else { return output.reject() };
+            assert_eq!(base3.encode(input), base.encode(input));
+        }
+        "impl_v3_decode" => {
+            let (spec, base) = gen_spec_base(&mut input, &mut output);
+            let Ok(base3) = v3::spec(&spec).encoding() else { return output.reject() };
+            let actual = base.decode(input);
+            let actual3 = base3.decode(input);
+            output.insert("decode_ok", actual.is_ok() as usize);
+            match (&actual, &actual3) {
+                (Ok(actual), Ok(actual3)) => assert_eq!(actual, actual3),
+                (Err(actual), Err(actual3)) => {
+                    assert_eq!(actual.position, actual3.position);
+                    assert_eq!(format!("{:?}", actual.kind), format!("{:?}", actual3.kind));
+                }
+                _ => panic!("decode mismatch: {actual:?} vs {actual3:?}"),
+            }
         }
         "spec_decode_encode" => {
             let (_, base) = gen_spec_base(&mut input, &mut output);
