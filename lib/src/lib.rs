@@ -1180,9 +1180,10 @@ pub struct Wrap {
 /// spec.wrap.separator.push_str(" ");
 /// let base64 = spec.encoding().unwrap();
 /// assert_eq!(base64.encode(b"Hey you"), "SGV5IHlv dQ== ");
+/// assert_eq!(base64.encode(b""), "");
 /// ```
 ///
-/// Note that the output always ends with the separator.
+/// Note that any non-empty output always ends with the separator.
 ///
 /// ### Translate characters when decoding
 ///
