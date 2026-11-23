@@ -1983,7 +1983,9 @@ impl Specification {
             check!(SpecificationError(Undefined(to[i])), v != INVALID);
             set(&mut values, from[i], v)?;
         }
-        let mut encoding = Vec::new();
+        // The implementation is 256 symbols, 256 values, padding, bit-order and bit-width, and
+        // optionally the wrap width and separator (or a zero width for ignore).
+        let mut encoding = Vec::with_capacity(515 + wrap.map_or(0, |(_, end)| end.len()));
         for _ in 0 .. 256 / symbols.len() {
             encoding.extend_from_slice(symbols);
         }
