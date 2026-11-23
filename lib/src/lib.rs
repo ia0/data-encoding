@@ -545,17 +545,18 @@ fn encode_wrap_mut<
     let enc = col * enc(bit.val());
     let dec = col * dec(bit.val()) + end.len();
     let olen = dec - end.len();
-    let n = input.len() / enc;
-    for i in 0 .. n {
-        let input = chunk_unchecked(input, enc, i);
-        let output = chunk_mut_unchecked(output, dec, i);
-        encode_base(bit, msb, symbols, input, &mut output[.. olen]);
-        output[olen ..].copy_from_slice(end);
+    let mut lines = input.chunks_exact(enc);
+    let (full_lines, last_line) = output.split_at_mut(lines.len() * dec);
+    for (input, output) in lines.by_ref().zip(full_lines.chunks_exact_mut(dec)) {
+        let (data, separator) = output.split_at_mut(olen);
+        encode_base(bit, msb, symbols, input, data);
+        separator.copy_from_slice(end);
     }
-    if input.len() > enc * n {
-        let olen = dec * n + encode_pad_len(bit, pad, input.len() - enc * n);
-        encode_pad(bit, msb, symbols, pad, &input[enc * n ..], &mut output[dec * n .. olen]);
-        output[olen ..].copy_from_slice(end);
+    let rest = lines.remainder();
+    if !rest.is_empty() {
+        let (data, separator) = last_line.split_at_mut(encode_pad_len(bit, pad, rest.len()));
+        encode_pad(bit, msb, symbols, pad, rest, data);
+        separator.copy_from_slice(end);
     }
 }
 
