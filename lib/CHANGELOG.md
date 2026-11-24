@@ -8,7 +8,7 @@
 
 ### Patch
 
-- Reserve the full length when building an encoding from a specification
+- Allocate exact length when building an encoding from a specification
 - Clarify wrapping behavior on empty output in documentation
 - Fix `redundant_explicit_links` rustdoc lint
 - Rename lints in `Cargo.toml` to use underscores
