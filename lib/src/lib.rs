@@ -1983,7 +1983,9 @@ impl Specification {
             check!(SpecificationError(Undefined(to[i])), v != INVALID);
             set(&mut values, from[i], v)?;
         }
-        let mut encoding = Vec::new();
+        let has_ignore = values.contains(&IGNORE);
+        let capacity = 514 + has_ignore as usize + wrap.map_or(0, |(_, end)| end.len());
+        let mut encoding = Vec::with_capacity(capacity);
         for _ in 0 .. 256 / symbols.len() {
             encoding.extend_from_slice(symbols);
         }
@@ -2003,9 +2005,10 @@ impl Specification {
         if let Some((col, end)) = wrap {
             encoding.push(col);
             encoding.extend_from_slice(end);
-        } else if values.contains(&IGNORE) {
+        } else if has_ignore {
             encoding.push(0);
         }
+        debug_assert_eq!(encoding.len(), capacity);
         Ok(Encoding(Cow::Owned(encoding)))
     }
 }
